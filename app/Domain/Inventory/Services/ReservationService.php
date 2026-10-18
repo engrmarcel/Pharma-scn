@@ -79,6 +79,46 @@ class ReservationService
         }, 3);
     }
 
+    /**
+     * Ship part of a reservation, earliest-expiry batches first. A partly used
+     * reservation keeps its remainder active.
+     *
+     * @return array{posting_id: string, batches: array<string, string>} batch_id => base quantity shipped
+     */
+    public function consumeQuantity(string $referenceType, string $referenceId, string $quantity, string $movementType = 'sale'): array
+    {
+        return DB::transaction(function () use ($referenceType, $referenceId, $quantity, $movementType) {
+            $reservations = StockReservation::query()
+                ->join('batches', 'batches.id', '=', 'stock_reservations.batch_id')
+                ->where('stock_reservations.reference_type', $referenceType)->where('stock_reservations.reference_id', $referenceId)
+                ->where('stock_reservations.status', 'active')
+                ->orderByRaw('batches.expiry_date IS NULL')->orderBy('batches.expiry_date')
+                ->select('stock_reservations.*')->lockForUpdate()->get();
+
+            $remaining = $quantity;
+            $lines = [];
+            $shipped = [];
+            foreach ($reservations as $r) {
+                if (bccomp($remaining, '0', 4) <= 0) {
+                    break;
+                }
+                $take = bccomp((string) $r->quantity, $remaining, 4) <= 0 ? (string) $r->quantity : $remaining;
+                $lines[] = new StockLine($r->warehouse_id, $r->batch_id, 'available', bcmul($take, '-1', 4), $movementType, reservedDelta: bcmul($take, '-1', 4));
+                $shipped[$r->batch_id] = bcadd($shipped[$r->batch_id] ?? '0', $take, 4);
+
+                $left = bcsub((string) $r->quantity, $take, 4);
+                $r->forceFill(bccomp($left, '0', 4) === 0 ? ['status' => 'consumed'] : ['quantity' => $left])->save();
+                $remaining = bcsub($remaining, $take, 4);
+            }
+
+            if (bccomp($remaining, '0', 4) > 0) {
+                throw new BusinessRuleViolation('reservation_insufficient', 'Less is reserved than you are trying to ship.', 409, ['short_by' => $remaining]);
+            }
+
+            return ['posting_id' => $this->ledger->post($lines, $movementType, $referenceType, $referenceId), 'batches' => $shipped];
+        }, 3);
+    }
+
     private function active(string $referenceType, string $referenceId): Collection
     {
         return StockReservation::query()->where('reference_type', $referenceType)->where('reference_id', $referenceId)

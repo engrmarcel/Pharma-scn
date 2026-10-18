@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-19: Phase 2.4b, sales
+- Price lists (customer, branch, default) with quantity breaks and validity; catalogue default price fallback; price overrides gated by `sales.price.override`.
+- Effective-dated tax rates per country and category (platform configuration), with a country default category. Seeded NG categories (EXEMPT, ZERO, VAT_STANDARD 7.5% from 2020-02-01) are flagged for professional confirmation.
+- Quotations (expiry; quoted prices honoured), sales orders (discount and credit-limit approval with segregation of duties, FEFO reservations per line), partial deliveries (`ReservationService::consumeQuantity`) with cost of goods sold, invoicing of delivered quantities, credit notes with returns (quarantined by default) and cost reversal, customer payments and allocation, receivables aging, customer statements.
+- Fix: `ReferenceDataSeeder` no longer overwrites admin-edited country activation or settings on redeploy (it only adds missing defaults).
+- Demo sales order through invoice. 159 tests passing.
+
 ### 2026-10-19: Phase 2.4a, finance foundations
 - Chart of accounts per organization (template keyed by `system_key`), financial periods (opened monthly on demand; close/reopen with reason).
 - `GeneralLedger`: balanced, immutable journal entries with reversals; closed periods refuse postings.

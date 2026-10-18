@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\ProcurementController;
 use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReferenceDataController;
+use App\Http\Controllers\Api\V1\SalesController;
 use App\Http\Controllers\Api\V1\StockDocumentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierController;
@@ -194,6 +195,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            Route::middleware('module:sales')->group(function () {
+                Route::get('price-lists', [SalesController::class, 'priceLists'])->name('price-lists.index');
+                Route::post('price-lists', [SalesController::class, 'storePriceList'])->name('price-lists.store');
+                Route::put('price-lists/{id}/items', [SalesController::class, 'replacePriceListItems'])->whereUlid('id')->name('price-lists.items');
+
+                Route::get('quotations', [SalesController::class, 'quotations'])->name('quotations.index');
+                Route::post('quotations', [SalesController::class, 'storeQuotation'])->name('quotations.store');
+                Route::post('quotations/{id}/convert', [SalesController::class, 'convertQuotation'])->whereUlid('id')->middleware('idempotent:required')->name('quotations.convert');
+
+                Route::get('sales-orders', [SalesController::class, 'salesOrders'])->name('sales-orders.index');
+                Route::post('sales-orders', [SalesController::class, 'storeSalesOrder'])->middleware('idempotent:required')->name('sales-orders.store');
+                Route::get('sales-orders/{id}', [SalesController::class, 'showSalesOrder'])->whereUlid('id')->name('sales-orders.show');
+                Route::patch('sales-orders/{id}', [SalesController::class, 'updateSalesOrder'])->whereUlid('id')->name('sales-orders.update');
+                Route::post('sales-orders/{id}/deliveries', [SalesController::class, 'deliver'])->whereUlid('id')->middleware('idempotent:required')->name('sales-orders.deliver');
+                Route::post('sales-orders/{id}/invoice', [SalesController::class, 'invoiceOrder'])->whereUlid('id')->middleware('idempotent:required')->name('sales-orders.invoice');
+                Route::post('sales-orders/{id}/{action}', [SalesController::class, 'salesOrderAction'])->whereUlid('id')
+                    ->whereIn('action', ['confirm', 'approve', 'reject', 'cancel', 'close'])->name('sales-orders.action');
+
+                Route::get('sales-invoices', [SalesController::class, 'invoices'])->name('sales-invoices.index');
+                Route::get('sales-invoices/{id}', [SalesController::class, 'showInvoice'])->whereUlid('id')->name('sales-invoices.show');
+                Route::post('sales-invoices/{id}/credit-notes', [SalesController::class, 'storeCreditNote'])->whereUlid('id')->middleware('idempotent:required')->name('sales-invoices.credit-notes');
+                Route::post('customer-payments', [SalesController::class, 'receivePayment'])->middleware('idempotent:required')->name('customer-payments.store');
+                Route::get('customers/{customerId}/statement', [SalesController::class, 'customerStatement'])->whereUlid('customerId')->name('customers.statement');
+                Route::get('sales/receivables-aging', [SalesController::class, 'receivablesAging'])->name('sales.receivables-aging');
+                Route::get('sales/settings', [SalesController::class, 'settings'])->name('sales.settings');
+                Route::patch('sales/settings', [SalesController::class, 'updateSettings'])->name('sales.settings.update');
             });
 
             Route::middleware('module:finance')->prefix('finance')->name('finance.')->group(function () {

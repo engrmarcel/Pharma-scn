@@ -18,6 +18,8 @@ use App\Domain\Parties\Models\Supplier;
 use App\Domain\Procurement\Models\PurchaseOrder;
 use App\Domain\Procurement\Services\GoodsReceiptService;
 use App\Domain\Procurement\Services\PurchaseOrderService;
+use App\Domain\Sales\Services\FulfilmentService;
+use App\Domain\Sales\Services\SalesOrderService;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
@@ -155,7 +157,7 @@ class DemoSeeder extends Seeder
                 foreach ($products as $i => $product) {
                     OrganizationProduct::query()->create([
                         'product_id' => $product->id, 'sku' => 'DEMO-SKU-'.($i + 1), 'currency_code' => 'NGN',
-                        'default_selling_price' => (string) (500 * ($i + 1)), 'default_purchase_cost' => (string) (350 * ($i + 1)),
+                        'default_selling_price' => (string) (5 * ($i + 1)), 'default_purchase_cost' => (string) (3 * ($i + 1)), // per base unit (tablet, capsule, sachet)
                         'reorder_level' => 100, 'reorder_quantity' => 500,
                     ]);
 
@@ -200,6 +202,14 @@ class DemoSeeder extends Seeder
                 'purchase_order_line_id' => $po->lines->first()->id, 'batch_number' => 'DEMO-PO-LOT-1',
                 'expiry_date' => now()->addMonths(20)->toDateString(), 'quantity' => '12',
             ]], 'DEMO-DN-1');
+
+            // Sales demo (spec §32): order priced from the catalogue selling price, delivered FEFO and invoiced.
+            $customer = Customer::query()->where('code', 'DEMO-CUS-1')->firstOrFail();
+            $sales = app(SalesOrderService::class);
+            $order = $sales->createOrder($customer, $warehouse, [['product_id' => $product->id, 'package_level_code' => 'pack', 'quantity' => '2']], notes: 'SYNTHETIC DEMO ORDER');
+            $order = $sales->confirm($order);
+            app(FulfilmentService::class)->deliver($order, [['sales_order_line_id' => $order->lines->first()->id, 'quantity' => '2']]);
+            app(FulfilmentService::class)->invoiceOrder($order);
         }, $membership);
     }
 

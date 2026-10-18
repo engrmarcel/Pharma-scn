@@ -37,6 +37,12 @@ use App\Domain\Procurement\Models\PurchaseOrder;
 use App\Domain\Procurement\Models\PurchaseRequisition;
 use App\Domain\Procurement\Models\SupplierInvoice;
 use App\Domain\Procurement\Models\SupplierReturn;
+use App\Domain\Sales\Models\CreditNote;
+use App\Domain\Sales\Models\Delivery;
+use App\Domain\Sales\Models\PriceList;
+use App\Domain\Sales\Models\Quotation;
+use App\Domain\Sales\Models\SalesInvoice;
+use App\Domain\Sales\Models\SalesOrder;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -103,6 +109,12 @@ class AppServiceProvider extends ServiceProvider
             'financial_period' => FinancialPeriod::class,
             'journal_entry' => JournalEntry::class,
             'payment' => Payment::class,
+            'price_list' => PriceList::class,
+            'quotation' => Quotation::class,
+            'sales_order' => SalesOrder::class,
+            'delivery' => Delivery::class,
+            'sales_invoice' => SalesInvoice::class,
+            'credit_note' => CreditNote::class,
             'attachment' => Attachment::class,
         ]);
 

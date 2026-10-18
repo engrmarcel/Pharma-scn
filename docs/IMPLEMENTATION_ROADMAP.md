@@ -32,7 +32,7 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
    - no negative stock unless policy allows it;
    - events `BatchCreated`, `StockReceived`, `StockTransferred`, `InventoryAdjusted`.
 4. **2.3 Procurement ✅:** requisition → approval → PO → GRN (batch capture) → supplier invoice and returns.
-5. **2.4 Sales and finance (2.4a finance foundations ✅; 2.4b sales next):** quote → order → invoice → credit note and returns; payments and allocation; chart of accounts, balanced journal entries, financial periods; effective-dated tax rules.
+5. **2.4 Sales and finance ✅ (2.4a finance foundations, 2.4b sales):** quote → order → invoice → credit note and returns; payments and allocation; chart of accounts, balanced journal entries, financial periods; effective-dated tax rules.
 6. **2.5 POS:** terminals, shifts and cash control, Livewire cashier UI (keyboard and scanner first), FEFO batch selection, split payments, receipts, held sales, returns with supervisor approval, payment provider adapters (verified callbacks, replay protection), and reports. Every POS operation runs through the ERP services from 2.2–2.4.
 7. **2.6 Field force:**
    - API: territories, assignments, visits with truthful GPS evidence, follow-ups, mobile orders as drafts, then submitted, then server-validated.
@@ -46,7 +46,8 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
 | 12 | Subscription bypass via direct API | ✅ `SubscriptionEntitlementTest` |
 | 15 | Unauthorized customer info (tenant level) | ✅ isolation tests; integration credentials in Phase 5 |
 | 3, 13 | Expired/recalled batch blocked; concurrent oversell | ✅ `InventoryTest`, `InventoryConcurrencyTest` (sale path re-tested in 2.5) |
-| 2, 4 | Refund approval, atomic sale + stock | Phase 2.5 (ledger atomicity already tested: `test_failed_posting_rolls_back_entirely`) |
+| 4 | Sale + stock + books atomic | ✅ order-to-cash flows (`SalesTest`), ledger rollback test; POS path in 2.5 |
+| 2 | Unauthorized refund approval | Phase 2.5 (credit-note permissions already enforced) |
 | 5, 7, 8 | Duplicate sync, truthful GPS, offline order state | Phase 2.6 / 3 |
 | 6 | Duplicate payment callbacks | Phase 2.5 |
 | 9, 14 | Integration retries, failed jobs keep the original request | Phase 5 (failed-job listing and retry exist now) |

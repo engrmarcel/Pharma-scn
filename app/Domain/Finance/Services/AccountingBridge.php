@@ -8,6 +8,8 @@ use App\Domain\Procurement\Models\GoodsReceipt;
 use App\Domain\Procurement\Models\PurchaseOrderLine;
 use App\Domain\Procurement\Models\SupplierInvoice;
 use App\Domain\Procurement\Models\SupplierReturn;
+use App\Domain\Sales\Models\CreditNote;
+use App\Domain\Sales\Models\SalesInvoice;
 use App\Support\Money;
 
 /**
@@ -103,6 +105,53 @@ class AccountingBridge
             ['account' => 'inventory', 'debit' => $value],
             ['account' => $reasonCode === 'opening_balance' ? 'equity' : 'inventory_adjustment', 'credit' => $value],
         ]);
+    }
+
+    /** Cost of goods delivered, at batch cost:  Dr COGS  Cr Inventory. */
+    public function deliveryCost(string $sourceType, string $sourceId, string $description, array $deltas, string $date): ?JournalEntry
+    {
+        $value = $this->value($deltas);
+        if (bccomp($value, '0', 4) === 0) {
+            return null;
+        }
+
+        return $this->ledger->post($date, $sourceType, $sourceId, $description, [
+            ['account' => 'cogs', 'debit' => $value],
+            ['account' => 'inventory', 'credit' => $value],
+        ]);
+    }
+
+    /** Dr Accounts receivable (total)  Cr Sales revenue (net of discount)  Cr Output tax. */
+    public function salesInvoice(SalesInvoice $invoice): JournalEntry
+    {
+        $net = bcsub((string) $invoice->subtotal, (string) $invoice->discount_total, 4);
+
+        return $this->ledger->post($invoice->invoice_date->toDateString(), 'sales_invoice', $invoice->id, "Sales invoice {$invoice->number}", [
+            ['account' => 'accounts_receivable', 'debit' => (string) $invoice->total, 'party_type' => 'customer', 'party_id' => $invoice->customer_id],
+            ['account' => 'sales_revenue', 'credit' => $net],
+            ['account' => 'output_tax', 'credit' => (string) $invoice->tax_total],
+        ], $invoice->currency_code);
+    }
+
+    /**
+     * Dr Sales returns  Dr Output tax  Cr Accounts receivable; restocked goods: Dr Inventory  Cr COGS.
+     *
+     * @param  list<array{batch_id: string, quantity: string}>  $restocked
+     */
+    public function creditNote(CreditNote $note, array $restocked): JournalEntry
+    {
+        $lines = [
+            ['account' => 'sales_returns', 'debit' => (string) $note->subtotal],
+            ['account' => 'output_tax', 'debit' => (string) $note->tax_total],
+            ['account' => 'accounts_receivable', 'credit' => (string) $note->total, 'party_type' => 'customer', 'party_id' => $note->customer_id],
+        ];
+        $value = $this->value($restocked);
+        if (bccomp($value, '0', 4) > 0) {
+            $lines[] = ['account' => 'inventory', 'debit' => $value];
+            $lines[] = ['account' => 'cogs', 'credit' => $value];
+        }
+
+        return $this->ledger->post($note->credit_date->toDateString(), 'credit_note', $note->id, "Credit note {$note->number}", $lines, $note->currency_code);
     }
 
     public function supplierReturn(SupplierReturn $return): ?JournalEntry

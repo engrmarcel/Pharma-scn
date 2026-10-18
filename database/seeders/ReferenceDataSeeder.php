@@ -8,6 +8,7 @@ use App\Domain\Platform\Models\Country;
 use App\Domain\Platform\Models\DosageForm;
 use App\Domain\Platform\Models\RegulatoryAuthority;
 use App\Domain\Platform\Models\UnitOfMeasure;
+use App\Domain\Sales\Models\TaxRate;
 use Illuminate\Database\Seeder;
 
 /**
@@ -30,17 +31,28 @@ class ReferenceDataSeeder extends Seeder
         ];
 
         foreach ($countries as [$code, $name, $currency, $tz, $locale, $phone, $active]) {
-            Country::query()->updateOrCreate(['code' => $code], [
-                'name' => $name,
-                'currency_code' => $currency,
-                'timezone' => $tz,
-                'default_locale' => $locale,
-                'phone_code' => $phone,
-                'is_active' => $active,
+            $defaults = [
                 // Document requirements are a compliance decision; this is a minimal starting point to be reviewed.
-                'settings' => ['verification' => ['required_document_categories' => ['business_registration']]],
-            ]);
+                'verification' => ['required_document_categories' => ['business_registration']],
+                // Products without a tax category on the catalogue item use this category. Medicines are commonly
+                // VAT-exempt in Nigeria; confirm per product with a tax professional.
+                'tax' => ['default_category' => $code === 'NG' ? 'EXEMPT' : null],
+            ];
+
+            // Runs on every deploy: create missing countries, add missing setting keys,
+            // and never overwrite what platform staff have configured (activation, settings).
+            $country = Country::query()->find($code);
+            if ($country === null) {
+                Country::query()->create([
+                    'code' => $code, 'name' => $name, 'currency_code' => $currency, 'timezone' => $tz,
+                    'default_locale' => $locale, 'phone_code' => $phone, 'is_active' => $active, 'settings' => $defaults,
+                ]);
+            } else {
+                $country->forceFill(['settings' => array_replace_recursive($defaults, $country->settings ?? [])])->save();
+            }
         }
+
+        $this->taxRates();
 
         $authorities = [
             ['NAFDAC', 'NG', 'National Agency for Food and Drug Administration and Control', 'https://nafdac.gov.ng'],
@@ -97,6 +109,25 @@ class ReferenceDataSeeder extends Seeder
         ];
         foreach ($categories as $code => $name) {
             ProductCategory::query()->updateOrCreate(['code' => $code], ['name' => $name]);
+        }
+    }
+
+    /**
+     * Starting tax configuration. These are editable platform settings, not tax advice;
+     * platform staff must confirm current rates before relying on them.
+     */
+    private function taxRates(): void
+    {
+        $source = 'Configured default. Confirm with a tax professional before use.';
+        foreach ([
+            ['NG', 'EXEMPT', 'VAT exempt', '0', '2000-01-01'],
+            ['NG', 'ZERO', 'VAT zero-rated', '0', '2000-01-01'],
+            ['NG', 'VAT_STANDARD', 'VAT standard rate', '7.5', '2020-02-01'],
+        ] as [$country, $category, $name, $rate, $from]) {
+            TaxRate::query()->firstOrCreate(
+                ['country_code' => $country, 'category_code' => $category, 'effective_from' => $from],
+                ['name' => $name, 'rate' => $rate, 'source' => $source],
+            );
         }
     }
 }

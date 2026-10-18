@@ -111,6 +111,15 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **Goods receipts** go through `StockReceiptService`, so they obey the same catalogue, expiry, quarantine and ledger rules as any other receipt. Over-receipt is blocked beyond `over_receipt_tolerance_percent`.
 - **Three-way match:** supplier invoices are compared with the order and the receipts, and re-matched under lock at approval. An invoice billing more than was received can only be approved with an explicit, audited override reason.
 
+## Sales (spec §10.5)
+
+- **Price resolution:** customer price list → branch price list → default price list → catalogue default selling price (per base unit). A price that differs from the resolved list price is an override and needs `sales.price.override`. Quoted prices are honoured on conversion.
+- **Tax:** the catalogue item's tax category, or the country default category, gives the rate from effective-dated `tax_rates`. If no rate is configured the line is refused; no rate is ever assumed. Tax applies after discount. The seeded Nigerian values are editable configuration flagged for professional confirmation.
+- **Confirming an order** reserves stock first-expiry-first-out per line, unless a discount exceeds `sales.max_discount_percent` or the customer's credit exposure would exceed their limit; then the order waits for approval by someone other than its creator.
+- **Deliveries** consume reservations (partially if needed, earliest expiry first) and post cost of goods sold at batch cost. **Invoices** bill only delivered, uninvoiced quantities and post receivables, revenue and output tax.
+- **Issued invoices are never edited.** Corrections are credit notes, which can return goods. Returned goods go to quarantine unless someone with `sales.returns.restock` restocks a sellable batch; restocked goods reverse their cost of goods sold. A credit cannot exceed the invoice's open balance; refunds of paid amounts arrive with POS refunds.
+- **Customer payments** allocate to invoices. An unallocated amount stays as a credit on the receivable.
+
 ## Finance foundations (spec §10.6, ADR-0008)
 
 - **`GeneralLedger::post()`** is the only writer of journal entries. Every entry balances at 4 decimals, each line is strictly a debit or a credit, and the entry lands in an open period (monthly periods open on demand). Entries are immutable; corrections are reversing entries.

@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅, 2.1 suppliers & customers ✅, 2.2 inventory core ✅, 2.3 procurement ✅, 2.4a finance foundations ✅; sales (2.4b), POS and field force not started.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅, 2.1 suppliers & customers ✅, 2.2 inventory core ✅, 2.3 procurement ✅, 2.4a finance foundations ✅, 2.4b sales ✅; POS (2.5) and field force (2.6) not started.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -19,7 +19,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **151 tests, 937 assertions, all passing** (MariaDB `pharma_network_test`).
+- `php artisan test`: **159 tests, 1060 assertions, all passing** (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -61,6 +61,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | CI workflow | ✅ | GitHub Actions on MySQL 8; passing |
 | Upload malware scanning | ⬜ | `scan_status` column only |
 | Synthetic demo data (§32, Phase 1 portion) | ✅ | Batches, suppliers, customers, POS and orders come with Phase 2 |
+| Sales (2.4b) | ✅ | Price lists (customer/branch/default), effective-dated tax rates by category, quotations, sales orders with discount and credit-limit approval, FEFO reservations, partial deliveries with COGS, invoices from delivered quantities, credit notes with quarantined-by-default returns, customer payments, receivables aging, customer statements |
 | Finance foundations (2.4a) | ✅ | Chart of accounts (per org, by system key), monthly periods with close/reopen, balanced immutable journal with reversals, automatic postings from receipts, supplier invoices (GRNI/PPV/tax/AP), write-offs, counts, opening balances, supplier returns and payments; supplier payment allocation; trial balance, ledger, P&L, balance sheet, payables aging. Management books, not certified statutory accounts |
 | Procurement (2.3) | ✅ | Requisitions with approval → POs (supplier price lists, threshold-based approval, segregation of duties) → goods receipts with batch capture and over-receipt tolerance → supplier invoices with three-way match and audited override → supplier returns; supplier performance; purchase suggestions. |
 | Inventory core (2.2) | ✅ | Append-only ledger + locked balances, batches with expiry/quality/recall status, FEFO (min shelf life), reservations, receipts with package-level conversion, adjustments, transfers (in-transit, partial receipt), counts, bins, quarantine/release, expiry & low-stock reports, batch-cost valuation; two-connection locking test |

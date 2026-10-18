@@ -26,6 +26,7 @@ class CustomerController extends PartyController
     {
         return [
             'licence_reference' => ['nullable', 'string', 'max:64'],
+            'price_list_id' => ['nullable', 'ulid', Rule::exists('price_lists', 'id')->where('organization_id', $this->tenant->id())],
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
         ];
