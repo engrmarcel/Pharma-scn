@@ -59,6 +59,10 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET/POST | `/product-change-requests` | `catalogue.propose`; organization must be platform-verified |
 | GET/POST/PATCH | `/catalogue/items` | `tenant_products.*`; module `catalogue` |
 | GET | `/audit-logs` | `audit.view`; this organization only |
+| GET/POST · GET/PATCH `{id}` | `/suppliers` (module procurement or inventory) | `suppliers.view` / `suppliers.manage`; `q`, `status`, `type` filters |
+| POST · DELETE | `/suppliers/{id}/contacts`, `/suppliers/{id}/contacts/{contactId}` | `suppliers.manage` |
+| GET/POST · GET/PATCH `{id}` | `/customers` (module sales, pos or field_force) | `customers.view` / `customers.manage` |
+| POST · DELETE | `/customers/{id}/contacts`, `…/{contactId}` | `customers.manage` |
 
 ### Platform administration (`/admin`, platform roles; no tenant context)
 | Method | Path | Permission |

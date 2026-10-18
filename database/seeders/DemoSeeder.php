@@ -11,6 +11,8 @@ use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
+use App\Domain\Parties\Models\Customer;
+use App\Domain\Parties\Models\Supplier;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
@@ -25,7 +27,7 @@ use Illuminate\Support\Facades\Auth;
  * prefix, is held by "FICTIONAL DEMO HOLDER" and stays unverified: the
  * platform refuses to mark DEMO-/TEST- identifiers verified.
  *
- * Batches, suppliers, customers and orders are added with the Phase 2
+ * Batches and orders are added with the Phase 2
  * modules that own them.
  */
 class DemoSeeder extends Seeder
@@ -104,6 +106,14 @@ class DemoSeeder extends Seeder
         app(TenantContext::class)->runAs($org, function () use ($type) {
             $hq = Branch::query()->create(['code' => 'HQ', 'name' => 'Head Office', 'type' => 'head_office', 'city' => 'Lagos']);
             Warehouse::query()->create(['code' => 'WH-MAIN', 'name' => 'Main Warehouse', 'branch_id' => $hq->id]);
+
+            // Synthetic trading parties (codes and names marked DEMO).
+            foreach ([['DEMO-SUP-1', 'Demo Supplier One Ltd', 'distributor'], ['DEMO-SUP-2', 'Demo Supplier Two Ltd', 'manufacturer']] as [$code, $name, $supplierType]) {
+                Supplier::query()->create(['code' => $code, 'name' => $name, 'type' => $supplierType, 'currency_code' => 'NGN', 'payment_terms_days' => 30, 'lead_time_days' => 5, 'email' => strtolower($code).'@demo.test']);
+            }
+            foreach ([['DEMO-CUS-1', 'Demo Customer Pharmacy', 'pharmacy', 6.4474, 3.3903], ['DEMO-CUS-2', 'Demo Customer Clinic', 'clinic', 6.6018, 3.3515]] as [$code, $name, $customerType, $lat, $lng]) {
+                Customer::query()->create(['code' => $code, 'name' => $name, 'type' => $customerType, 'currency_code' => 'NGN', 'payment_terms_days' => 14, 'latitude' => $lat, 'longitude' => $lng, 'email' => strtolower($code).'@demo.test']);
+            }
 
             if (in_array($type, ['manufacturer', 'importer', 'national_distributor'], true)) {
                 $north = Branch::query()->create(['code' => 'ABJ', 'name' => 'Abuja Branch', 'city' => 'Abuja']);

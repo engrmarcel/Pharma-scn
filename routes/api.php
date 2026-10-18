@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReferenceDataController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
+use App\Http\Controllers\Api\V1\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -97,6 +99,24 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('catalogue/items', [OrganizationProductController::class, 'index'])->name('catalogue.items.index');
                 Route::post('catalogue/items', [OrganizationProductController::class, 'store'])->name('catalogue.items.store');
                 Route::patch('catalogue/items/{item}', [OrganizationProductController::class, 'update'])->whereUlid('item')->name('catalogue.items.update');
+            });
+
+            Route::middleware('module:procurement|inventory')->prefix('suppliers')->name('suppliers.')->group(function () {
+                Route::get('/', [SupplierController::class, 'index'])->name('index');
+                Route::post('/', [SupplierController::class, 'store'])->name('store');
+                Route::get('{id}', [SupplierController::class, 'show'])->whereUlid('id')->name('show');
+                Route::patch('{id}', [SupplierController::class, 'update'])->whereUlid('id')->name('update');
+                Route::post('{id}/contacts', [SupplierController::class, 'storeContact'])->whereUlid('id')->name('contacts.store');
+                Route::delete('{id}/contacts/{contactId}', [SupplierController::class, 'destroyContact'])->whereUlid(['id', 'contactId'])->name('contacts.destroy');
+            });
+
+            Route::middleware('module:sales|pos|field_force')->prefix('customers')->name('customers.')->group(function () {
+                Route::get('/', [CustomerController::class, 'index'])->name('index');
+                Route::post('/', [CustomerController::class, 'store'])->name('store');
+                Route::get('{id}', [CustomerController::class, 'show'])->whereUlid('id')->name('show');
+                Route::patch('{id}', [CustomerController::class, 'update'])->whereUlid('id')->name('update');
+                Route::post('{id}/contacts', [CustomerController::class, 'storeContact'])->whereUlid('id')->name('contacts.store');
+                Route::delete('{id}/contacts/{contactId}', [CustomerController::class, 'destroyContact'])->whereUlid(['id', 'contactId'])->name('contacts.destroy');
             });
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

@@ -15,6 +15,9 @@ use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\OrganizationInvitation;
 use App\Domain\Organizations\Models\OrganizationMembership;
 use App\Domain\Organizations\Models\Warehouse;
+use App\Domain\Parties\Models\Customer;
+use App\Domain\Parties\Models\PartyContact;
+use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Models\Attachment;
 use App\Domain\Platform\Models\Country;
 use App\Models\User;
@@ -63,6 +66,9 @@ class AppServiceProvider extends ServiceProvider
             'subscription_plan' => SubscriptionPlan::class,
             'organization_subscription' => OrganizationSubscription::class,
             'country' => Country::class,
+            'supplier' => Supplier::class,
+            'customer' => Customer::class,
+            'party_contact' => PartyContact::class,
             'attachment' => Attachment::class,
         ]);
 

@@ -21,18 +21,25 @@ class EnsureModuleEnabled
         private readonly EntitlementService $entitlements,
     ) {}
 
-    public function handle(Request $request, Closure $next, string $module): Response
+    /**
+     * "module:procurement|inventory" passes when ANY listed module is both enabled and entitled.
+     */
+    public function handle(Request $request, Closure $next, string $modules): Response
     {
         $organization = $this->tenant->organization();
+        $candidates = explode('|', $modules);
 
-        if (! $organization?->hasModule($module)) {
-            throw new BusinessRuleViolation('module_not_enabled', "The {$module} module is not enabled for this organization.", 403);
+        $enabled = array_values(array_filter($candidates, fn ($m) => $organization?->hasModule($m)));
+        if ($enabled === []) {
+            throw new BusinessRuleViolation('module_not_enabled', "The {$modules} module is not enabled for this organization.", 403);
         }
 
-        if (! $this->entitlements->allows($organization, "module.{$module}")) {
-            throw new BusinessRuleViolation('module_not_entitled', "The organization's subscription does not include the {$module} module.", 403);
+        foreach ($enabled as $module) {
+            if ($this->entitlements->allows($organization, "module.{$module}")) {
+                return $next($request);
+            }
         }
 
-        return $next($request);
+        throw new BusinessRuleViolation('module_not_entitled', "The organization's subscription does not include the {$modules} module.", 403);
     }
 }

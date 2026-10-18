@@ -89,6 +89,8 @@ class OrganizationProductController extends Controller
             'default_purchase_cost' => $money,
             'default_selling_price' => $money,
             'tax_category_code' => ['nullable', 'string', 'max:32'],
+            // Must be one of this organization's own suppliers.
+            'preferred_supplier_id' => ['nullable', 'ulid', Rule::exists('suppliers', 'id')->where('organization_id', $this->tenant->id())],
             'reorder_level' => ['nullable', 'decimal:0,4', 'min:0'],
             'reorder_quantity' => ['nullable', 'decimal:0,4', 'min:0'],
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],

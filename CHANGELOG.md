@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-19: Phase 2.1, suppliers and customers
+- Tenant-owned `suppliers`, `customers` and `party_contacts` with codes unique per organization, credit and payment terms, a customer location for the field force, and an optional link to a platform organization.
+- API with search, filters, contacts (single primary) and audit; module-gated (`module:procurement|inventory`, `module:sales|pos|field_force`). Module middleware now accepts alternatives.
+- New permissions `suppliers.*` / `customers.*`, mapped to the relevant system roles.
+- `organization_products.preferred_supplier_id` now has a foreign key and is validated against the organization's own suppliers.
+- Synthetic suppliers and customers in demo data.
+
 ### 2026-10-18: Phase 2.0, account security
 - TOTP two-factor authentication (pragmarx/google2fa) with QR enrolment, replay protection, 8 single-use hashed recovery codes, web login challenge, self-service disable, and platform reset for lost devices.
 - Email verification with signed links; self-service registration endpoint.
