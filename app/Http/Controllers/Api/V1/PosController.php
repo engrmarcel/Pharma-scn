@@ -11,6 +11,7 @@ use App\Domain\Pos\Models\PosRefund;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosShift;
 use App\Domain\Pos\Models\PosTerminal;
+use App\Domain\Pos\Services\PosCatalogue;
 use App\Domain\Pos\Services\PosRefundService;
 use App\Domain\Pos\Services\PosReports;
 use App\Domain\Pos\Services\PosSaleService;
@@ -21,7 +22,6 @@ use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -121,30 +121,12 @@ class PosController extends Controller
     // ---- Product lookup ---------------------------------------------------------
 
     /** Name, SKU, GTIN or batch number search with sellable stock at the terminal's warehouse. */
-    public function lookup(Request $request): JsonResponse
+    public function lookup(Request $request, PosCatalogue $catalogue): JsonResponse
     {
         Gate::authorize('pos.sell');
         $data = $request->validate(['pos_terminal_id' => ['required', 'ulid'], 'q' => ['required', 'string', 'min:2', 'max:100']]);
-        $terminal = PosTerminal::query()->findOrFail($data['pos_terminal_id']);
-        $q = trim($data['q']);
-        $today = today()->toDateString();
-        $like = '%'.addcslashes($q, '%_').'%';
 
-        $rows = DB::table('organization_products as op')
-            ->join('products as p', 'p.id', '=', 'op.product_id')
-            ->where('op.organization_id', $this->tenant->id())->where('op.status', 'active')
-            ->where(fn ($w) => $w->where('p.display_name', 'like', $like)->orWhere('p.generic_name', 'like', $like)->orWhere('op.sku', $q)
-                ->orWhereExists(fn ($e) => $e->from('product_identifiers as pi')->whereColumn('pi.product_id', 'p.id')->where('pi.value', $q))
-                ->orWhereExists(fn ($e) => $e->from('batches as b')->whereColumn('b.product_id', 'p.id')->where('b.organization_id', $this->tenant->id())->where('b.batch_number', strtoupper($q))))
-            ->select(['p.id as product_id', 'p.display_name', 'op.sku'])
-            ->selectSub(fn ($s) => $s->from('inventory_balances as ib')->join('batches as bt', 'bt.id', '=', 'ib.batch_id')
-                ->whereColumn('ib.product_id', 'p.id')->where('ib.warehouse_id', $terminal->warehouse_id)->where('ib.stock_state', 'available')
-                ->where('bt.quality_status', 'released')->where('bt.recall_status', 'none')
-                ->where(fn ($x) => $x->whereNull('bt.expiry_date')->orWhere('bt.expiry_date', '>=', $today))
-                ->selectRaw('COALESCE(SUM(ib.quantity - ib.reserved_quantity), 0)'), 'sellable_base_units')
-            ->limit(25)->get();
-
-        return response()->json(['data' => $rows]);
+        return response()->json(['data' => $catalogue->lookup(PosTerminal::query()->findOrFail($data['pos_terminal_id']), $data['q'])]);
     }
 
     // ---- Sales ------------------------------------------------------------------

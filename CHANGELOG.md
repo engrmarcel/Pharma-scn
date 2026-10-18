@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-20: Phase 2.5b, POS cashier UI
+- Livewire register (`/pos`): open shift, scanner-first search (SKU, GTIN or batch number + Enter adds an exact match), server-priced cart with quantities, prescription indicator, hold and resume, checkout, cash with change, standalone card-terminal entry (pending until confirmed), cancel, close shift.
+- Printable 72 mm receipt (`/pos/receipts/{sale}`) with batch numbers and expiry, no prescription details.
+- Tenant pages in the web app: organization from the switcher, re-validated by `ResolveTenant`; Livewire persistent middleware re-applies tenant, module and account-security checks on component updates.
+- `PosCatalogue` lookup shared by the API and the register. 174 tests passing.
+
 ### 2026-10-20: Phase 2.5a, POS backend
 - Terminals (limited by the `pos_terminals` entitlement); shifts with opening float, signed drawer movements, supervisor-only cash in/out, close with expected/counted/variance, and independent review.
 - Sales: idempotent start by `client_transaction_id`, cart pricing (override and discount controls), scanned-batch validation, prescription-only and controlled dispensing controls, hold, checkout with FEFO or scanned-batch reservation, cancel (cash returned, reservations released).

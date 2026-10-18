@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
 use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Catalogue\ProductBrowser;
+use App\Livewire\Pos\Register;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -31,6 +33,12 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::post('organizations/switch', [DashboardController::class, 'switchOrganization'])->name('organizations.switch');
 
     Route::get('catalogue', ProductBrowser::class)->name('catalogue');
+
+    // Tenant pages: the organization chosen in the switcher, re-validated on every request (and on Livewire updates).
+    Route::middleware(['tenant', 'module:pos'])->group(function () {
+        Route::get('pos', Register::class)->name('pos.register');
+        Route::get('pos/receipts/{sale}', PosReceiptController::class)->whereUlid('sale')->name('pos.receipt');
+    });
 
     Route::get('admin/verifications', VerificationQueue::class)
         ->middleware('can:platform.organizations.view')

@@ -47,6 +47,10 @@ use App\Domain\Sales\Models\PriceList;
 use App\Domain\Sales\Models\Quotation;
 use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesOrder;
+use App\Http\Middleware\EnsureAccountSecurity;
+use App\Http\Middleware\EnsureModuleEnabled;
+use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ResolveTenant;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -56,6 +60,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -133,6 +138,9 @@ class AppServiceProvider extends ServiceProvider
 
             return $access->isRegistered($ability) ? $access->check($user, $ability) : null;
         });
+
+        // Livewire component updates re-run the page's tenant and module checks.
+        Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnsureAccountSecurity::class, ResolveTenant::class, EnsureModuleEnabled::class]);
 
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
         RateLimiter::for('auth', fn (Request $request) => [
