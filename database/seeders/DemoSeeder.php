@@ -7,7 +7,7 @@ use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductCategory;
 use App\Domain\Catalogue\Services\ProductCatalogueService;
-use App\Domain\Inventory\Services\StockReceiptService;
+use App\Domain\Inventory\Services\DirectReceiptService;
 use App\Domain\Organizations\Enums\VerificationStatus;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
@@ -160,7 +160,7 @@ class DemoSeeder extends Seeder
                     ]);
 
                     $prefix = 'DEMO-'.strtoupper(substr($org->id, -4)).'-'.($i + 1);
-                    app(StockReceiptService::class)->receive($warehouse, [
+                    app(DirectReceiptService::class)->receive($warehouse, [
                         ['product_id' => $product->id, 'batch_number' => "{$prefix}A", 'expiry_date' => now()->addMonths(2)->toDateString(), 'quantity' => 40 + 10 * $i, 'unit_cost' => (string) (3 * ($i + 1))],
                         ['product_id' => $product->id, 'batch_number' => "{$prefix}B", 'expiry_date' => now()->addMonths(18)->toDateString(), 'quantity' => 200, 'unit_cost' => (string) (3 * ($i + 1))],
                         ['product_id' => $product->id, 'batch_number' => "{$prefix}X", 'expiry_date' => now()->subMonth()->toDateString(), 'quantity' => 15, 'quality_status' => 'quarantined'],

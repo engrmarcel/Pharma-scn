@@ -11,6 +11,11 @@ use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductChangeRequest;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
 use App\Domain\Catalogue\Services\UnitConverter;
+use App\Domain\Finance\Models\Account;
+use App\Domain\Finance\Models\FinancialPeriod;
+use App\Domain\Finance\Models\JournalEntry;
+use App\Domain\Finance\Models\Payment;
+use App\Domain\Finance\Services\ChartOfAccounts;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -54,6 +59,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(AccessControl::class);
         $this->app->scoped(LocationAccess::class);
         $this->app->scoped(UnitConverter::class);
+        $this->app->scoped(ChartOfAccounts::class);
     }
 
     /**
@@ -93,6 +99,10 @@ class AppServiceProvider extends ServiceProvider
             'goods_receipt' => GoodsReceipt::class,
             'supplier_invoice' => SupplierInvoice::class,
             'supplier_return' => SupplierReturn::class,
+            'account' => Account::class,
+            'financial_period' => FinancialPeriod::class,
+            'journal_entry' => JournalEntry::class,
+            'payment' => Payment::class,
             'attachment' => Attachment::class,
         ]);
 

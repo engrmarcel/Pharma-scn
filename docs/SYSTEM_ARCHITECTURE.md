@@ -111,6 +111,24 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **Goods receipts** go through `StockReceiptService`, so they obey the same catalogue, expiry, quarantine and ledger rules as any other receipt. Over-receipt is blocked beyond `over_receipt_tolerance_percent`.
 - **Three-way match:** supplier invoices are compared with the order and the receipts, and re-matched under lock at approval. An invoice billing more than was received can only be approved with an explicit, audited override reason.
 
+## Finance foundations (spec §10.6, ADR-0008)
+
+- **`GeneralLedger::post()`** is the only writer of journal entries. Every entry balances at 4 decimals, each line is strictly a debit or a credit, and the entry lands in an open period (monthly periods open on demand). Entries are immutable; corrections are reversing entries.
+- **`AccountingBridge`** posts operational documents inside their own transaction:
+
+  | Document | Debit | Credit |
+  |---|---|---|
+  | Goods receipt | Inventory | Goods received not invoiced (GRNI) |
+  | Supplier invoice | GRNI (at the cost used on receipt), purchase price variance, input tax, other charges | Accounts payable |
+  | Write-offs and counts | Inventory adjustments (or Inventory, for gains) | Inventory (or Inventory adjustments) |
+  | Opening-balance receipt | Inventory | Equity |
+  | Supplier return | Returns awaiting credit | Inventory |
+  | Supplier payment | Accounts payable | Cash / bank |
+
+  A closed period therefore blocks the operational document as well, and the whole document is refused. Stock and books never diverge.
+- **Accounts:** automatic postings find accounts by `system_key`, so an organization (or a country template) can rename or renumber the chart freely.
+- **Always on:** the journal is maintained whether or not the `finance` module is enabled; the module only gates the finance API.
+
 ## Subscriptions and entitlements (spec §21, ADR-0007)
 
 `EntitlementService::guard($org, 'branches', fn () => …)` wraps every limited creation. It checks the subscription state and plan or override limits under a row lock on the organization. The `module:x` middleware requires both platform enablement and a `module.x` entitlement. A lapsed subscription blocks new consumption but never hides or deletes existing records.

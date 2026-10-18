@@ -64,6 +64,11 @@ return [
         'procurement.invoice' => ['organization', 'Record supplier invoices'],
         'procurement.return' => ['organization', 'Post returns to suppliers'],
         'procurement.settings.manage' => ['organization', 'Change approval threshold and receipt tolerance'],
+        'finance.view' => ['organization', 'View accounts, journals, payments and financial reports'],
+        'finance.accounts.manage' => ['organization', 'Maintain the chart of accounts'],
+        'finance.journal.post' => ['organization', 'Post and reverse manual journal entries'],
+        'finance.periods.manage' => ['organization', 'Close and reopen financial periods'],
+        'finance.payments.record' => ['organization', 'Record and allocate payments'],
     ],
 
     'roles' => [
@@ -85,9 +90,10 @@ return [
                 'organization.billing.view', 'suppliers.view', 'suppliers.manage', 'customers.view', 'customers.manage',
                 'inventory.view', 'inventory.receive', 'inventory.adjust', 'inventory.transfer', 'inventory.count', 'inventory.quality', 'inventory.valuation.view', 'inventory.settings.manage',
                 'procurement.view', 'procurement.requisition', 'procurement.order', 'procurement.approve', 'procurement.invoice', 'procurement.return', 'procurement.settings.manage',
+                'finance.view', 'finance.accounts.manage', 'finance.journal.post', 'finance.periods.manage', 'finance.payments.record',
             ]],
-            'finance_manager' => ['Finance manager', ['organization.view', 'locations.view', 'tenant_products.view', 'audit.view', 'organization.billing.view', 'suppliers.view', 'customers.view', 'customers.manage', 'inventory.view', 'inventory.valuation.view', 'procurement.view', 'procurement.approve', 'procurement.invoice']],
-            'accountant' => ['Accountant', ['organization.view', 'locations.view', 'tenant_products.view', 'suppliers.view', 'customers.view', 'inventory.view', 'inventory.valuation.view', 'procurement.view', 'procurement.invoice']],
+            'finance_manager' => ['Finance manager', ['organization.view', 'locations.view', 'tenant_products.view', 'audit.view', 'organization.billing.view', 'suppliers.view', 'customers.view', 'customers.manage', 'inventory.view', 'inventory.valuation.view', 'procurement.view', 'procurement.approve', 'procurement.invoice', 'finance.view', 'finance.accounts.manage', 'finance.journal.post', 'finance.periods.manage', 'finance.payments.record']],
+            'accountant' => ['Accountant', ['organization.view', 'locations.view', 'tenant_products.view', 'suppliers.view', 'customers.view', 'inventory.view', 'inventory.valuation.view', 'procurement.view', 'procurement.invoice', 'finance.view', 'finance.journal.post', 'finance.payments.record']],
             'inventory_manager' => ['Inventory manager', ['organization.view', 'locations.view', 'tenant_products.view', 'tenant_products.manage', 'catalogue.propose', 'suppliers.view', 'inventory.view', 'inventory.receive', 'inventory.adjust', 'inventory.transfer', 'inventory.count', 'inventory.quality', 'inventory.valuation.view', 'inventory.settings.manage', 'procurement.view', 'procurement.requisition']],
             'warehouse_officer' => ['Warehouse officer', ['organization.view', 'locations.view', 'tenant_products.view', 'suppliers.view', 'inventory.view', 'inventory.receive', 'inventory.transfer', 'inventory.count', 'procurement.view']],
             'procurement_officer' => ['Procurement officer', ['organization.view', 'locations.view', 'tenant_products.view', 'suppliers.view', 'suppliers.manage', 'inventory.view', 'inventory.receive', 'procurement.view', 'procurement.requisition', 'procurement.order', 'procurement.invoice', 'procurement.return']],
@@ -101,7 +107,7 @@ return [
             'logistics_coordinator' => ['Logistics coordinator', ['organization.view', 'locations.view', 'customers.view', 'inventory.view', 'inventory.transfer']],
             'driver' => ['Driver / delivery officer', ['organization.view']],
             'integration_admin' => ['Integration administrator', ['organization.view', 'tenant_products.view']],
-            'auditor' => ['Auditor (read-only)', ['organization.view', 'locations.view', 'tenant_products.view', 'audit.view', 'suppliers.view', 'customers.view', 'inventory.view', 'inventory.valuation.view', 'procurement.view']],
+            'auditor' => ['Auditor (read-only)', ['organization.view', 'locations.view', 'tenant_products.view', 'audit.view', 'suppliers.view', 'customers.view', 'inventory.view', 'inventory.valuation.view', 'procurement.view', 'finance.view']],
         ],
     ],
 ];

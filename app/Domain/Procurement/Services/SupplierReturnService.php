@@ -2,6 +2,7 @@
 
 namespace App\Domain\Procurement\Services;
 
+use App\Domain\Finance\Services\AccountingBridge;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Services\DocumentNumberer;
 use App\Domain\Inventory\Services\InventoryLedger;
@@ -26,6 +27,7 @@ class SupplierReturnService
         private readonly InventoryLedger $ledger,
         private readonly DocumentNumberer $numbers,
         private readonly AuditLogger $audit,
+        private readonly AccountingBridge $accounting,
     ) {}
 
     /** @param list<array{batch_id: string, base_quantity: string, stock_state?: ?string}> $lines */
@@ -54,6 +56,7 @@ class SupplierReturnService
 
             $postingId = $this->ledger->post($stockLines, $reasonCode, 'supplier_return', $return->id);
             $return->forceFill(['posting_id' => $postingId, 'posted_at' => now()])->save();
+            $this->accounting->supplierReturn($return);
             $this->audit->record('supplier_return.posted', $return, new: ['number' => $return->number, 'supplier_id' => $supplier->id, 'lines' => count($lines)]);
 
             return $return->load('lines');

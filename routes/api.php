@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MemberController;
@@ -193,6 +194,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            Route::middleware('module:finance')->prefix('finance')->name('finance.')->group(function () {
+                Route::get('accounts', [FinanceController::class, 'accounts'])->name('accounts.index');
+                Route::post('accounts', [FinanceController::class, 'storeAccount'])->name('accounts.store');
+                Route::patch('accounts/{id}', [FinanceController::class, 'updateAccount'])->whereUlid('id')->name('accounts.update');
+                Route::get('periods', [FinanceController::class, 'periods'])->name('periods.index');
+                Route::post('periods/{id}/{action}', [FinanceController::class, 'changePeriod'])->whereUlid('id')->whereIn('action', ['close', 'reopen'])->name('periods.change');
+                Route::get('journal-entries', [FinanceController::class, 'journalEntries'])->name('journal-entries.index');
+                Route::post('journal-entries', [FinanceController::class, 'storeJournalEntry'])->middleware('idempotent:required')->name('journal-entries.store');
+                Route::post('journal-entries/{id}/reverse', [FinanceController::class, 'reverseJournalEntry'])->whereUlid('id')->middleware('idempotent:required')->name('journal-entries.reverse');
+                Route::get('payments', [FinanceController::class, 'payments'])->name('payments.index');
+                Route::post('payments/supplier', [FinanceController::class, 'paySupplier'])->middleware('idempotent:required')->name('payments.supplier');
+                Route::post('payments/{id}/allocations', [FinanceController::class, 'allocatePayment'])->whereUlid('id')->middleware('idempotent:required')->name('payments.allocate');
+                Route::get('reports/{report}', [FinanceController::class, 'report'])
+                    ->whereIn('report', ['trial-balance', 'balance-sheet', 'profit-and-loss', 'account-ledger', 'payables-aging'])->name('reports');
             });
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

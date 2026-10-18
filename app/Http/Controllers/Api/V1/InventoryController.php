@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\InventoryMovement;
+use App\Domain\Inventory\Services\DirectReceiptService;
 use App\Domain\Inventory\Services\FefoAllocator;
 use App\Domain\Inventory\Services\LocationAccess;
 use App\Domain\Inventory\Services\StockQueries;
-use App\Domain\Inventory\Services\StockReceiptService;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Http\Controllers\Controller;
@@ -186,7 +186,7 @@ class InventoryController extends Controller
             'meta' => ['note' => 'Preview only; stock is not reserved.']]);
     }
 
-    public function receive(Request $request, StockReceiptService $receipts): JsonResponse
+    public function receive(Request $request, DirectReceiptService $receipts): JsonResponse
     {
         Gate::authorize('inventory.receive');
         $data = $request->validate([
@@ -207,8 +207,7 @@ class InventoryController extends Controller
         ]);
         $this->locations->assertWarehouse($data['warehouse_id']);
 
-        $result = $receipts->receive(Warehouse::query()->findOrFail($data['warehouse_id']), $data['lines'], $data['supplier_id'] ?? null,
-            'external_reference', null, $data['reason_code'] ?? 'receipt');
+        $result = $receipts->receive(Warehouse::query()->findOrFail($data['warehouse_id']), $data['lines'], $data['supplier_id'] ?? null, $data['reason_code'] ?? 'receipt');
 
         return response()->json(['data' => $result + ['reference' => $data['reference'] ?? null]], 201);
     }

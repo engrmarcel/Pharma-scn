@@ -32,7 +32,7 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
    - no negative stock unless policy allows it;
    - events `BatchCreated`, `StockReceived`, `StockTransferred`, `InventoryAdjusted`.
 4. **2.3 Procurement ✅:** requisition → approval → PO → GRN (batch capture) → supplier invoice and returns.
-5. **2.4 Sales and finance:** quote → order → invoice → credit note and returns; payments and allocation; chart of accounts, balanced journal entries, financial periods; effective-dated tax rules.
+5. **2.4 Sales and finance (2.4a finance foundations ✅; 2.4b sales next):** quote → order → invoice → credit note and returns; payments and allocation; chart of accounts, balanced journal entries, financial periods; effective-dated tax rules.
 6. **2.5 POS:** terminals, shifts and cash control, Livewire cashier UI (keyboard and scanner first), FEFO batch selection, split payments, receipts, held sales, returns with supervisor approval, payment provider adapters (verified callbacks, replay protection), and reports. Every POS operation runs through the ERP services from 2.2–2.4.
 7. **2.6 Field force:**
    - API: territories, assignments, visits with truthful GPS evidence, follow-ups, mobile orders as drafts, then submitted, then server-validated.

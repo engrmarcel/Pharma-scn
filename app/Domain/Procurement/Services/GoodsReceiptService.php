@@ -2,6 +2,7 @@
 
 namespace App\Domain\Procurement\Services;
 
+use App\Domain\Finance\Services\AccountingBridge;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Services\DocumentNumberer;
 use App\Domain\Inventory\Services\StockReceiptService;
@@ -25,6 +26,7 @@ class GoodsReceiptService
         private readonly DocumentNumberer $numbers,
         private readonly ProcurementPolicy $policy,
         private readonly AuditLogger $audit,
+        private readonly AccountingBridge $accounting,
     ) {}
 
     /**
@@ -100,7 +102,8 @@ class GoodsReceiptService
 
             $complete = $po->lines()->get()->every(fn ($l) => bccomp((string) $l->received_base_quantity, (string) $l->base_quantity, 4) >= 0);
             $po->forceFill(['status' => $complete ? 'received' : 'partially_received'])->save();
-            $grn->forceFill(['posting_id' => $result['posting_id']])->save();
+            $journal = $this->accounting->goodsReceipt($grn->fresh());
+            $grn->forceFill(['posting_id' => $result['posting_id'], 'journal_entry_id' => $journal?->id])->save();
 
             $this->audit->record('goods_receipt.posted', $grn, new: ['number' => $grn->number, 'purchase_order' => $po->number, 'lines' => count($lines), 'po_status' => $po->status]);
 

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Procurement\Services;
 
+use App\Domain\Finance\Services\AccountingBridge;
 use App\Domain\Inventory\Services\DocumentNumberer;
 use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Services\AuditLogger;
@@ -28,6 +29,7 @@ class SupplierInvoiceService
         private readonly DocumentNumberer $numbers,
         private readonly ProcurementPolicy $policy,
         private readonly AuditLogger $audit,
+        private readonly AccountingBridge $accounting,
     ) {}
 
     /**
@@ -105,7 +107,8 @@ class SupplierInvoiceService
                 PurchaseOrderLine::query()->whereKey($line->purchase_order_line_id)->increment('invoiced_base_quantity', (string) $line->base_quantity);
             }
 
-            $locked->forceFill(['status' => 'approved', 'approved_by' => $approver->id, 'approved_at' => now()])->save();
+            $journal = $this->accounting->supplierInvoice($locked);
+            $locked->forceFill(['status' => 'approved', 'approved_by' => $approver->id, 'approved_at' => now(), 'journal_entry_id' => $journal->id])->save();
             $this->audit->record('supplier_invoice.approved', $locked, new: ['match_status' => $locked->match_status, 'override_reason' => $overrideReason]);
 
             return $locked->load('lines');

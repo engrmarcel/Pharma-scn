@@ -2,6 +2,7 @@
 
 namespace App\Domain\Inventory\Services;
 
+use App\Domain\Finance\Services\AccountingBridge;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\InventoryBalance;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -29,6 +30,7 @@ class StockDocumentService
         private readonly FefoAllocator $fefo,
         private readonly DocumentNumberer $numbers,
         private readonly AuditLogger $audit,
+        private readonly AccountingBridge $accounting,
     ) {}
 
     /**
@@ -66,6 +68,8 @@ class StockDocumentService
 
             $postingId = $this->ledger->post($stockLines, $reasonCode, 'stock_adjustment', $adjustment->id);
             $adjustment->forceFill(['posting_id' => $postingId, 'posted_at' => now()])->save();
+            $this->accounting->stockAdjustment('stock_adjustment', $adjustment->id, "Stock adjustment {$adjustment->number} ({$reasonCode})",
+                array_map(fn ($l) => ['batch_id' => $l['batch_id'], 'quantity' => (string) $l['quantity_delta']], $lines));
 
             return $adjustment->load('lines');
         });
@@ -240,6 +244,10 @@ class StockDocumentService
             }
 
             $postingId = $stockLines === [] ? null : $this->ledger->post($stockLines, 'count_correction', 'stock_count', $locked->id);
+            if ($stockLines !== []) {
+                $this->accounting->stockAdjustment('stock_count', $locked->id, "Stock count {$locked->number}",
+                    array_map(fn (StockLine $l) => ['batch_id' => $l->batchId, 'quantity' => $l->quantity], $stockLines));
+            }
             $locked->forceFill(['status' => 'posted', 'posting_id' => $postingId, 'posted_by' => Auth::id(), 'posted_at' => now()])->save();
             $this->audit->record('stock_count.posted', $locked, new: ['lines' => $locked->lines()->count(), 'adjusted_lines' => count($stockLines)]);
 

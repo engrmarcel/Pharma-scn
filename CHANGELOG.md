@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### 2026-10-19: Phase 2.4a, finance foundations
+- Chart of accounts per organization (template keyed by `system_key`), financial periods (opened monthly on demand; close/reopen with reason).
+- `GeneralLedger`: balanced, immutable journal entries with reversals; closed periods refuse postings.
+- `AccountingBridge` posts inside the document transaction: goods receipts, supplier invoices (GRNI clearing, price variance, input tax, other charges), write-offs and counts, opening-balance and other direct receipts (`DirectReceiptService`), supplier returns and supplier payments.
+- Supplier payments with allocation to approved invoices (balance and currency checks, partial or paid status).
+- Reports: trial balance, account ledger, profit and loss, balance sheet, payables aging.
+- `finance` added to default modules for trading organization types; ADR-0008. 151 tests passing.
+
 ### 2026-10-19: Phase 2.3, procurement
 - Purchase requisitions (submit, approve/reject, convert to per-supplier POs) and purchase orders (draft → pending approval → approved → sent → partially received → received → closed; reject, edit and resubmit; cancel only without receipts).
 - Approval threshold and segregation of duties (`procurement.allow_self_approval` for single-person organizations); supplier price lists with validity and minimum quantities; expected date from supplier lead time.
