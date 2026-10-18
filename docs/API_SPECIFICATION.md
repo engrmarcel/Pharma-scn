@@ -59,6 +59,20 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET/POST | `/product-change-requests` | `catalogue.propose`; organization must be platform-verified |
 | GET/POST/PATCH | `/catalogue/items` | `tenant_products.*`; module `catalogue` |
 | GET | `/audit-logs` | `audit.view`; this organization only |
+| PUT | `/members/{id}/locations` `{all_locations, branch_ids[], warehouse_ids[]}` | `organization.members.manage`; restricts inventory visibility and actions |
+| GET | `/inventory/stock-levels` (`product_id`, `warehouse_id`) | `inventory.view`; per product+warehouse: available on hand, reserved, **sellable**, blocked, quarantined, damaged, in transit, nearest sellable expiry (base units) |
+| GET | `/inventory/balances`, `/inventory/movements`, `/inventory/expiring?days=`, `/inventory/low-stock` | `inventory.view` (movement `unit_cost` only with `inventory.valuation.view`) |
+| GET | `/inventory/valuation` | `inventory.valuation.view`; value at batch cost |
+| POST | `/inventory/allocations/preview` `{product_id, warehouse_id, quantity}` | `inventory.view`; FEFO plan, no reservation |
+| POST | `/inventory/receipts` **(Idempotency-Key required)** `{warehouse_id, supplier_id?, reason_code?, lines[{product_id, batch_number, expiry_date, manufacturing_date?, quantity, package_level_code?, unit_cost?, quality_status?, bin_location_id?}]}` | `inventory.receive`; product must be in the organization catalogue |
+| GET / PATCH | `/inventory/settings` `{allow_negative_stock, min_shelf_life_days}` | view / `inventory.settings.manage` |
+| GET / POST | `/warehouses/{id}/bins` | view / `inventory.settings.manage` |
+| GET | `/batches`, `/batches/{id}` | `inventory.view`; includes `sale_block_reason` |
+| POST | `/batches/{id}/quarantine` · `/release` · `/reject` `{reason}` | `inventory.quality` |
+| GET / POST | `/stock-adjustments` **(POST needs Idempotency-Key)** `{warehouse_id, reason_code, notes?, lines[{batch_id, stock_state?, quantity_delta}]}` | `inventory.adjust` |
+| GET / POST · GET `{id}` | `/stock-transfers` `{from_warehouse_id, to_warehouse_id, lines[{product_id, quantity, batch_id?}]}` | `inventory.transfer` |
+| POST | `/stock-transfers/{id}/dispatch` · `/receive` **(Idempotency-Key)** `{lines[{line_id, quantity}]}` · `/cancel` | `inventory.transfer`; source/destination access respectively |
+| GET / POST | `/stock-counts` · PUT `/{id}/lines` · POST `/{id}/post` | `inventory.count` (posting also needs `inventory.adjust`) |
 | GET/POST · GET/PATCH `{id}` | `/suppliers` (module procurement or inventory) | `suppliers.view` / `suppliers.manage`; `q`, `status`, `type` filters |
 | POST · DELETE | `/suppliers/{id}/contacts`, `/suppliers/{id}/contacts/{contactId}` | `suppliers.manage` |
 | GET/POST · GET/PATCH `{id}` | `/customers` (module sales, pos or field_force) | `customers.view` / `customers.manage` |
@@ -96,7 +110,7 @@ Public addition: `GET /health`, which returns `200 {"status":"ok","checks":{"dat
 
 ## Stable error codes (selection)
 
-`mfa_required` (401), `mfa_code_invalid` (401/422), `mfa_disabled` (403), `mfa_enrollment_required` (403/409), `mfa_required_by_policy` (403), `email_unverified` (403), `entitlement_limit_reached` (403), `subscription_inactive` (403), `module_not_entitled` (403), `synthetic_identifier_unverifiable` (422), `synthetic_identifier_rejected` (422), `organization_required` (400), `organization_access_denied` (403), `organization_suspended` (403), `account_suspended` (403), `module_not_enabled` (403), `organization_not_verified` (403), `review_conflict_of_interest` (403), `verification_conflict_of_interest` (403), `verification_documents_missing` (422), `verification_transition_invalid` (409), `product_version_conflict` (409), `package_hierarchy_invalid` (422), `gtin_invalid` (422), `product_identifier_duplicate` (409), `roles_invalid` (422), `last_owner` (409), `invitation_invalid` (404), `invitation_email_mismatch` (403), `idempotency_key_required|invalid` (400), `idempotency_key_reused` (422), `idempotency_request_in_progress` (409).
+`insufficient_stock` (409), `stock_reserved` (409), `batch_not_sellable` (409), `batch_expiry_mismatch` (409), `expired_on_receipt` (422), `product_not_in_catalogue` (422), `location_access_denied` (403), `stock_reference_invalid` (404), `transfer_state_invalid` (409), `batch_release_blocked` (409), `mfa_required` (401), `mfa_code_invalid` (401/422), `mfa_disabled` (403), `mfa_enrollment_required` (403/409), `mfa_required_by_policy` (403), `email_unverified` (403), `entitlement_limit_reached` (403), `subscription_inactive` (403), `module_not_entitled` (403), `synthetic_identifier_unverifiable` (422), `synthetic_identifier_rejected` (422), `organization_required` (400), `organization_access_denied` (403), `organization_suspended` (403), `account_suspended` (403), `module_not_enabled` (403), `organization_not_verified` (403), `review_conflict_of_interest` (403), `verification_conflict_of_interest` (403), `verification_documents_missing` (422), `verification_transition_invalid` (409), `product_version_conflict` (409), `package_hierarchy_invalid` (422), `gtin_invalid` (422), `product_identifier_duplicate` (409), `roles_invalid` (422), `last_owner` (409), `invitation_invalid` (404), `invitation_email_mismatch` (403), `idempotency_key_required|invalid` (400), `idempotency_key_reused` (422), `idempotency_request_in_progress` (409).
 
 ## Example: register, upload, submit
 

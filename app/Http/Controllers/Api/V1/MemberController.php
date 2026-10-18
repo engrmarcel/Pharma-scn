@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api\V1;
 use App\Domain\Access\Models\Role;
 use App\Domain\Organizations\Models\OrganizationMembership;
 use App\Domain\Organizations\Services\MembershipService;
+use App\Domain\Platform\Services\AuditLogger;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MembershipResource;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -90,6 +92,37 @@ class MemberController extends Controller
         }
 
         return MembershipResource::make($this->memberships->setStatus($membership, $data['status'], $request->user())->load(['user', 'roles']));
+    }
+
+    /** Restrict a member to specific branches/warehouses, or give access to all locations. */
+    public function updateLocations(Request $request, string $membershipId, AuditLogger $audit): MembershipResource
+    {
+        Gate::authorize('organization.members.manage');
+        $membership = $this->membershipQuery()->findOrFail($membershipId);
+        $orgId = $this->tenant->id();
+
+        $data = $request->validate([
+            'all_locations' => ['required', 'boolean'],
+            'branch_ids' => ['array'],
+            'branch_ids.*' => ['ulid', Rule::exists('branches', 'id')->where('organization_id', $orgId)],
+            'warehouse_ids' => ['array'],
+            'warehouse_ids.*' => ['ulid', Rule::exists('warehouses', 'id')->where('organization_id', $orgId)],
+        ]);
+
+        DB::transaction(function () use ($membership, $data) {
+            $membership->forceFill(['all_locations' => $data['all_locations']])->save();
+            $membership->locationScopes()->delete();
+            if (! $data['all_locations']) {
+                foreach (['branch' => $data['branch_ids'] ?? [], 'warehouse' => $data['warehouse_ids'] ?? []] as $type => $ids) {
+                    foreach (array_unique($ids) as $id) {
+                        $membership->locationScopes()->create(['location_type' => $type, 'location_id' => $id]);
+                    }
+                }
+            }
+        });
+        $audit->record('membership.locations_changed', $membership, new: $data);
+
+        return MembershipResource::make($membership->fresh()->load(['user', 'roles']));
     }
 
     /** Accepting needs no tenant context: the invitation token identifies the organization. */

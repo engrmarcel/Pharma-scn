@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### 2026-10-19: Phase 2.2, inventory core
+- Batches (expiry, quality and recall status, batch cost); append-only `inventory_movements` ledger; `inventory_balances` projection maintained only by `InventoryLedger` under ordered row locks with deadlock retry; negative stock blocked unless the organization allows it.
+- FEFO allocation that excludes expired, recalled, quarantined and reserved stock, with an optional minimum remaining shelf life. Reservations (reserve, consume, release).
+- Receipts with package-level conversion (Idempotency-Key required); adjustments and write-offs; transfers with FEFO dispatch, in-transit tracking and partial receipt; stock counts against live balances; bins.
+- Batch quarantine, release and reject across warehouses (releases reservations; expired or recalled batches cannot be released).
+- Stock levels, batch balances, ledger, expiring, low-stock and valuation endpoints; costs gated by `inventory.valuation.view`.
+- Branch/warehouse access scopes enforced (`PUT /members/{id}/locations`).
+- Idempotency middleware is now re-entrant (fixes a double claim when group and route both apply it).
+- Two-connection locking test; synthetic demo batches with spread expiries. 133 tests passing.
+
 ### 2026-10-19: Phase 2.1, suppliers and customers
 - Tenant-owned `suppliers`, `customers` and `party_contacts` with codes unique per organization, credit and payment terms, a customer location for the field force, and an optional link to a platform organization.
 - API with search, filters, contacts (single primary) and audit; module-gated (`module:procurement|inventory`, `module:sales|pos|field_force`). Module middleware now accepts alternatives.

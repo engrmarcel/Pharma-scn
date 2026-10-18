@@ -29,7 +29,9 @@ class EnforceIdempotency
 
     public function handle(Request $request, Closure $next, ?string $mode = null): Response
     {
-        if (in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true)) {
+        // Re-entrant: a route may carry both the group-level 'idempotent' and its own
+        // 'idempotent:required'. The outermost instance that claims the key handles it.
+        if (in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true) || $request->attributes->get('idempotency.claimed')) {
             return $next($request);
         }
 
@@ -51,6 +53,7 @@ class EnforceIdempotency
         $hash = hash('sha256', $request->method().'|'.$request->path().'|'.json_encode($request->all()));
 
         $record = $this->claim($scope, $key, $request, $hash);
+        $request->attributes->set('idempotency.claimed', true);
 
         if ($record->completed_at !== null) {
             return response($record->response_body, $record->response_status, [

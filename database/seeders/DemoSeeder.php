@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Domain\Access\Models\Role;
+use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
+use App\Domain\Inventory\Services\StockReceiptService;
 use App\Domain\Catalogue\Models\ProductCategory;
 use App\Domain\Catalogue\Services\ProductCatalogueService;
 use App\Domain\Organizations\Enums\VerificationStatus;
@@ -27,7 +29,7 @@ use Illuminate\Support\Facades\Auth;
  * prefix, is held by "FICTIONAL DEMO HOLDER" and stays unverified: the
  * platform refuses to mark DEMO-/TEST- identifiers verified.
  *
- * Batches and orders are added with the Phase 2
+ * Purchase and sales orders are added with the Phase 2
  * modules that own them.
  */
 class DemoSeeder extends Seeder
@@ -63,6 +65,7 @@ class DemoSeeder extends Seeder
 
         Auth::setUser($admin);
         $this->products($admin);
+        $this->stock();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -122,6 +125,45 @@ class DemoSeeder extends Seeder
                 Warehouse::query()->create(['code' => 'WH-QUAR', 'name' => 'Quarantine Store', 'type' => 'quarantine', 'branch_id' => $hq->id]);
             }
         });
+    }
+
+    /**
+     * Catalogue mappings and synthetic batches (DEMO- lot numbers) with a spread of
+     * expiry dates, including one near expiry and one expired-and-quarantined lot.
+     */
+    private function stock(): void
+    {
+        $products = Product::query()->where('description', 'like', 'SYNTHETIC DEMO PRODUCT%')->orderBy('generic_name')->get();
+
+        foreach (Organization::query()->where('name', 'like', 'Demo%')->get() as $org) {
+            if (! $org->hasModule('inventory')) {
+                continue;
+            }
+            $membership = $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->first();
+            Auth::setUser($membership->user);
+
+            app(TenantContext::class)->runAs($org, function () use ($products, $org) {
+                if (OrganizationProduct::query()->exists()) {
+                    return;
+                }
+                $warehouse = Warehouse::query()->where('code', 'WH-MAIN')->firstOrFail();
+
+                foreach ($products as $i => $product) {
+                    OrganizationProduct::query()->create([
+                        'product_id' => $product->id, 'sku' => 'DEMO-SKU-'.($i + 1), 'currency_code' => 'NGN',
+                        'default_selling_price' => (string) (500 * ($i + 1)), 'default_purchase_cost' => (string) (350 * ($i + 1)),
+                        'reorder_level' => 100, 'reorder_quantity' => 500,
+                    ]);
+
+                    $prefix = 'DEMO-'.strtoupper(substr($org->id, -4)).'-'.($i + 1);
+                    app(StockReceiptService::class)->receive($warehouse, [
+                        ['product_id' => $product->id, 'batch_number' => "{$prefix}A", 'expiry_date' => now()->addMonths(2)->toDateString(), 'quantity' => 40 + 10 * $i, 'unit_cost' => (string) (3 * ($i + 1))],
+                        ['product_id' => $product->id, 'batch_number' => "{$prefix}B", 'expiry_date' => now()->addMonths(18)->toDateString(), 'quantity' => 200, 'unit_cost' => (string) (3 * ($i + 1))],
+                        ['product_id' => $product->id, 'batch_number' => "{$prefix}X", 'expiry_date' => now()->subMonth()->toDateString(), 'quantity' => 15, 'quality_status' => 'quarantined'],
+                    ], reasonCode: 'opening_balance');
+                }
+            }, $membership);
+        }
     }
 
     private function products(User $admin): void

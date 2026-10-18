@@ -87,6 +87,23 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **No super-user bypass.** A platform super admin has no access to tenant data unless they are a member of that organization.
 - System roles are synced from config by `RolesAndPermissionsSeeder` on every deploy. Organizations may add custom roles built from organization-scope permissions only.
 
+## Inventory integrity (spec §10.2–10.3, §13.4)
+
+- **`InventoryLedger::post()`** is the only code that changes stock quantities. In one transaction it:
+  - resolves batches and warehouses through the tenant scope;
+  - creates any missing balance rows, then locks every touched row with `SELECT … FOR UPDATE` in sorted key order;
+  - refuses negative stock (unless `inventory.allow_negative_stock`, and only for unreserved available stock) and refuses to dip below reserved quantities;
+  - appends immutable movements.
+
+  Deadlocks and lock timeouts are retried up to 3 times. `InventoryConcurrencyTest` shows a second database session holding the row blocks a competing posting, and that the last units cannot be sold twice.
+- **`FefoAllocator`** picks the earliest-expiry sellable batches, with no-expiry batches last. Expired, recalled, quarantined, rejected and reserved stock is never allocated. Explicitly chosen batches go through `assertSellable()`.
+- **Blocked stock never becomes sellable:**
+  - quarantining a batch releases its reservations and moves all of its available stock to `quarantined`, in every warehouse;
+  - receipts and adjustments of blocked batches cannot land in `available`;
+  - transfers of a batch blocked in transit arrive quarantined.
+- **Stock documents** (adjustments, transfers, counts) update their own rows and post to the ledger in the same transaction. Unreceived transfer quantity remains visible `in_transit`.
+- **Warehouse access:** `LocationAccess` restricts reads and actions for members with `all_locations = false` to their assigned warehouses and branches.
+
 ## Subscriptions and entitlements (spec §21, ADR-0007)
 
 `EntitlementService::guard($org, 'branches', fn () => …)` wraps every limited creation. It checks the subscription state and plan or override limits under a row lock on the organization. The `module:x` middleware requires both platform enablement and a `module.x` entitlement. A lapsed subscription blocks new consumption but never hides or deletes existing records.

@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅, 2.1 suppliers & customers ✅; inventory, procurement, sales, POS and field force not started.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅, 2.1 suppliers & customers ✅, 2.2 inventory core ✅; procurement, sales, finance, POS and field force not started.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -19,7 +19,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **117 tests, 567 assertions, all passing** (MariaDB `pharma_network_test`).
+- `php artisan test`: **133 tests, 712 assertions, all passing** (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -48,7 +48,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Account suspension (revokes tokens and sessions) | ✅ | |
 | Multi-tenancy (fail-closed scope, resolution, jobs, files) | ✅ | |
 | RBAC: registry, all §5.2 roles, organization-scoped evaluation | ✅ | Custom-role CRUD endpoints not built (model supports it) |
-| Branch/warehouse access scopes | 🟡 | Model only; enforced from Phase 2.2 |
+| Branch/warehouse access scopes | ✅ | `PUT /members/{id}/locations`; enforced on all inventory reads and actions |
 | Onboarding, invitations, verification workflow | ✅ | |
 | Subscription and entitlement foundations | ✅ | Plans, entitlements, overrides, enforcement for users, branches, warehouses, storage and modules. Invoicing, renewals and payment collection come later (§21.4) |
 | Country configuration | ✅ | NG active; GH, KE, ZA, RW, EG configured and inactive |
@@ -61,6 +61,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | CI workflow | ✅ | GitHub Actions on MySQL 8; passing |
 | Upload malware scanning | ⬜ | `scan_status` column only |
 | Synthetic demo data (§32, Phase 1 portion) | ✅ | Batches, suppliers, customers, POS and orders come with Phase 2 |
+| Inventory core (2.2) | ✅ | Append-only ledger + locked balances, batches with expiry/quality/recall status, FEFO (min shelf life), reservations, receipts with package-level conversion, adjustments, transfers (in-transit, partial receipt), counts, bins, quarantine/release, expiry & low-stock reports, batch-cost valuation; two-connection locking test |
 | Suppliers and customers with contacts (2.1) | ✅ | Tenant-scoped; optional link to a platform organization (no data access implied); module-gated; sales-rep territory narrowing arrives in 2.6 |
 | **Product Master (Phase 2 scope, done early)** | ✅ | Products, ingredients, package hierarchy, GTIN, classifications, NAFDAC/regulatory identifiers with evidence, governance, tenant mappings |
 

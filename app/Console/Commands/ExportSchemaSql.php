@@ -41,7 +41,7 @@ class ExportSchemaSql extends Command
         }
 
         // Strip server-specific noise so the file diffs cleanly between machines.
-        $sql = preg_replace(['/^\/\*!\d+ SET .*?\*\/;\s*$/m', '/ AUTO_INCREMENT=\d+/'], '', $process->getOutput());
+        $sql = preg_replace(['/^\/\*!\d+ SET .*?\*\/;\s*$/m', '/ AUTO_INCREMENT=\d+/'], '', str_replace("\r\n", "\n", $process->getOutput()));
         $migration = DB::connection($connection)->table('migrations')->orderByDesc('id')->value('migration');
 
         $header = "-- Pharmaceutical Supply Chain Network: database structure\n"

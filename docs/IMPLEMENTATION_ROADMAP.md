@@ -22,7 +22,7 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
 
 1. **2.0 Security carry-over ✅:** TOTP two-factor with recovery codes (modes off / optional / required_for_platform_staff / required_for_all, default **off**), organization-level requirement, email verification (default **off**), self-registration, password-reset test.
 2. **2.1 Parties ✅:** suppliers and customers (tenant), with contacts, credit terms and an optional platform-organization link.
-3. **2.2 Inventory core:**
+3. **2.2 Inventory core ✅:**
    - `batches` (lot, manufacturing and expiry dates, quality/quarantine/recall status, source);
    - `inventory_movements`, an append-only ledger in base units;
    - `inventory_balances`, a projection locked with `SELECT … FOR UPDATE`;
@@ -45,7 +45,8 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
 | 1 | Cross-tenant read | ✅ `TenantIsolationTest` |
 | 12 | Subscription bypass via direct API | ✅ `SubscriptionEntitlementTest` |
 | 15 | Unauthorized customer info (tenant level) | ✅ isolation tests; integration credentials in Phase 5 |
-| 2, 3, 4, 13 | Refund approval, expired/recalled batch, atomic sale, oversell | Phase 2.2 / 2.5 |
+| 3, 13 | Expired/recalled batch blocked; concurrent oversell | ✅ `InventoryTest`, `InventoryConcurrencyTest` (sale path re-tested in 2.5) |
+| 2, 4 | Refund approval, atomic sale + stock | Phase 2.5 (ledger atomicity already tested: `test_failed_posting_rolls_back_entirely`) |
 | 5, 7, 8 | Duplicate sync, truthful GPS, offline order state | Phase 2.6 / 3 |
 | 6 | Duplicate payment callbacks | Phase 2.5 |
 | 9, 14 | Integration retries, failed jobs keep the original request | Phase 5 (failed-job listing and retry exist now) |

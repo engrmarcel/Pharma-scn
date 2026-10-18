@@ -9,6 +9,7 @@
 | Isolation | `TenantIsolationTest` + tenant cases in every module | Cross-tenant reads, writes, bindings, validation rules, jobs |
 | UI | Livewire component tests (`WebInterfaceTest`) | Components render and **actions re-authorize** |
 | Schema | `SchemaSnapshotTest` | The SQL schema file matches the migrations |
+| Concurrency | `InventoryConcurrencyTest` | A real second DB session holds a row lock; proves postings serialize and cannot oversell. Uses committed data (truncation) and restores the baseline afterwards |
 | Static | Laravel Pint | Code style |
 
 Tests run against **MariaDB/MySQL, not SQLite**, because row locking, decimals, foreign keys and JSON behaviour must match production. The test database is `pharma_network_test` (see `phpunit.xml`), and `TestingSeeder` loads reference data and the permission registry.

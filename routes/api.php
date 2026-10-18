@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
@@ -15,6 +17,7 @@ use App\Http\Controllers\Api\V1\OrganizationProductController;
 use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReferenceDataController;
+use App\Http\Controllers\Api\V1\StockDocumentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use Illuminate\Support\Facades\Route;
@@ -84,6 +87,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('invitations', [MemberController::class, 'invite'])->name('invitations.store');
             Route::put('members/{membershipId}/roles', [MemberController::class, 'updateRoles'])->whereUlid('membershipId')->name('members.roles');
             Route::put('members/{membershipId}/status', [MemberController::class, 'updateStatus'])->whereUlid('membershipId')->name('members.status');
+            Route::put('members/{membershipId}/locations', [MemberController::class, 'updateLocations'])->whereUlid('membershipId')->name('members.locations');
 
             Route::get('branches', [LocationController::class, 'branches'])->name('branches.index');
             Route::post('branches', [LocationController::class, 'storeBranch'])->name('branches.store');
@@ -117,6 +121,44 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::patch('{id}', [CustomerController::class, 'update'])->whereUlid('id')->name('update');
                 Route::post('{id}/contacts', [CustomerController::class, 'storeContact'])->whereUlid('id')->name('contacts.store');
                 Route::delete('{id}/contacts/{contactId}', [CustomerController::class, 'destroyContact'])->whereUlid(['id', 'contactId'])->name('contacts.destroy');
+            });
+
+            Route::middleware('module:inventory|pos')->group(function () {
+                Route::prefix('inventory')->name('inventory.')->group(function () {
+                    Route::get('stock-levels', [InventoryController::class, 'stockLevels'])->name('stock-levels');
+                    Route::get('balances', [InventoryController::class, 'balances'])->name('balances');
+                    Route::get('movements', [InventoryController::class, 'movements'])->name('movements');
+                    Route::get('expiring', [InventoryController::class, 'expiring'])->name('expiring');
+                    Route::get('low-stock', [InventoryController::class, 'lowStock'])->name('low-stock');
+                    Route::get('valuation', [InventoryController::class, 'valuation'])->name('valuation');
+                    Route::post('allocations/preview', [InventoryController::class, 'previewAllocation'])->name('allocations.preview');
+                    // Stock receipts must be retry-safe: the client must send an Idempotency-Key.
+                    Route::post('receipts', [InventoryController::class, 'receive'])->middleware('idempotent:required')->name('receipts.store');
+                    Route::get('settings', [InventoryController::class, 'settings'])->name('settings');
+                    Route::patch('settings', [InventoryController::class, 'updateSettings'])->name('settings.update');
+                });
+
+                Route::get('warehouses/{warehouseId}/bins', [InventoryController::class, 'bins'])->whereUlid('warehouseId')->name('bins.index');
+                Route::post('warehouses/{warehouseId}/bins', [InventoryController::class, 'storeBin'])->whereUlid('warehouseId')->name('bins.store');
+
+                Route::get('batches', [BatchController::class, 'index'])->name('batches.index');
+                Route::get('batches/{id}', [BatchController::class, 'show'])->whereUlid('id')->name('batches.show');
+                Route::post('batches/{id}/{action}', [BatchController::class, 'changeQuality'])->whereUlid('id')->whereIn('action', ['quarantine', 'release', 'reject'])->name('batches.quality');
+
+                Route::get('stock-adjustments', [StockDocumentController::class, 'adjustments'])->name('stock-adjustments.index');
+                Route::post('stock-adjustments', [StockDocumentController::class, 'storeAdjustment'])->middleware('idempotent:required')->name('stock-adjustments.store');
+
+                Route::get('stock-transfers', [StockDocumentController::class, 'transfers'])->name('stock-transfers.index');
+                Route::post('stock-transfers', [StockDocumentController::class, 'storeTransfer'])->name('stock-transfers.store');
+                Route::get('stock-transfers/{id}', [StockDocumentController::class, 'showTransfer'])->whereUlid('id')->name('stock-transfers.show');
+                Route::post('stock-transfers/{id}/dispatch', [StockDocumentController::class, 'dispatchTransfer'])->whereUlid('id')->name('stock-transfers.dispatch');
+                Route::post('stock-transfers/{id}/receive', [StockDocumentController::class, 'receiveTransfer'])->whereUlid('id')->middleware('idempotent:required')->name('stock-transfers.receive');
+                Route::post('stock-transfers/{id}/cancel', [StockDocumentController::class, 'cancelTransfer'])->whereUlid('id')->name('stock-transfers.cancel');
+
+                Route::get('stock-counts', [StockDocumentController::class, 'counts'])->name('stock-counts.index');
+                Route::post('stock-counts', [StockDocumentController::class, 'storeCount'])->name('stock-counts.store');
+                Route::put('stock-counts/{id}/lines', [StockDocumentController::class, 'recordCountLines'])->whereUlid('id')->name('stock-counts.lines');
+                Route::post('stock-counts/{id}/post', [StockDocumentController::class, 'postCount'])->whereUlid('id')->name('stock-counts.post');
             });
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');

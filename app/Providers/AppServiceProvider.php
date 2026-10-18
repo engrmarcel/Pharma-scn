@@ -10,6 +10,12 @@ use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductChangeRequest;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
+use App\Domain\Inventory\Models\Batch;
+use App\Domain\Inventory\Models\BinLocation;
+use App\Domain\Inventory\Models\StockAdjustment;
+use App\Domain\Inventory\Models\StockCount;
+use App\Domain\Inventory\Models\StockTransfer;
+use App\Domain\Inventory\Services\LocationAccess;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\OrganizationInvitation;
@@ -40,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
         // Reset per request and per queued job.
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(AccessControl::class);
+        $this->app->scoped(LocationAccess::class);
     }
 
     /**
@@ -69,6 +76,11 @@ class AppServiceProvider extends ServiceProvider
             'supplier' => Supplier::class,
             'customer' => Customer::class,
             'party_contact' => PartyContact::class,
+            'batch' => Batch::class,
+            'bin_location' => BinLocation::class,
+            'stock_adjustment' => StockAdjustment::class,
+            'stock_transfer' => StockTransfer::class,
+            'stock_count' => StockCount::class,
             'attachment' => Attachment::class,
         ]);
 

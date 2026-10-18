@@ -50,17 +50,25 @@ organizations 1─* organization_subscriptions (status, trial/period dates, ende
 organizations 1─* organization_entitlement_overrides (negotiated exceptions, with reason and grantor)
 ```
 
+## Parties and inventory (Phase 2.1–2.2, implemented)
+
+```
+suppliers / customers (tenant) 1─* party_contacts
+batches (tenant; unique org+product+batch_number; one expiry per lot; quality_status, recall_status, unit_cost per base unit)
+inventory_movements  APPEND-ONLY ledger: posting_id groups legs; signed base-unit quantity; balance_after; movement_type, reason, reference
+inventory_balances   projection, unique (warehouse, batch, stock_state); quantity + reserved_quantity; only InventoryLedger writes it
+stock_reservations   FEFO-allocated holds (active → consumed | released)
+stock_adjustments(+lines) · stock_transfers(+lines, split per batch at dispatch) · stock_counts(+lines with system_quantity at posting)
+bin_locations ─* warehouses · document_sequences (per-org ADJ/TRF/CNT numbering under row lock)
+```
+
+Stock states are `available`, `quarantined`, `damaged` and `in_transit`. *Sellable* means available, unreserved, batch released, not recalled, not expired, and meeting the organization's minimum remaining shelf life. Every balance equals the sum of its movements, which a test checks.
+
 ## Forward entity model (Phases 2–7, designed and not yet migrated)
 
 All of these tables are tenant-owned (`organization_id`) unless marked *shared*. Quantities are stored in base units with the package level recorded.
 
 ```
-Parties        suppliers, customers, party_contacts
-Inventory      batches (product, lot, mfg/expiry, quality_status, quarantine/recall flags, source)
-               bin_locations ─* warehouses
-               inventory_movements (append-only: batch, warehouse, bin, qty±, reason, reference_type/id, unit_cost, device_txn_id?)
-               inventory_balances (warehouse+batch projection; row-locked) · stock_reservations · stock_adjustments
-               stock_transfers(+items) · stock_counts(+lines)
 Procurement    purchase_requisitions → purchase_orders(+items) → goods_receipts(+items with batch) → supplier_invoices · supplier_returns
 Sales          price_lists(+items) · quotations → sales_orders(+items) → invoices(+items) · credit_notes · sales_returns
 Finance        accounts (chart) · journal_entries(+lines, balanced) · financial_periods · payments · payment_allocations · tax_rules (effective-dated, per country)
