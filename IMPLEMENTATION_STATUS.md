@@ -23,7 +23,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
-- **Not executed:** the CI workflow (no remote repository), and MySQL 8 runs.
+- **CI (GitHub Actions run #1, commit ba206f7): passed.** Pint, full test suite on MySQL 8.0, asset build, `composer audit` and `npm audit` all green: https://github.com/engrmarcel/Pharma-scn/actions/runs/39052574988
 
 ## Phase 1 acceptance (§31)
 
@@ -57,14 +57,14 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | API foundations (versioning, errors, idempotency, correlation, rate limits) | ✅ | OpenAPI document not yet produced |
 | Domain events (after-commit) | ✅ | 5 events so far; outbox in Phase 5 |
 | Logging and health checks | ✅ | JSON log channel, `/api/v1/health`, ops status |
-| CI workflow | 🟡 | Written; not yet run |
+| CI workflow | ✅ | GitHub Actions on MySQL 8; passing |
 | Upload malware scanning | ⬜ | `scan_status` column only |
 | Synthetic demo data (§32, Phase 1 portion) | ✅ | Batches, suppliers, customers, POS and orders come with Phase 2 |
 | **Product Master (Phase 2 scope, done early)** | ✅ | Products, ingredients, package hierarchy, GTIN, classifications, NAFDAC/regulatory identifiers with evidence, governance, tenant mappings |
 
 ## Known limitations and risks
 
-1. MariaDB 10.4 locally versus MySQL 8 in production. CI on MySQL 8 has not run yet.
+1. MariaDB 10.4 locally versus MySQL 8 in production. CI runs the suite on MySQL 8 on every push.
 2. Regulator directory URLs and verification document requirements (only `business_registration` for now) need compliance review.
 3. No integration with NAFDAC exists. Verification is manual and evidenced.
 4. Seeded plan prices are NULL until the commercial team sets them.

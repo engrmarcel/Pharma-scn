@@ -54,7 +54,7 @@ Deploys are immutable releases (symlinked release directories or images). To rol
 
 ## CI
 
-`.github/workflows/ci.yml` runs Pint, the full test suite on **MySQL 8**, an asset build, and `composer audit` / `npm audit`. It has not been executed yet because the repository has no remote; push it to GitHub to activate it.
+`.github/workflows/ci.yml` runs Pint, the full test suite on **MySQL 8**, an asset build, and `composer audit` / `npm audit`. It runs on every push to `main` and on pull requests (repository: https://github.com/engrmarcel/Pharma-scn).
 
 ## External credentials the owner must configure
 
