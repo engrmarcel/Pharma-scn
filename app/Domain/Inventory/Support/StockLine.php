@@ -12,7 +12,7 @@ final class StockLine
 {
     public const STATES = ['available', 'quarantined', 'damaged', 'in_transit'];
 
-    public const TYPES = ['receipt', 'adjustment', 'transfer_out', 'transfer_in', 'state_change', 'sale', 'sale_return', 'count', 'write_off'];
+    public const TYPES = ['receipt', 'adjustment', 'transfer_out', 'transfer_in', 'state_change', 'sale', 'sale_return', 'count', 'write_off', 'supplier_return'];
 
     public function __construct(
         public readonly string $warehouseId,

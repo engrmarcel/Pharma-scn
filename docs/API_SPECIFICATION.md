@@ -73,6 +73,16 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET / POST · GET `{id}` | `/stock-transfers` `{from_warehouse_id, to_warehouse_id, lines[{product_id, quantity, batch_id?}]}` | `inventory.transfer` |
 | POST | `/stock-transfers/{id}/dispatch` · `/receive` **(Idempotency-Key)** `{lines[{line_id, quantity}]}` · `/cancel` | `inventory.transfer`; source/destination access respectively |
 | GET / POST | `/stock-counts` · PUT `/{id}/lines` · POST `/{id}/post` | `inventory.count` (posting also needs `inventory.adjust`) |
+| GET / POST | `/purchase-requisitions` `{warehouse_id, needed_by?, lines[{product_id, quantity, package_level_code?, suggested_supplier_id?}]}` (module procurement) | `procurement.view` / `procurement.requisition` |
+| POST | `/purchase-requisitions/{id}/submit` · `/approve` · `/reject {notes}` · `/convert {supplier_id?}` | requisition / `procurement.approve` / `procurement.order`; approver ≠ requester unless `allow_self_approval` |
+| GET / POST · GET/PATCH `{id}` | `/purchase-orders` `{supplier_id, warehouse_id, expected_date?, lines[{product_id, quantity, package_level_code?, unit_price?, tax_rate?}]}` (price from supplier price list when omitted) | `procurement.view` / `procurement.order` |
+| POST | `/purchase-orders/{id}/submit` · `/approve` · `/reject {reason}` · `/send` · `/cancel {reason}` · `/close {reason}` | order / approve; submit auto-approves below `approval_threshold`; no threshold = all need approval |
+| GET / POST | `/goods-receipts` **(Idempotency-Key)** `{purchase_order_id, supplier_delivery_note?, lines[{purchase_order_line_id, batch_number, expiry_date, quantity (PO package level), quality_status?}]}` | `inventory.receive` + `procurement.view`; `over_receipt` beyond tolerance |
+| GET / POST | `/supplier-invoices` **(Idempotency-Key)** `{supplier_id, purchase_order_id?, supplier_invoice_number, invoice_date, due_date?, lines[]}` → `match_status` matched / variance / unmatched | `procurement.invoice`; duplicate supplier document → 409 |
+| POST | `/supplier-invoices/{id}/approve {override_reason?}` · `/cancel {reason}` | approve / invoice; unmatched needs an override reason |
+| GET / POST | `/supplier-returns` **(Idempotency-Key)** `{supplier_id, warehouse_id, reason_code, lines[{batch_id, base_quantity, stock_state?}]}` | `procurement.return` |
+| GET / PUT | `/suppliers/{id}/price-list` · GET `/suppliers/{id}/performance` | view / order |
+| GET | `/procurement/suggestions` (low stock + preferred supplier + list price; suggestions only) · GET/PATCH `/procurement/settings` `{approval_threshold, allow_self_approval, over_receipt_tolerance_percent}` | view / `procurement.settings.manage` |
 | GET/POST · GET/PATCH `{id}` | `/suppliers` (module procurement or inventory) | `suppliers.view` / `suppliers.manage`; `q`, `status`, `type` filters |
 | POST · DELETE | `/suppliers/{id}/contacts`, `/suppliers/{id}/contacts/{contactId}` | `suppliers.manage` |
 | GET/POST · GET/PATCH `{id}` | `/customers` (module sales, pos or field_force) | `customers.view` / `customers.manage` |

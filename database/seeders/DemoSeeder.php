@@ -15,6 +15,9 @@ use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
 use App\Domain\Parties\Models\Customer;
 use App\Domain\Parties\Models\Supplier;
+use App\Domain\Procurement\Models\PurchaseOrder;
+use App\Domain\Procurement\Services\GoodsReceiptService;
+use App\Domain\Procurement\Services\PurchaseOrderService;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
@@ -29,7 +32,7 @@ use Illuminate\Support\Facades\Auth;
  * prefix, is held by "FICTIONAL DEMO HOLDER" and stays unverified: the
  * platform refuses to mark DEMO-/TEST- identifiers verified.
  *
- * Purchase and sales orders are added with the Phase 2
+ * Sales orders are added with the Phase 2
  * modules that own them.
  */
 class DemoSeeder extends Seeder
@@ -66,6 +69,7 @@ class DemoSeeder extends Seeder
         Auth::setUser($admin);
         $this->products($admin);
         $this->stock();
+        $this->purchasing();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -164,6 +168,39 @@ class DemoSeeder extends Seeder
                 }
             }, $membership);
         }
+    }
+
+    /**
+     * One synthetic purchase order for the demo pharmacy, auto-approved under its
+     * approval threshold and partially received (procurement demo workflow, spec §32 #3).
+     */
+    private function purchasing(): void
+    {
+        $org = Organization::query()->where('name', 'Demo Community Pharmacy')->first();
+        if ($org === null || PurchaseOrder::acrossTenants()->where('organization_id', $org->id)->exists()) {
+            return;
+        }
+        $membership = $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->first();
+        Auth::setUser($membership->user);
+
+        app(TenantContext::class)->runAs($org, function () use ($org, $membership) {
+            $settings = $org->settings ?? [];
+            data_set($settings, 'procurement.approval_threshold', '500000');
+            $org->forceFill(['settings' => $settings])->save();
+
+            $supplier = Supplier::query()->where('code', 'DEMO-SUP-1')->firstOrFail();
+            $warehouse = Warehouse::query()->where('code', 'WH-MAIN')->firstOrFail();
+            $product = Product::query()->where('generic_name', 'Paracetamol')->firstOrFail();
+
+            $orders = app(PurchaseOrderService::class);
+            $po = $orders->createOrder($supplier, $warehouse, [['product_id' => $product->id, 'package_level_code' => 'pack', 'quantity' => '20', 'unit_price' => '450']], notes: 'SYNTHETIC DEMO ORDER');
+            $po = $orders->submitOrder($po, $membership->user);
+
+            app(GoodsReceiptService::class)->receive($po, [[
+                'purchase_order_line_id' => $po->lines->first()->id, 'batch_number' => 'DEMO-PO-LOT-1',
+                'expiry_date' => now()->addMonths(20)->toDateString(), 'quantity' => '12',
+            ]], 'DEMO-DN-1');
+        }, $membership);
     }
 
     private function products(User $admin): void

@@ -64,12 +64,22 @@ bin_locations ─* warehouses · document_sequences (per-org ADJ/TRF/CNT numberi
 
 Stock states are `available`, `quarantined`, `damaged` and `in_transit`. *Sellable* means available, unreserved, batch released, not recalled, not expired, and meeting the organization's minimum remaining shelf life. Every balance equals the sum of its movements, which a test checks.
 
+## Procurement (Phase 2.3, implemented)
+
+```
+supplier_price_list_items (supplier, product, package level, price, min qty, validity)
+purchase_requisitions(+lines, package qty + base qty, suggested supplier) → purchase_orders(+lines: qty, base qty, unit price, tax rate,
+  line subtotal/tax, received_base_quantity, invoiced_base_quantity; totals) → goods_receipts(+lines → batch, posting_id)
+supplier_invoices(+lines; unique supplier + supplier_invoice_number; match_status, match_details) · supplier_returns(+lines, posting_id)
+```
+
+All amounts come from `App\Support\Money`: bcmath at 10 places, rounded half-up to 4.
+
 ## Forward entity model (Phases 2–7, designed and not yet migrated)
 
 All of these tables are tenant-owned (`organization_id`) unless marked *shared*. Quantities are stored in base units with the package level recorded.
 
 ```
-Procurement    purchase_requisitions → purchase_orders(+items) → goods_receipts(+items with batch) → supplier_invoices · supplier_returns
 Sales          price_lists(+items) · quotations → sales_orders(+items) → invoices(+items) · credit_notes · sales_returns
 Finance        accounts (chart) · journal_entries(+lines, balanced) · financial_periods · payments · payment_allocations · tax_rules (effective-dated, per country)
 POS            pos_terminals · pos_shifts (opening/expected/counted/variance) · pos_cash_movements · pos_sales(+items with batch_id) · pos_payments · pos_refunds · receipts

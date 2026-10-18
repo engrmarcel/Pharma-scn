@@ -104,6 +104,13 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **Stock documents** (adjustments, transfers, counts) update their own rows and post to the ledger in the same transaction. Unreceived transfer quantity remains visible `in_transit`.
 - **Warehouse access:** `LocationAccess` restricts reads and actions for members with `all_locations = false` to their assigned warehouses and branches.
 
+## Procurement controls (spec §10.4)
+
+- **Segregation of duties:** requisitions, purchase orders and supplier invoices must be approved by someone other than their creator. A single-person organization can turn on `procurement.allow_self_approval`, and the setting change is audited.
+- **Approval threshold:** purchase orders below `procurement.approval_threshold` are auto-approved on submit, which is recorded in the audit log. With no threshold set, every order needs approval.
+- **Goods receipts** go through `StockReceiptService`, so they obey the same catalogue, expiry, quarantine and ledger rules as any other receipt. Over-receipt is blocked beyond `over_receipt_tolerance_percent`.
+- **Three-way match:** supplier invoices are compared with the order and the receipts, and re-matched under lock at approval. An invoice billing more than was received can only be approved with an explicit, audited override reason.
+
 ## Subscriptions and entitlements (spec §21, ADR-0007)
 
 `EntitlementService::guard($org, 'branches', fn () => …)` wraps every limited creation. It checks the subscription state and plan or override limits under a row lock on the organization. The `module:x` middleware requires both platform enablement and a `module.x` entitlement. A lapsed subscription blocks new consumption but never hides or deletes existing records.

@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-19: Phase 2.3, procurement
+- Purchase requisitions (submit, approve/reject, convert to per-supplier POs) and purchase orders (draft → pending approval → approved → sent → partially received → received → closed; reject, edit and resubmit; cancel only without receipts).
+- Approval threshold and segregation of duties (`procurement.allow_self_approval` for single-person organizations); supplier price lists with validity and minimum quantities; expected date from supplier lead time.
+- Goods receipts against POs with batch capture through `StockReceiptService`, over-receipt tolerance, and idempotency.
+- Supplier invoices with three-way match (matched / variance / unmatched), re-matched under lock at approval, audited override, and duplicate supplier invoice protection. Supplier returns through the ledger.
+- Supplier performance (on-time rate, lead time, fill rate) and purchase suggestions from reorder levels.
+- `App\Support\Money` for exact half-up decimal arithmetic; `UnitConverter`; `StockQueries`.
+- Demo purchase order with a partial goods receipt. 144 tests passing.
+
 ### 2026-10-19: Phase 2.2, inventory core
 - Batches (expiry, quality and recall status, batch cost); append-only `inventory_movements` ledger; `inventory_balances` projection maintained only by `InventoryLedger` under ordered row locks with deadlock retry; negative stock blocked unless the organization allows it.
 - FEFO allocation that excludes expired, recalled, quarantined and reserved stock, with an optional minimum remaining shelf life. Reservations (reserve, consume, release).

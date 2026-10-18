@@ -6,6 +6,7 @@ use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\InventoryMovement;
 use App\Domain\Inventory\Services\FefoAllocator;
 use App\Domain\Inventory\Services\LocationAccess;
+use App\Domain\Inventory\Services\StockQueries;
 use App\Domain\Inventory\Services\StockReceiptService;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Platform\Services\AuditLogger;
@@ -139,25 +140,11 @@ class InventoryController extends Controller
     }
 
     /** Products whose sellable stock is at or below their reorder level. */
-    public function lowStock(): JsonResponse
+    public function lowStock(StockQueries $queries): JsonResponse
     {
         Gate::authorize('inventory.view');
-        $today = today()->toDateString();
 
-        $rows = DB::table('organization_products as op')
-            ->join('products as p', 'p.id', '=', 'op.product_id')
-            ->leftJoin('inventory_balances as b', fn ($j) => $j->on('b.product_id', '=', 'op.product_id')->on('b.organization_id', '=', 'op.organization_id')->where('b.stock_state', 'available'))
-            ->leftJoin('batches as bt', 'bt.id', '=', 'b.batch_id')
-            ->where('op.organization_id', $this->tenant->id())
-            ->whereNotNull('op.reorder_level')
-            ->groupBy('op.id', 'op.product_id', 'op.sku', 'p.display_name', 'op.reorder_level', 'op.reorder_quantity', 'op.preferred_supplier_id')
-            ->selectRaw("op.product_id, op.sku, p.display_name as product_name, op.reorder_level, op.reorder_quantity, op.preferred_supplier_id,
-                COALESCE(SUM(CASE WHEN bt.quality_status = 'released' AND bt.recall_status = 'none' AND (bt.expiry_date IS NULL OR bt.expiry_date >= ?) THEN b.quantity - b.reserved_quantity END), 0) as sellable", [$today])
-            ->havingRaw('sellable <= op.reorder_level')
-            ->orderBy('p.display_name')
-            ->get();
-
-        return response()->json(['data' => $rows, 'meta' => ['note' => 'Organization-wide sellable stock compared with the reorder level, in base units.']]);
+        return response()->json(['data' => $queries->lowStock(), 'meta' => ['note' => 'Organization-wide sellable stock compared with the reorder level, in base units.']]);
     }
 
     /** Valuation at batch cost (specific identification). Batches without a recorded cost are reported separately. */

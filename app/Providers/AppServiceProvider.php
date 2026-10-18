@@ -10,6 +10,7 @@ use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductChangeRequest;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
+use App\Domain\Catalogue\Services\UnitConverter;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -26,6 +27,11 @@ use App\Domain\Parties\Models\PartyContact;
 use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Models\Attachment;
 use App\Domain\Platform\Models\Country;
+use App\Domain\Procurement\Models\GoodsReceipt;
+use App\Domain\Procurement\Models\PurchaseOrder;
+use App\Domain\Procurement\Models\PurchaseRequisition;
+use App\Domain\Procurement\Models\SupplierInvoice;
+use App\Domain\Procurement\Models\SupplierReturn;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -47,6 +53,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(TenantContext::class);
         $this->app->scoped(AccessControl::class);
         $this->app->scoped(LocationAccess::class);
+        $this->app->scoped(UnitConverter::class);
     }
 
     /**
@@ -81,6 +88,11 @@ class AppServiceProvider extends ServiceProvider
             'stock_adjustment' => StockAdjustment::class,
             'stock_transfer' => StockTransfer::class,
             'stock_count' => StockCount::class,
+            'purchase_requisition' => PurchaseRequisition::class,
+            'purchase_order' => PurchaseOrder::class,
+            'goods_receipt' => GoodsReceipt::class,
+            'supplier_invoice' => SupplierInvoice::class,
+            'supplier_return' => SupplierReturn::class,
             'attachment' => Attachment::class,
         ]);
 

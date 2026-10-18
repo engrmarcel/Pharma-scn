@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationProductController;
+use App\Http\Controllers\Api\V1\ProcurementController;
 use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\ReferenceDataController;
@@ -159,6 +160,39 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('stock-counts', [StockDocumentController::class, 'storeCount'])->name('stock-counts.store');
                 Route::put('stock-counts/{id}/lines', [StockDocumentController::class, 'recordCountLines'])->whereUlid('id')->name('stock-counts.lines');
                 Route::post('stock-counts/{id}/post', [StockDocumentController::class, 'postCount'])->whereUlid('id')->name('stock-counts.post');
+            });
+
+            Route::middleware('module:procurement')->group(function () {
+                Route::get('purchase-requisitions', [ProcurementController::class, 'requisitions'])->name('purchase-requisitions.index');
+                Route::post('purchase-requisitions', [ProcurementController::class, 'storeRequisition'])->name('purchase-requisitions.store');
+                Route::post('purchase-requisitions/{id}/submit', [ProcurementController::class, 'submitRequisition'])->whereUlid('id')->name('purchase-requisitions.submit');
+                Route::post('purchase-requisitions/{id}/{decision}', [ProcurementController::class, 'decideRequisition'])->whereUlid('id')->whereIn('decision', ['approve', 'reject'])->name('purchase-requisitions.decide');
+                Route::post('purchase-requisitions/{id}/convert', [ProcurementController::class, 'convertRequisition'])->whereUlid('id')->name('purchase-requisitions.convert');
+
+                Route::get('purchase-orders', [ProcurementController::class, 'orders'])->name('purchase-orders.index');
+                Route::post('purchase-orders', [ProcurementController::class, 'storeOrder'])->name('purchase-orders.store');
+                Route::get('purchase-orders/{id}', [ProcurementController::class, 'showOrder'])->whereUlid('id')->name('purchase-orders.show');
+                Route::patch('purchase-orders/{id}', [ProcurementController::class, 'updateOrder'])->whereUlid('id')->name('purchase-orders.update');
+                Route::post('purchase-orders/{id}/{action}', [ProcurementController::class, 'orderAction'])->whereUlid('id')
+                    ->whereIn('action', ['submit', 'approve', 'reject', 'send', 'cancel', 'close'])->name('purchase-orders.action');
+
+                Route::get('goods-receipts', [ProcurementController::class, 'goodsReceipts'])->name('goods-receipts.index');
+                Route::post('goods-receipts', [ProcurementController::class, 'storeGoodsReceipt'])->middleware('idempotent:required')->name('goods-receipts.store');
+
+                Route::get('supplier-invoices', [ProcurementController::class, 'invoices'])->name('supplier-invoices.index');
+                Route::post('supplier-invoices', [ProcurementController::class, 'storeInvoice'])->middleware('idempotent:required')->name('supplier-invoices.store');
+                Route::post('supplier-invoices/{id}/{action}', [ProcurementController::class, 'invoiceAction'])->whereUlid('id')->whereIn('action', ['approve', 'cancel'])->name('supplier-invoices.action');
+
+                Route::get('supplier-returns', [ProcurementController::class, 'returns'])->name('supplier-returns.index');
+                Route::post('supplier-returns', [ProcurementController::class, 'storeReturn'])->middleware('idempotent:required')->name('supplier-returns.store');
+
+                Route::get('suppliers/{supplierId}/price-list', [ProcurementController::class, 'priceList'])->whereUlid('supplierId')->name('suppliers.price-list');
+                Route::put('suppliers/{supplierId}/price-list', [ProcurementController::class, 'replacePriceList'])->whereUlid('supplierId')->name('suppliers.price-list.replace');
+                Route::get('suppliers/{supplierId}/performance', [ProcurementController::class, 'supplierPerformance'])->whereUlid('supplierId')->name('suppliers.performance');
+
+                Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
+                Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
+                Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
             });
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
