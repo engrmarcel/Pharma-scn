@@ -32,6 +32,10 @@ use App\Domain\Parties\Models\PartyContact;
 use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Models\Attachment;
 use App\Domain\Platform\Models\Country;
+use App\Domain\Pos\Models\PosRefund;
+use App\Domain\Pos\Models\PosSale;
+use App\Domain\Pos\Models\PosShift;
+use App\Domain\Pos\Models\PosTerminal;
 use App\Domain\Procurement\Models\GoodsReceipt;
 use App\Domain\Procurement\Models\PurchaseOrder;
 use App\Domain\Procurement\Models\PurchaseRequisition;
@@ -115,6 +119,10 @@ class AppServiceProvider extends ServiceProvider
             'delivery' => Delivery::class,
             'sales_invoice' => SalesInvoice::class,
             'credit_note' => CreditNote::class,
+            'pos_terminal' => PosTerminal::class,
+            'pos_shift' => PosShift::class,
+            'pos_sale' => PosSale::class,
+            'pos_refund' => PosRefund::class,
             'attachment' => Attachment::class,
         ]);
 

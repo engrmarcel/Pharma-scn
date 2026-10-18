@@ -15,6 +15,9 @@ use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
 use App\Domain\Parties\Models\Customer;
 use App\Domain\Parties\Models\Supplier;
+use App\Domain\Pos\Models\PosTerminal;
+use App\Domain\Pos\Services\PosSaleService;
+use App\Domain\Pos\Services\PosSessionService;
 use App\Domain\Procurement\Models\PurchaseOrder;
 use App\Domain\Procurement\Services\GoodsReceiptService;
 use App\Domain\Procurement\Services\PurchaseOrderService;
@@ -24,6 +27,7 @@ use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 /**
  * SYNTHETIC development data (spec §32). Refuses to run in production.
@@ -72,6 +76,7 @@ class DemoSeeder extends Seeder
         $this->products($admin);
         $this->stock();
         $this->purchasing();
+        $this->pointOfSale();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -211,6 +216,44 @@ class DemoSeeder extends Seeder
             app(FulfilmentService::class)->deliver($order, [['sales_order_line_id' => $order->lines->first()->id, 'quantity' => '2']]);
             app(FulfilmentService::class)->invoiceOrder($order);
         }, $membership);
+    }
+
+    /**
+     * POS demo (spec §32 #4, #5): a terminal, a cashier shift with one cash sale
+     * through invoice and stock deduction, closed and reviewed by the supervisor.
+     */
+    private function pointOfSale(): void
+    {
+        $org = Organization::query()->where('name', 'Demo Community Pharmacy')->first();
+        if ($org === null || PosTerminal::acrossTenants()->where('organization_id', $org->id)->exists()) {
+            return;
+        }
+        $member = fn (string $email) => $org->memberships()->whereHas('user', fn ($q) => $q->where('email', $email))->with('user')->firstOrFail();
+        $owner = $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->with('user')->firstOrFail();
+        $cashier = $member('ph1.cashier@demo.test');
+        $supervisor = $member('ph1.supervisor@demo.test');
+        $context = app(TenantContext::class);
+
+        Auth::setUser($owner->user);
+        $terminal = $context->runAs($org, fn () => app(PosSessionService::class)->registerTerminal(
+            Warehouse::query()->where('code', 'WH-MAIN')->firstOrFail(), 'T1', 'Front counter (demo)'), $owner);
+
+        Auth::setUser($cashier->user);
+        $shift = $context->runAs($org, function () use ($terminal, $cashier) {
+            $sessions = app(PosSessionService::class);
+            $sales = app(PosSaleService::class);
+            $shift = $sessions->openShift($terminal, $cashier->user, '10000');
+
+            $sale = $sales->start($shift, $cashier->user, strtolower((string) Str::ulid()));
+            $sales->setLines($sale, [['product_id' => Product::query()->where('generic_name', 'Oral rehydration salts')->value('id'), 'package_level_code' => 'box', 'quantity' => '1']]);
+            $sale = $sales->checkout($sale);
+            $sales->addPayment($sale, 'cash', (string) $sale->total, 'cash', (string) (ceil((float) $sale->total / 1000) * 1000));
+
+            return $sessions->closeShift($shift, $sessions->drawer($shift), 'SYNTHETIC DEMO SHIFT');
+        }, $cashier);
+
+        Auth::setUser($supervisor->user);
+        $context->runAs($org, fn () => app(PosSessionService::class)->reviewShift($shift, $supervisor->user, null), $supervisor);
     }
 
     private function products(User $admin): void

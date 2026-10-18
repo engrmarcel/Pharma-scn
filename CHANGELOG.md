@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-20: Phase 2.5a, POS backend
+- Terminals (limited by the `pos_terminals` entitlement); shifts with opening float, signed drawer movements, supervisor-only cash in/out, close with expected/counted/variance, and independent review.
+- Sales: idempotent start by `client_transaction_id`, cart pricing (override and discount controls), scanned-batch validation, prescription-only and controlled dispensing controls, hold, checkout with FEFO or scanned-batch reservation, cancel (cash returned, reservations released).
+- Payments: cash at the till; standalone terminals confirmed by a different user after settlement; provider payments confirmed only by verified, idempotent webhooks (`payment_provider_events`); a development-only fake provider. ADR-0009.
+- Atomic completion through ERP services: stock out with batch evidence, COGS, `pos` invoice, receipts allocated to it.
+- Refunds with independent approval, credit to the exact invoice lines, return to the original batches (quarantined by default), cash out of the open drawer or by bank transfer.
+- Receipts (batch numbers and expiry, no prescription details) and POS reports (summary with gross margin, by product, cashier, payment method, terminal, refunds, shifts, batches).
+- Demo terminal, shift and cash sale. 170 tests passing.
+
 ### 2026-10-19: Phase 2.4b, sales
 - Price lists (customer, branch, default) with quantity breaks and validity; catalogue default price fallback; price overrides gated by `sales.price.override`.
 - Effective-dated tax rates per country and category (platform configuration), with a country default category. Seeded NG categories (EXEMPT, ZERO, VAT_STANDARD 7.5% from 2020-02-01) are flagged for professional confirmation.

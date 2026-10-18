@@ -42,6 +42,22 @@ class ReservationService
         }, 3);
     }
 
+    /**
+     * Reserve a specific batch (e.g. scanned at POS). The caller must have
+     * checked the batch is sellable (FefoAllocator::assertSellable).
+     */
+    public function reserveBatch(string $productId, string $warehouseId, string $batchId, string $quantity, string $referenceType, string $referenceId): StockReservation
+    {
+        return DB::transaction(function () use ($productId, $warehouseId, $batchId, $quantity, $referenceType, $referenceId) {
+            $this->ledger->adjustReserved(["{$warehouseId}|{$batchId}" => $quantity]);
+
+            return StockReservation::query()->create([
+                'warehouse_id' => $warehouseId, 'product_id' => $productId, 'batch_id' => $batchId, 'quantity' => $quantity,
+                'reference_type' => $referenceType, 'reference_id' => $referenceId, 'status' => 'active', 'created_by' => Auth::id(),
+            ]);
+        }, 3);
+    }
+
     public function release(string $referenceType, string $referenceId): int
     {
         return DB::transaction(function () use ($referenceType, $referenceId) {

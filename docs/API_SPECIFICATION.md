@@ -83,6 +83,19 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET / POST | `/supplier-returns` **(Idempotency-Key)** `{supplier_id, warehouse_id, reason_code, lines[{batch_id, base_quantity, stock_state?}]}` | `procurement.return` |
 | GET / PUT | `/suppliers/{id}/price-list` · GET `/suppliers/{id}/performance` | view / order |
 | GET | `/procurement/suggestions` (low stock + preferred supplier + list price; suggestions only) · GET/PATCH `/procurement/settings` `{approval_threshold, allow_self_approval, over_receipt_tolerance_percent}` | view / `procurement.settings.manage` |
+| GET / POST · PATCH `{id}` | `/pos/terminals` (module pos) | `pos.sell` / `pos.terminals.manage`; limited by the `pos_terminals` entitlement |
+| POST · GET `current` · GET `{id}` | `/pos/shifts` `{pos_terminal_id, opening_float}` | `pos.sell`; one open shift per terminal and per cashier |
+| POST | `/pos/shifts/{id}/cash-movements` **(Idempotency-Key)** `{amount (±), reason}` · `/close {counted_cash}` · `/review {notes}` | `pos.cash.manage` / own shift / `pos.shift.review` (not the cashier; notes required for variance) |
+| GET | `/pos/lookup?pos_terminal_id&q=` (name, SKU, GTIN or batch number; sellable stock at the terminal) | `pos.sell` |
+| POST · GET `{id}` | `/pos/sales` `{pos_shift_id, client_transaction_id (ULID), customer_id?}`; same client id returns the same sale | `pos.sell` (own sales) |
+| PUT | `/pos/sales/{id}/lines` `{lines[{product_id, quantity, package_level_code?, unit_price?, discount_percent?, batch_id?, prescription?{reference, prescriber_name, prescribed_on}}]}` | price change: `sales.price.override`; discount above limit: `sales.approve`; Rx: `pos.dispense.prescription` |
+| POST | `/pos/sales/{id}/hold` · `/checkout` · `/cancel {reason}` | cancel with payments: `pos.sale.cancel` |
+| POST | `/pos/sales/{id}/payments` **(Idempotency-Key)** `{method: cash\|card\|bank_transfer\|mobile_money, amount, tendered?, channel: manual_terminal\|<provider>, approval_code?}` | `pos.sell`; electronic stays pending |
+| GET · POST | `/pos/payments/pending` · `/pos/payments/{id}/confirm` | `pos.payments.confirm` (not the selling cashier) |
+| GET | `/pos/sales/{id}/receipt` | own sale |
+| POST · GET · POST | `/pos/sales/{id}/refunds` **(Idempotency-Key)** `{reason, refund_method: cash\|bank_transfer, lines[{pos_sale_line_id, quantity, restock_state?}]}` · `/pos/refunds` · `/pos/refunds/{id}/approve\|reject` | `pos.refund.request` / `pos.refund.approve` (not the requester) |
+| GET | `/pos/reports/{summary\|by-product\|by-cashier\|by-payment-method\|by-terminal\|refunds\|shifts\|batches}?from&to` | `pos.reports.view` |
+| POST (public) | `/payments/webhooks/{provider}` | provider signature only; idempotent per event id |
 | GET / POST · PUT `{id}/items` | `/price-lists` `{code, name, branch_id?, is_default?, items[{product_id, package_level_code, unit_price, minimum_quantity?, valid_from?, valid_to?}]}` (module sales) | `sales.view` / `sales.price_lists.manage` |
 | GET / POST · POST `{id}/convert` **(Idempotency-Key)** | `/quotations` `{customer_id, warehouse_id, valid_until?, lines[]}` | `sales.quote` / `sales.order`; quoted prices honoured; expired → 409 |
 | GET / POST **(Idempotency-Key)** · GET/PATCH `{id}` | `/sales-orders` `{customer_id, warehouse_id, requested_date?, lines[{product_id, quantity, package_level_code?, unit_price?, discount_percent?}]}` | `sales.view` / `sales.order`; price differing from the list price needs `sales.price.override` |

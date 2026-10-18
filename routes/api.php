@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationProductController;
+use App\Http\Controllers\Api\V1\PaymentWebhookController;
+use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProcurementController;
 use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
@@ -38,6 +40,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public
     Route::get('branding', [ReferenceDataController::class, 'branding'])->name('branding');
     Route::get('health', [OperationsController::class, 'health'])->middleware('throttle:30,1')->name('health');
+    // Provider callbacks: authenticated by the provider's signature, not by a user.
+    Route::post('payments/webhooks/{provider}', PaymentWebhookController::class)->where('provider', '[a-z0-9_]+')->middleware('throttle:300,1')->name('payments.webhook');
 
     Route::middleware('throttle:auth')->prefix('auth')->group(function () {
         Route::post('tokens', [AuthController::class, 'issueToken'])->name('auth.tokens.issue');
@@ -195,6 +199,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {
+                Route::get('terminals', [PosController::class, 'terminals'])->name('terminals.index');
+                Route::post('terminals', [PosController::class, 'storeTerminal'])->name('terminals.store');
+                Route::patch('terminals/{id}', [PosController::class, 'updateTerminal'])->whereUlid('id')->name('terminals.update');
+
+                Route::post('shifts', [PosController::class, 'openShift'])->name('shifts.open');
+                Route::get('shifts/current', [PosController::class, 'currentShift'])->name('shifts.current');
+                Route::get('shifts/{id}', [PosController::class, 'showShift'])->whereUlid('id')->name('shifts.show');
+                Route::post('shifts/{id}/cash-movements', [PosController::class, 'cashMovement'])->whereUlid('id')->middleware('idempotent:required')->name('shifts.cash');
+                Route::post('shifts/{id}/close', [PosController::class, 'closeShift'])->whereUlid('id')->name('shifts.close');
+                Route::post('shifts/{id}/review', [PosController::class, 'reviewShift'])->whereUlid('id')->name('shifts.review');
+
+                Route::get('lookup', [PosController::class, 'lookup'])->name('lookup');
+                Route::post('sales', [PosController::class, 'startSale'])->name('sales.start');
+                Route::get('sales/{id}', [PosController::class, 'showSale'])->whereUlid('id')->name('sales.show');
+                Route::put('sales/{id}/lines', [PosController::class, 'setLines'])->whereUlid('id')->name('sales.lines');
+                Route::post('sales/{id}/payments', [PosController::class, 'addPayment'])->whereUlid('id')->middleware('idempotent:required')->name('sales.payments');
+                Route::get('sales/{id}/receipt', [PosController::class, 'receipt'])->whereUlid('id')->name('sales.receipt');
+                Route::post('sales/{id}/refunds', [PosController::class, 'requestRefund'])->whereUlid('id')->middleware('idempotent:required')->name('sales.refunds');
+                Route::post('sales/{id}/{action}', [PosController::class, 'saleAction'])->whereUlid('id')->whereIn('action', ['hold', 'checkout', 'cancel'])->name('sales.action');
+
+                Route::get('payments/pending', [PosController::class, 'pendingPayments'])->name('payments.pending');
+                Route::post('payments/{paymentId}/confirm', [PosController::class, 'confirmPayment'])->whereUlid('paymentId')->name('payments.confirm');
+                Route::get('refunds', [PosController::class, 'refunds'])->name('refunds.index');
+                Route::post('refunds/{id}/{decision}', [PosController::class, 'decideRefund'])->whereUlid('id')->whereIn('decision', ['approve', 'reject'])->name('refunds.decide');
+                Route::get('reports/{report}', [PosController::class, 'report'])->name('reports');
             });
 
             Route::middleware('module:sales')->group(function () {

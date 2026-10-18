@@ -69,6 +69,7 @@ class EntitlementService
                     ->whereNull('accepted_at')->whereNull('revoked_at')->where('expires_at', '>', now())->count(),
             'branches' => DB::table('branches')->where('organization_id', $organization->id)->count(),
             'warehouses' => DB::table('warehouses')->where('organization_id', $organization->id)->count(),
+            'pos_terminals' => DB::table('pos_terminals')->where('organization_id', $organization->id)->where('status', 'active')->count(),
             'storage_mb' => (int) ceil(DB::table('attachments')->where('organization_id', $organization->id)->sum('size_bytes') / 1048576),
         ];
     }

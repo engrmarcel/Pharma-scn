@@ -111,6 +111,18 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **Goods receipts** go through `StockReceiptService`, so they obey the same catalogue, expiry, quarantine and ledger rules as any other receipt. Over-receipt is blocked beyond `over_receipt_tolerance_percent`.
 - **Three-way match:** supplier invoices are compared with the order and the receipts, and re-matched under lock at approval. An invoice billing more than was received can only be approved with an explicit, audited override reason.
 
+## POS (spec §11, ADR-0009)
+
+- **No separate POS ledger.** A POS sale is a front end over the ERP: `PosSaleService` uses `SalesPricing`, `FefoAllocator`, `ReservationService`, `FulfilmentService`, `AccountingBridge` and `PaymentService`.
+- **Sale lifecycle:**
+  - The cart prices lines, validates scanned batches as sellable and applies prescription controls.
+  - **Checkout** reserves stock first-expiry-first-out (or the scanned batch).
+  - Payments are cash (confirmed at the till) or electronic (pending until a verified provider callback or a supervisor settlement check).
+  - **Completion** is atomic: stock out with batch evidence, cost of goods sold, a `pos` invoice, and receipts allocated to it.
+- **Shifts:** one open shift per terminal and per cashier. The drawer is the sum of signed cash movements: opening float, sales, cash in/out (supervisor only), refunds and cancellations. Closing records expected cash, counted cash and variance. A different user reviews the shift and must explain any variance.
+- **Refunds:** a cashier requests; a different user with `pos.refund.approve` approves. The refund credits the exact invoice lines, returns goods to the batches they came from (quarantined unless restocked by an authorized user), and pays the money back from the terminal's open drawer or by bank transfer.
+- **Prescription controls:** products classified prescription-only or controlled in the organization's country need `pos.dispense.prescription` plus a recorded prescription reference, prescriber and date. Receipts never show these details.
+
 ## Sales (spec §10.5)
 
 - **Price resolution:** customer price list → branch price list → default price list → catalogue default selling price (per base unit). A price that differs from the resolved list price is an override and needs `sales.price.override`. Quoted prices are honoured on conversion.

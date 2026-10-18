@@ -111,6 +111,29 @@ class PaymentService
         });
     }
 
+    /**
+     * Money paid back to a customer (e.g. a POS refund):  Dr Accounts receivable  Cr Cash/bank.
+     */
+    public function refundCustomer(Customer $customer, string $amount, string $method, string $date, ?string $reference = null, ?string $notes = null): Payment
+    {
+        return DB::transaction(function () use ($customer, $amount, $method, $date, $reference, $notes) {
+            $cashAccount = $this->chart->forPaymentMethod($method);
+            $payment = Payment::query()->create([
+                'number' => $this->numbers->next('RFD'), 'direction' => 'outgoing', 'party_type' => 'customer', 'party_id' => $customer->id,
+                'method' => $method, 'amount' => $amount, 'allocated_amount' => $amount, 'currency_code' => $customer->currency_code, 'payment_date' => $date,
+                'reference' => $reference, 'status' => 'confirmed', 'account_id' => $cashAccount, 'notes' => $notes, 'created_by' => Auth::id(),
+            ]);
+            $journal = $this->ledger->post($date, 'payment', $payment->id, "Refund {$payment->number} to {$customer->name}", [
+                ['account' => 'accounts_receivable', 'debit' => $amount, 'party_type' => 'customer', 'party_id' => $customer->id],
+                ['account_id' => $cashAccount, 'credit' => $amount],
+            ], $payment->currency_code);
+            $payment->forceFill(['journal_entry_id' => $journal->id])->save();
+            $this->audit->record('payment.refunded', $payment, new: ['number' => $payment->number, 'amount' => $amount, 'method' => $method]);
+
+            return $payment;
+        });
+    }
+
     /** Allocate an existing payment's unallocated balance. */
     public function allocate(Payment $payment, array $allocations): Payment
     {

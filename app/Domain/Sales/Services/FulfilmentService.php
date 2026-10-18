@@ -131,15 +131,49 @@ class FulfilmentService
     }
 
     /**
+     * Issue an invoice for goods already handed over outside a sales order
+     * (POS). Lines carry final prices, discounts and tax as sold.
+     *
+     * @param  list<array<string, mixed>>  $lines  sales_invoice_lines attributes
+     */
+    public function issueDirectInvoice(string $customerId, string $warehouseId, string $source, string $currency, array $lines): SalesInvoice
+    {
+        return DB::transaction(function () use ($customerId, $warehouseId, $source, $currency, $lines) {
+            $invoice = SalesInvoice::query()->create([
+                'number' => $this->numbers->next('INV'), 'customer_id' => $customerId, 'warehouse_id' => $warehouseId, 'source' => $source,
+                'status' => 'issued', 'currency_code' => $currency, 'invoice_date' => today(), 'due_date' => today(), 'created_by' => Auth::id(),
+            ]);
+
+            $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
+            $created = [];
+            foreach ($lines as $line) {
+                $created[] = $invoice->lines()->create($line);
+                foreach (['subtotal' => 'line_subtotal', 'discount' => 'line_discount', 'tax' => 'line_tax', 'total' => 'line_total'] as $k => $col) {
+                    $totals[$k] = Money::add($totals[$k], (string) $line[$col]);
+                }
+            }
+            $invoice->forceFill(['subtotal' => $totals['subtotal'], 'discount_total' => $totals['discount'], 'tax_total' => $totals['tax'], 'total' => $totals['total']])->save();
+            $journal = $this->accounting->salesInvoice($invoice);
+            $invoice->forceFill(['journal_entry_id' => $journal->id])->save();
+
+            $this->audit->record('sales_invoice.issued', $invoice, new: ['number' => $invoice->number, 'total' => (string) $invoice->total, 'source' => $source]);
+            event(new SaleCompleted($invoice->id, $invoice->organization_id, $source));
+
+            // Lines in the same order as given, so callers can link their own lines to them.
+            return $invoice->setRelation('lines', collect($created));
+        });
+    }
+
+    /**
      * Credit (part of) an invoice. Returned goods are restocked as quarantined
      * unless restock_state "available" is requested by someone allowed to, for
      * a batch that is still sellable.
      *
      * @param  list<array{sales_invoice_line_id: string, quantity: string, batch_id?: ?string, restock_state?: ?string}>  $lines
      */
-    public function creditNote(SalesInvoice $invoice, string $reasonCode, array $lines, ?string $returnWarehouseId = null, ?string $notes = null): CreditNote
+    public function creditNote(SalesInvoice $invoice, string $reasonCode, array $lines, ?string $returnWarehouseId = null, ?string $notes = null, bool $allowCreditBalance = false): CreditNote
     {
-        return DB::transaction(function () use ($invoice, $reasonCode, $lines, $returnWarehouseId, $notes) {
+        return DB::transaction(function () use ($invoice, $reasonCode, $lines, $returnWarehouseId, $notes, $allowCreditBalance) {
             $inv = SalesInvoice::query()->lockForUpdate()->findOrFail($invoice->id);
             if ($inv->status !== 'issued') {
                 throw new BusinessRuleViolation('sales_invoice_state_invalid', "Invoice is {$inv->status}.", 409);
@@ -187,7 +221,8 @@ class FulfilmentService
 
             $total = Money::add($subtotal, $tax);
             $open = $inv->openBalance();
-            if (bccomp($total, $open, 4) > 0) {
+            // Refund flows (POS) may credit a paid invoice; the resulting customer credit is then paid out.
+            if (! $allowCreditBalance && bccomp($total, $open, 4) > 0) {
                 throw new BusinessRuleViolation('credit_exceeds_open_balance', "The credit ({$total}) exceeds the invoice's open balance ({$open}); refunds of paid amounts arrive with POS refunds.", 409);
             }
 
@@ -211,7 +246,10 @@ class FulfilmentService
         if ($warehouseId === null) {
             throw new BusinessRuleViolation('return_warehouse_required', 'Choose the warehouse receiving the returned goods.', 422);
         }
-        $delivered = DeliveryLine::query()->where('sales_order_line_id', $invLine->sales_order_line_id)->where('batch_id', $batchId)->exists();
+        $delivered = $invoice->source === 'pos'
+            ? DB::table('pos_sale_allocations as a')->join('pos_sale_lines as l', 'l.id', '=', 'a.pos_sale_line_id')
+                ->where('l.sales_invoice_line_id', $invLine->id)->where('a.batch_id', $batchId)->exists()
+            : DeliveryLine::query()->where('sales_order_line_id', $invLine->sales_order_line_id)->where('batch_id', $batchId)->exists();
         if (! $delivered) {
             throw new BusinessRuleViolation('return_batch_mismatch', 'That batch was not delivered on this invoice line.', 422, ['line' => $i]);
         }
