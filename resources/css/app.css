@@ -1,9 +1,129 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/playfair-display';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    --font-display: 'Playfair Display Variable', Georgia, 'Times New Roman', serif;
+
+    /* Corporate navy and gold. The live brand colours come from BrandingService (--brand-*). */
+    --color-navy-50: #f0f4fa;
+    --color-navy-100: #dce5f3;
+    --color-navy-200: #b9cbe7;
+    --color-navy-300: #8aa7d4;
+    --color-navy-400: #5880bd;
+    --color-navy-500: #3461a6;
+    --color-navy-600: #1f4b8f;
+    --color-navy-700: #173a72;
+    --color-navy-800: #112c58;
+    --color-navy-900: #0b1f42;
+    --color-navy-950: #06132b;
+
+    --color-gold-50: #fdf8ec;
+    --color-gold-100: #faefcf;
+    --color-gold-200: #f4dc9a;
+    --color-gold-300: #edc45d;
+    --color-gold-400: #e6ae33;
+    --color-gold-500: #d4951c;
+    --color-gold-600: #b67614;
+    --color-gold-700: #8f5814;
+
+    --animate-float: float 7s ease-in-out infinite;
+    --animate-float-slow: float 11s ease-in-out infinite;
+    --animate-flow: flow 2.4s linear infinite;
+    --animate-pulse-ring: pulse-ring 2.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+    --animate-fade-up: fade-up 0.6s ease-out both;
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0) rotate(var(--tw-rotate, 0)); }
+        50% { transform: translateY(-14px) rotate(var(--tw-rotate, 0)); }
+    }
+    @keyframes flow {
+        to { stroke-dashoffset: -24; }
+    }
+    @keyframes pulse-ring {
+        0% { transform: scale(0.8); opacity: 0.7; }
+        80%, 100% { transform: scale(2.2); opacity: 0; }
+    }
+    @keyframes fade-up {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+}
+
+[x-cloak] { display: none !important; }
+
+@layer base {
+    body { font-feature-settings: 'cv11', 'ss01'; }
+    h1, h2, h3 { letter-spacing: -0.01em; }
+}
+
+@layer components {
+    .font-display { font-family: var(--font-display); }
+
+    /* Buttons */
+    .btn, .btn-primary, .btn-gold, .btn-light, .btn-ghost-light { @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-primary)] disabled:cursor-not-allowed disabled:opacity-60; }
+    .btn-primary { @apply bg-[var(--brand-primary)] text-white shadow-sm hover:brightness-110; }
+    .btn-gold { @apply bg-gold-400 text-navy-950 shadow-sm hover:bg-gold-300; }
+    .btn-light { @apply border border-slate-300 bg-white text-slate-700 hover:border-slate-400 hover:bg-slate-50; }
+    .btn-ghost-light { @apply border border-white/25 text-white hover:bg-white/10; }
+
+    /* Surfaces */
+    .card { @apply rounded-xl border border-slate-200/80 bg-white shadow-sm; }
+    .card-header { @apply flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4; }
+    .card-title { @apply flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-navy-900; }
+    .eyebrow { @apply text-xs font-semibold uppercase tracking-[0.18em] text-gold-500; }
+
+    /* Forms */
+    .form-label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+    .form-field { @apply rounded-lg border border-slate-300 bg-white shadow-xs transition focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/15 focus:outline-none; }
+    .form-input { @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-xs transition placeholder:text-slate-400 focus:border-[var(--brand-primary)] focus:ring-4 focus:ring-[var(--brand-primary)]/15 focus:outline-none; }
+
+    /* Navigation */
+    .nav-link { @apply relative inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-slate-700 transition hover:text-[var(--brand-primary)]; }
+    .nav-link::after { content: ''; @apply absolute inset-x-3 -bottom-[17px] h-[3px] scale-x-0 rounded-full bg-gold-400 transition-transform duration-300; }
+    .nav-link:hover::after, .nav-link[aria-expanded='true']::after, .nav-link.is-active::after { @apply scale-x-100; }
+    .nav-link.is-active { @apply text-[var(--brand-primary)]; }
+    .dropdown-panel { @apply absolute left-0 top-full z-40 mt-4 rounded-xl border border-slate-200 bg-white p-2 shadow-xl shadow-navy-900/10 ring-1 ring-black/5; }
+    .menu-item { @apply flex items-start gap-3 rounded-lg p-3 text-left transition hover:bg-navy-50; }
+    .menu-icon { @apply grid size-10 shrink-0 place-items-center rounded-lg bg-navy-50 text-[var(--brand-primary)] ring-1 ring-navy-100 transition group-hover:bg-[var(--brand-primary)] group-hover:text-white; }
+
+    /* Badges */
+    .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset; }
+
+    /* Statistic cards */
+    .stat-card { @apply relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-navy-900/10; }
+    .stat-card::before { content: ''; @apply absolute inset-x-0 top-0 h-1 bg-[var(--tone)]; }
+    .stat-icon { @apply grid size-12 place-items-center rounded-xl text-white shadow-md; background: linear-gradient(135deg, var(--tone), color-mix(in oklab, var(--tone) 70%, black)); }
+
+    /* Tables */
+    .data-table { @apply w-full text-sm; }
+    .data-table thead { @apply bg-navy-900 text-left text-xs uppercase tracking-wider text-white; }
+    .data-table tbody tr { @apply border-t border-slate-100 transition hover:bg-navy-50/60; }
+
+    /* Decorative backgrounds */
+    .hero-surface {
+        background:
+            radial-gradient(1200px 400px at 85% -10%, color-mix(in oklab, var(--brand-primary) 55%, transparent), transparent 70%),
+            radial-gradient(700px 300px at 0% 120%, rgb(230 174 51 / 0.18), transparent 70%),
+            linear-gradient(135deg, var(--brand-secondary), color-mix(in oklab, var(--brand-secondary) 75%, black));
+    }
+    .hex-pattern {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='98' viewBox='0 0 56 98'%3E%3Cpath d='M28 66 0 50V17L28 1l28 16v33L28 66Zm0 32V66m0-65' fill='none' stroke='%23ffffff' stroke-opacity='.07' stroke-width='1'/%3E%3C/svg%3E");
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media print {
+    .no-print { display: none !important; }
 }

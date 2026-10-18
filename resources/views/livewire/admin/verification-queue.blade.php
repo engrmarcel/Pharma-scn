@@ -1,7 +1,5 @@
 <div>
-    <h1 class="mb-4 text-2xl font-semibold">Organization verification</h1>
-
-    <select wire:model.live="status" class="mb-4 rounded border border-slate-300 px-3 py-2 text-sm">
+    <select wire:model.live="status" class="mb-4 form-field px-3 py-2 text-sm">
         @foreach (\App\Domain\Organizations\Enums\VerificationStatus::cases() as $s)
             <option value="{{ $s->value }}">{{ str_replace('_', ' ', $s->value) }}</option>
         @endforeach
@@ -22,7 +20,7 @@
         </div>
 
         @if ($current)
-            <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
+            <div class="card p-4 text-sm">
                 <h2 class="text-lg font-semibold">{{ $current->name }}</h2>
                 <dl class="mt-2 grid grid-cols-3 gap-1 text-slate-700">
                     <dt class="text-slate-500">Legal name</dt><dd class="col-span-2">{{ $current->legal_name ?? '—' }}</dd>
@@ -44,11 +42,11 @@
 
                 @if ($canDecide && $current->verification_status->canBeDecided())
                     <textarea wire:model="notes" rows="3" placeholder="Notes (required to reject or request changes)"
-                              class="mt-4 w-full rounded border border-slate-300 px-3 py-2"></textarea>
+                              class="mt-4 w-full form-field px-3 py-2"></textarea>
                     @error('notes') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
                     <div class="mt-2 flex gap-2">
-                        <button wire:click="decide('approve')" class="rounded bg-[var(--brand-primary)] px-3 py-1.5 font-medium text-white">Approve</button>
-                        <button wire:click="decide('request_changes')" class="rounded border border-slate-300 px-3 py-1.5">Request changes</button>
+                        <button wire:click="decide('approve')" class="btn-primary px-3 py-1.5 font-medium text-white">Approve</button>
+                        <button wire:click="decide('request_changes')" class="form-field px-3 py-1.5">Request changes</button>
                         <button wire:click="decide('reject')" class="rounded border border-red-300 px-3 py-1.5 text-red-700">Reject</button>
                     </div>
                 @endif

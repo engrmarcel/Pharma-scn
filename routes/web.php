@@ -29,7 +29,7 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::post('logout', [SessionController::class, 'destroy'])->name('logout');
     Route::get('account/security', SecuritySettings::class)->name('account.security');
 
-    Route::get('dashboard', [DashboardController::class, 'show'])->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'show'])->middleware('tenant:optional')->name('dashboard');
     Route::post('organizations/switch', [DashboardController::class, 'switchOrganization'])->name('organizations.switch');
 
     Route::get('catalogue', ProductBrowser::class)->name('catalogue');

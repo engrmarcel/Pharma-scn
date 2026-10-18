@@ -8,10 +8,13 @@ use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Models\User;
 use Livewire\Livewire;
+use Tests\Concerns\InteractsWithInventory;
 use Tests\FeatureTestCase;
 
 class WebInterfaceTest extends FeatureTestCase
 {
+    use InteractsWithInventory;
+
     public function test_login_page_and_successful_login(): void
     {
         User::factory()->create(['email' => 'web@example.test', 'password' => 'Secret12345']);
@@ -39,6 +42,42 @@ class WebInterfaceTest extends FeatureTestCase
         $this->post('/organizations/switch', ['organization_id' => $foreign->id])->assertSessionHasErrors('organization_id');
         $this->post('/organizations/switch', ['organization_id' => $org->id])->assertRedirect('/dashboard')
             ->assertSessionHas(config('platform.tenancy.session_key'), $org->id);
+    }
+
+    public function test_dashboard_figures_follow_the_selected_organization_and_never_fail_on_a_bad_selection(): void
+    {
+        [$owner, $org, $product, $main] = $this->stockedOrganization();
+        $this->receive($org, $main, $product, 'DASH-1', '50', '+30 days', ['unit_cost' => '10']);
+        [, $foreign] = $this->organizationMember();
+        $key = config('platform.tenancy.session_key');
+
+        $this->actingAs($owner)->withSession([$key => $org->id])->get('/dashboard')->assertOk()
+            ->assertSee('Products in stock')->assertSee('Expiring soon')->assertSee('DASH-1')->assertSee('Stock value');
+
+        // A foreign or stale selection is ignored, not an error, and shows no figures.
+        $this->withSession([$key => $foreign->id])->get('/dashboard')->assertOk()
+            ->assertDontSee('Products in stock')->assertDontSee($foreign->name)->assertSee('Select an organization');
+
+        // A suspended organization: the dashboard still loads, without its figures.
+        $org->forceFill(['status' => 'suspended'])->save();
+        $this->withSession([$key => $org->id])->get('/dashboard')->assertOk()->assertDontSee('Products in stock')->assertSee('Suspended');
+    }
+
+    public function test_dashboard_hides_figures_the_member_cannot_view(): void
+    {
+        [, $org] = $this->stockedOrganization();
+        [$cashier] = $this->organizationMember(['pos_cashier'], organization: $org);
+
+        $this->actingAs($cashier)->withSession([config('platform.tenancy.session_key') => $org->id])->get('/dashboard')->assertOk()
+            ->assertDontSee('Stock value')->assertDontSee('Receivables')->assertDontSee('Open purchase orders');
+    }
+
+    public function test_platform_staff_see_network_oversight_and_login_page_renders(): void
+    {
+        $this->get('/login')->assertOk()->assertSee('Welcome back')->assertSee('Keep me signed in');
+
+        $this->actingAs($this->platformUser('compliance_officer'))->get('/dashboard')->assertOk()
+            ->assertSee('Network oversight')->assertSee('Awaiting verification')->assertSee('Verification queue');
     }
 
     public function test_catalogue_browser_searches_and_hides_products_under_review(): void

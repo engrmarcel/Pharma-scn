@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### 2026-10-20: Web interface redesign
+- Corporate navy and gold design system (Tailwind 4 tokens and components); brand colours still come from `BrandingService`, with new defaults `#0b4ea2` / `#0b1f42`. Inter and Playfair Display are self-hosted through `@fontsource` (no third-party font requests). Icons from `blade-ui-kit/blade-heroicons`.
+- Header with a utility bar (support contacts, date, non-production badge, current organization), sticky main bar and hover/click/keyboard dropdown menus (Operations, Organization switcher, Administration, account menu), plus a mobile menu. Page banners with breadcrumbs; a multi-column footer.
+- Split-screen sign-in with an animated supply-network illustration, icon inputs, show/hide password and a busy state; matching two-factor challenge page.
+- Dashboard: greeting hero with organization summary, statistic cards with icons and count-up figures (stock, expiry, expired, low stock, stock value, purchase and sales orders, receivables, POS sales today), 7-day sales trend, expiring-soon list and platform oversight cards. Each figure appears only when the module is enabled and entitled and the member holds the view permission; stock figures respect warehouse scopes; money is shown in the organization currency only.
+- `ResolveTenant` gains an optional mode (`tenant:optional`) used by the dashboard: a missing, foreign or suspended selection shows no figures instead of an error.
+- Reduced-motion support; 177 tests passing.
+
 ### 2026-10-20: Phase 2.5b, POS cashier UI
 - Livewire register (`/pos`): open shift, scanner-first search (SKU, GTIN or batch number + Enter adds an exact match), server-priced cart with quantities, prescription indicator, hold and resume, checkout, cash with change, standalone card-terminal entry (pending until confirmed), cancel, close shift.
 - Printable 72 mm receipt (`/pos/receipts/{sale}`) with batch numbers and expiry, no prescription details.

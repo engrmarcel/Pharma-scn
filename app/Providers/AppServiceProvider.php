@@ -51,6 +51,7 @@ use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveTenant;
+use App\Http\View\Composers\NavigationComposer;
 use App\Models\User;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -59,6 +60,7 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -138,6 +140,8 @@ class AppServiceProvider extends ServiceProvider
 
             return $access->isRegistered($ability) ? $access->check($user, $ability) : null;
         });
+
+        View::composer(['layouts.app', 'layouts.guest', 'dashboard'], NavigationComposer::class);
 
         // Livewire component updates re-run the page's tenant and module checks.
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnsureAccountSecurity::class, ResolveTenant::class, EnsureModuleEnabled::class]);

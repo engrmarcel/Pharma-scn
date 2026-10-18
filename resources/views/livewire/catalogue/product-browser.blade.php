@@ -1,10 +1,8 @@
 <div>
-    <h1 class="mb-4 text-2xl font-semibold">Product catalogue</h1>
-
     <div class="mb-4 flex flex-wrap gap-3">
         <input type="search" wire:model.live.debounce.300ms="q" placeholder="Name, generic, SKU, GTIN or registration no."
-               class="w-full max-w-md rounded border border-slate-300 px-3 py-2 text-sm">
-        <select wire:model.live="form" class="rounded border border-slate-300 px-3 py-2 text-sm">
+               class="w-full max-w-md form-field px-3 py-2 text-sm">
+        <select wire:model.live="form" class="form-field px-3 py-2 text-sm">
             <option value="">All dosage forms</option>
             @foreach ($forms as $f)
                 <option value="{{ $f->code }}">{{ $f->name }}</option>
@@ -14,8 +12,8 @@
 
     <div class="grid gap-6 lg:grid-cols-5">
         <div class="lg:col-span-3">
-            <table class="w-full overflow-hidden rounded-lg border border-slate-200 bg-white text-sm shadow-sm">
-                <thead class="bg-slate-100 text-left text-xs uppercase text-slate-600">
+            <table class="data-table overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                <thead>
                     <tr><th class="px-3 py-2">Product</th><th class="px-3 py-2">Manufacturer</th><th class="px-3 py-2">Status</th></tr>
                 </thead>
                 <tbody>
@@ -39,7 +37,7 @@
 
         <aside class="lg:col-span-2">
             @if ($detail)
-                <div class="rounded-lg border border-slate-200 bg-white p-4 text-sm shadow-sm">
+                <div class="card p-4 text-sm">
                     <h2 class="text-lg font-semibold">{{ $detail->display_name }}</h2>
                     <p class="text-slate-600">{{ $detail->generic_name }} · {{ $detail->dosage_form_code }} · v{{ $detail->version }}</p>
 

@@ -31,11 +31,35 @@ class ResolveTenant
         private readonly TwoFactorService $twoFactor,
     ) {}
 
-    public function handle(Request $request, Closure $next): Response
+    /**
+     * "tenant:optional" (pages such as the dashboard): without a valid selection the
+     * request simply continues with no organization instead of failing.
+     */
+    public function handle(Request $request, Closure $next, ?string $mode = null): Response
     {
         // Long-lived workers (Octane, test runner) reuse the instance; never carry permissions over.
         $this->access->flush();
 
+        try {
+            $membership = $this->resolve($request);
+        } catch (BusinessRuleViolation $e) {
+            if ($mode === 'optional') {
+                return $next($request);
+            }
+            throw $e;
+        }
+
+        $this->tenant->set($membership->organization, $membership);
+
+        try {
+            return $next($request);
+        } finally {
+            $this->tenant->clear();
+        }
+    }
+
+    private function resolve(Request $request): OrganizationMembership
+    {
         $user = $request->user();
         $requested = $request->headers->get(config('platform.tenancy.header'))
             ?? ($request->hasSession() ? $request->session()->get(config('platform.tenancy.session_key')) : null);
@@ -66,12 +90,6 @@ class ResolveTenant
             throw new BusinessRuleViolation('mfa_enrollment_required', 'This organization requires two-factor authentication. Set it up to continue.', 403);
         }
 
-        $this->tenant->set($membership->organization, $membership);
-
-        try {
-            return $next($request);
-        } finally {
-            $this->tenant->clear();
-        }
+        return $membership;
     }
 }

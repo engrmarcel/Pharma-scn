@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Web;
 
+use App\Domain\Platform\Services\DashboardMetrics;
 use App\Http\Controllers\Controller;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -10,16 +12,19 @@ use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function show(Request $request): View
+    /** Figures appear only for an organization that ResolveTenant (optional mode) accepted for this request. */
+    public function show(Request $request, TenantContext $tenant, DashboardMetrics $metrics): View
     {
         $user = $request->user();
         $memberships = $user->activeMemberships()->with(['organization.modules', 'roles'])->get();
-        $currentId = $request->session()->get(config('platform.tenancy.session_key'));
+        $currentId = $tenant->id() ?? $request->session()->get(config('platform.tenancy.session_key'));
 
         return view('dashboard', [
             'memberships' => $memberships,
             'current' => $memberships->firstWhere('organization_id', $currentId),
+            'tenantActive' => $tenant->has(),
             'platformRoles' => $user->platformRoles()->pluck('name'),
+            'metrics' => $metrics->for($user),
         ]);
     }
 

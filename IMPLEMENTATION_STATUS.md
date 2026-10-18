@@ -19,7 +19,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **174 tests, 1266 assertions, all passing** (MariaDB `pharma_network_test`).
+- `php artisan test`: **177 tests, 1289 assertions, all passing** (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -54,7 +54,8 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Country configuration | ✅ | NG active; GH, KE, ZA, RW, EG configured and inactive |
 | Platform admin (API) | ✅ | Organizations, verification, users, catalogue, plans, subscriptions, countries, failed jobs, ops status, audit |
 | Platform admin (web UI) | 🟡 | Verification queue and catalogue browser only |
-| Tenant web UI | 🟡 | Dashboard, catalogue browser, account security and the POS register; other ERP screens are API-only so far |
+| Tenant web UI | 🟡 | Dashboard (permission-aware statistic cards, 7-day sales trend, expiry watch), catalogue browser, account security and the POS register; other ERP screens are API-only so far |
+| Web design system | ✅ | Navy/gold corporate theme (brand colours remain configurable), self-hosted Inter + Playfair Display, Heroicons, dropdown navigation with organization switcher, split-screen sign-in; verified at desktop and 390 px widths |
 | Audit infrastructure | ✅ | |
 | API foundations (versioning, errors, idempotency, correlation, rate limits) | ✅ | OpenAPI document not yet produced |
 | Domain events (after-commit) | ✅ | 5 events so far; outbox in Phase 5 |
