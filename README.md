@@ -1,6 +1,6 @@
 # Pharmaceutical Supply Chain Network Platform
 
-A multi-tenant pharmaceutical SaaS platform combining ERP, POS, a mobile field force, a B2B marketplace, traceability and enterprise integrations. It is built Nigeria-first and designed for other African markets. The product name is configurable (`config/platform.php`, or the admin branding API).
+A multi-tenant pharmaceutical SaaS platform combining ERP, POS, a mobile field force (Flutter app in [`mobile/field_app`](mobile/field_app/README.md)), a B2B marketplace, traceability and enterprise integrations. It is built Nigeria-first and designed for other African markets. The product name is configurable (`config/platform.php`, or the admin branding API).
 
 **Current state:** Phase 1 (platform foundation and Product Master) is implemented and tested. See [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) for exactly what works and what does not, and [docs/IMPLEMENTATION_ROADMAP.md](docs/IMPLEMENTATION_ROADMAP.md) for what comes next.
 

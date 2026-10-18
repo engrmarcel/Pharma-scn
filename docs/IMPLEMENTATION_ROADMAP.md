@@ -6,7 +6,7 @@ Phases and acceptance criteria follow master spec §31 (`docs/source/MASTER_SPEC
 |---|---|---|
 | **0** Discovery & architecture | Environment audit, docs, module boundaries, entity model, tenancy, API and DB conventions, test strategy, dev workflow, roadmap, external-credential inventory | ✅ |
 | **1** Platform foundation | Skeleton, auth, organizations, tenancy, memberships, RBAC, verification, branches and warehouses, country config, branding, platform admin, audit, API foundations, **subscription and entitlement foundations**, logging and health, CI | ✅ (MFA and email verification carried into Phase 2 kickoff; see status) |
-| **2** ERP + POS + Field force / Light CRM | Product Master incl. NAFDAC identifiers *(built early, done)*; ERP: inventory ledger, warehouse, batch and expiry, FEFO, procurement, suppliers, customers, sales, invoicing, finance foundations, transfers and adjustments; POS; Flutter field-force app | 🟡 Product Master done |
+| **2** ERP + POS + Field force / Light CRM | Product Master incl. NAFDAC identifiers *(built early, done)*; ERP: inventory ledger, warehouse, batch and expiry, FEFO, procurement, suppliers, customers, sales, invoicing, finance foundations, transfers and adjustments; POS; Flutter field-force app | ✅ Done (2.0–2.6b) |
 | **3** Offline-first POS & mobile sync | Encrypted local storage, offline sales, receipts, visits and orders, sync queue, idempotency, conflicts, reconciliation, device registration and revocation, offline payment states, 6-hour outage test | 📐 `OFFLINE_FIRST_DESIGN.md` |
 | **4** B2B marketplace | Discovery, listings, relationships, RFQ, quotes, B2B orders, approvals, fulfilment, returns and disputes, payment status, marketplace fees, supplier verification | ⬜ |
 | **5** Enterprise integration gateway | Canonical model, connector framework, registry, mappings, REST, SFTP/file, webhooks, inbox/outbox, retries, monitoring, reconciliation, SAP adapter | 📐 `ENTERPRISE_INTEGRATIONS.md` |
@@ -36,7 +36,7 @@ Each increment ships migrations, services, API, permissions, tests and docs befo
 6. **2.5 POS ✅ (2.5a backend, 2.5b cashier UI):** terminals, shifts and cash control, Livewire cashier UI (keyboard and scanner first), FEFO batch selection, split payments, receipts, held sales, returns with supervisor approval, payment provider adapters (verified callbacks, replay protection), and reports. Every POS operation runs through the ERP services from 2.2–2.4.
 7. **2.6 Field force:**
    - **2.6a API ✅:** territories, assignments, visits with truthful GPS evidence, follow-ups, mobile orders as drafts, then submitted, then server-validated; supervisor reports; location retention (ADR-0010).
-   - Flutter Android app with a local SQLite model designed for Phase 3.
+   - **2.6b Flutter app ✅:** Android-first app (`mobile/field_app`) with a local SQLite model and ordered outbox designed for Phase 3; end-to-end tested against the live API; debug APK built.
 
 ## Test coverage map for §29.2 mandatory scenarios
 

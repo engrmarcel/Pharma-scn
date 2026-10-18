@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅, 2.1 suppliers & customers ✅, 2.2 inventory core ✅, 2.3 procurement ✅, 2.4a finance foundations ✅, 2.4b sales ✅, 2.5 POS (backend + cashier UI) ✅, 2.6a field-force API ✅; Flutter field app (2.6b) next.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ (Product Master, account security, suppliers & customers, inventory, procurement, finance foundations, sales, POS backend and cashier UI, field-force API and Flutter app); Phase 3 (offline-first POS and mobile synchronization) next.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -15,11 +15,12 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Laravel / Livewire / Sanctum | 13.37 / 4.4 / 4.x | |
 | Database | **MariaDB 10.4.32** (XAMPP) | Production target MySQL 8 (ADR-0002); CI is configured for MySQL 8 |
 | Redis | not installed | Database drivers used locally |
-| Node / Flutter | 24.20 / 3.47.5 | Flutter unused until Phase 2.6 |
+| Node / Flutter | 24.20 / 3.47.5 | Flutter field app in `mobile/field_app` (Dart 3.13) |
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **184 tests, 1468 assertions, all passing** (MariaDB `pharma_network_test`).
+- `php artisan test`: **184 tests, 1468 assertions, all passing**
+- `flutter test` (mobile/field_app): **10 passing**, plus 1 live-API end-to-end test (run locally against `php artisan serve` with demo data; skipped in CI) (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -69,6 +70,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Finance foundations (2.4a) | ✅ | Chart of accounts (per org, by system key), monthly periods with close/reopen, balanced immutable journal with reversals, automatic postings from receipts, supplier invoices (GRNI/PPV/tax/AP), write-offs, counts, opening balances, supplier returns and payments; supplier payment allocation; trial balance, ledger, P&L, balance sheet, payables aging. Management books, not certified statutory accounts |
 | Procurement (2.3) | ✅ | Requisitions with approval → POs (supplier price lists, threshold-based approval, segregation of duties) → goods receipts with batch capture and over-receipt tolerance → supplier invoices with three-way match and audited override → supplier returns; supplier performance; purchase suggestions. |
 | Inventory core (2.2) | ✅ | Append-only ledger + locked balances, batches with expiry/quality/recall status, FEFO (min shelf life), reservations, receipts with package-level conversion, adjustments, transfers (in-transit, partial receipt), counts, bins, quarantine/release, expiry & low-stock reports, batch-cost valuation; two-connection locking test |
+| Flutter field app (2.6b) | ✅ | `mobile/field_app` (Flutter 3.47, Android first). Covers sign-in (token in Keystore/Keychain), organization choice, assigned-customer directory, one-shot location at check-in/out (status recorded, never guessed), visit log with activities and follow-up date, customer-priced catalogue with stock age, draft → queued → ERP-decided orders with unambiguous status wording, follow-ups, activity report, and a needs-attention list. Data lives in a local SQLite database with an ordered outbox and `client_reference` idempotency. Verified by `flutter analyze` (clean), 10 unit/widget tests, an end-to-end test against the live demo-seeded API (sign-in → verified visit → order accepted as a confirmed sales order), and a debug APK build. Not done: iOS build (needs macOS), local database encryption, and background sync (Phase 3) |
 | Field-force API (2.6a) | ✅ | Territories with representatives, supervisors and a fulfilment warehouse; customer assignments that narrow representatives (`customers.view_assigned`) across customers, quotations, orders, invoices and statements; visits with server-classified location evidence (verified, outside radius, low accuracy, mock, no location, customer location unknown), clock checks, one open visit per representative, immutable evidence; activities; follow-ups; mobile orders validated into ERP sales orders (accepted = confirmed or held for approval; rejected with reasons and nothing left behind); customer-priced catalogue with a stamped stock snapshot; supervisor activity report; `mobile_users` limit; daily location purge; replay-safe `client_reference`; demo territories, visits and an accepted mobile order |
 | Suppliers and customers with contacts (2.1) | ✅ | Tenant-scoped; optional link to a platform organization (no data access implied); module-gated; representatives see only assigned customers (2.6a) |
 | **Product Master (Phase 2 scope, done early)** | ✅ | Products, ingredients, package hierarchy, GTIN, classifications, NAFDAC/regulatory identifiers with evidence, governance, tenant mappings |

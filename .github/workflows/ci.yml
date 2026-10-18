@@ -61,3 +61,31 @@ jobs:
 
       - name: Dependency audit
         run: composer audit && npm audit --omit=dev
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile/field_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.5'
+          channel: stable
+          cache: true
+
+      # sqflite_common_ffi (used by the tests) loads the system SQLite library.
+      - name: Install SQLite
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      # The live-API end-to-end test skips itself unless FIELD_E2E_BASE_URL is set.
+      - name: Tests
+        run: flutter test

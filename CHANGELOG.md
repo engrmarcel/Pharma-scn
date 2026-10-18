@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### 2026-10-21: Phase 2.6b, Flutter field app (Phase 2 complete)
+- `mobile/field_app` (Flutter 3.47, Dart 3.13, Android first, iOS runner included).
+- Sign-in with the API token in Keystore/Keychain; organization choice validated against `/field-force/me`; one local database per user and organization.
+- Assigned-customer directory, cleared of customers that are no longer assigned; customer-priced catalogue per pack, with the age of the stock snapshot shown.
+- Visits: one-shot location at check-in and check-out (permission, service and timeout states recorded; coordinates never guessed); notes, feedback, permission-gated competitor information, activities and follow-up date; server-decided verification shown after sync; first-use location notice.
+- Orders: draft on device → waiting to sync → submitted → accepted by ERP (sales order number, stock reserved or awaiting approval) or rejected with the reason; edit and resubmit.
+- Durable ordered outbox: offline work survives restarts. Connection and server errors retry later; refusals are listed under "Needs attention" together with the steps that depend on them. Replays are idempotent through `client_reference`.
+- Follow-ups (offline completion), activity report for representatives and supervisors.
+- Tests: 10 unit/widget tests (SQLite via FFI), a live-API end-to-end test, and a new CI job (analyze + test). The debug APK builds locally.
+
 ### 2026-10-21: Phase 2.6a, field-force API
 - Territories (code, parent, fulfilment warehouse) with representative and supervisor members (limited by the `mobile_users` entitlement) and customer assignments (territory and/or representative).
 - New permission `customers.view_assigned` (sales representatives, new `field_supervisor` role): customers, quotations, sales orders, invoices and statements are limited to assigned customers; hidden records return 404; organization-wide receivables aging is closed to them.

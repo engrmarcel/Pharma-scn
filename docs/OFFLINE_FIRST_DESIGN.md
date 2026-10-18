@@ -11,7 +11,9 @@ Phase 1 already provides the foundations this design depends on: ULID keys (clie
 
 ## Client storage (Flutter, Android first)
 
-- SQLite (drift) database. The database key is held in Android Keystore / iOS Keychain (`flutter_secure_storage`), with SQLCipher encryption for the database file.
+- SQLite database. Target: the database key is held in Android Keystore / iOS Keychain (`flutter_secure_storage`), with SQLCipher encryption for the database file.
+  - **Built in Phase 2.6b** (`mobile/field_app`): plain `sqflite` with the tables `customers`, `catalogue_items`, `visits`, `orders`, `follow_ups` and an ordered `outbox`. Records are keyed by device `client_reference` (UUID v7); the API token is stored in Keystore/Keychain; there is one database file per user and organization.
+  - **Not yet encrypted.** SQLCipher, device registration and background sync are Phase 3 work.
 - Cached data per device role:
   - **POS:** the branch's sellable catalogue and prices, batch availability snapshots with an `as_of` time, recent customers, and open shift state.
   - **Field force:** assigned customers only, the authorized catalogue, applicable price lists, visit forms, and pending drafts.
