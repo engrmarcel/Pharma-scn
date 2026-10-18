@@ -36,7 +36,7 @@ abstract class PartyController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        Gate::authorize($this->permissionPrefix().'.view');
+        $this->authorizeView();
 
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -45,7 +45,7 @@ abstract class PartyController extends Controller
         ]);
         $model = $this->model();
 
-        $page = $model::query()
+        $page = $this->visible($model::query())
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) => $w
                 ->where('name', 'like', '%'.addcslashes($v, '%_').'%')
                 ->orWhere('code', 'like', addcslashes($v, '%_').'%')))
@@ -59,8 +59,9 @@ abstract class PartyController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        Gate::authorize($this->permissionPrefix().'.view');
-        $party = $this->find($id);
+        $this->authorizeView();
+        $model = $this->model();
+        $party = $this->visible($model::query())->findOrFail($id);
 
         return response()->json(['data' => $this->present($party) + [
             'contacts' => $party->contacts()->orderByDesc('is_primary')->orderBy('name')->get()
@@ -144,6 +145,17 @@ abstract class PartyController extends Controller
         $this->audit->record('party_contact.deleted', $party, old: ['contact_id' => $contactId, 'name' => $contact->name]);
 
         return response()->json(null, 204);
+    }
+
+    protected function authorizeView(): void
+    {
+        Gate::authorize($this->permissionPrefix().'.view');
+    }
+
+    /** Hook for narrower visibility (customers: territory assignments). */
+    protected function visible($query)
+    {
+        return $query;
     }
 
     protected function present(Party $party): array

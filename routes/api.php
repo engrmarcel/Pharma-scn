@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\FieldForceController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
@@ -199,6 +200,40 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            // Field force / light CRM (spec §12). Device records are idempotent by client_reference.
+            Route::middleware('module:field_force')->prefix('field-force')->name('field-force.')->group(function () {
+                Route::get('me', [FieldForceController::class, 'me'])->name('me');
+                Route::get('territories', [FieldForceController::class, 'territories'])->name('territories.index');
+                Route::post('territories', [FieldForceController::class, 'storeTerritory'])->name('territories.store');
+                Route::patch('territories/{id}', [FieldForceController::class, 'updateTerritory'])->whereUlid('id')->name('territories.update');
+                Route::put('territories/{id}/members', [FieldForceController::class, 'setTerritoryMembers'])->whereUlid('id')->name('territories.members');
+                Route::put('customer-assignments', [FieldForceController::class, 'assignCustomers'])->name('customer-assignments');
+                Route::get('customers', [FieldForceController::class, 'customers'])->name('customers.index');
+                Route::get('customers/{id}', [FieldForceController::class, 'customer'])->whereUlid('id')->name('customers.show');
+                Route::get('catalogue', [FieldForceController::class, 'catalogue'])->name('catalogue');
+
+                Route::get('visits', [FieldForceController::class, 'visits'])->name('visits.index');
+                Route::post('visits', [FieldForceController::class, 'checkIn'])->name('visits.check-in');
+                Route::get('visits/{id}', [FieldForceController::class, 'visit'])->whereUlid('id')->name('visits.show');
+                Route::patch('visits/{id}', [FieldForceController::class, 'updateVisit'])->whereUlid('id')->name('visits.update');
+                Route::post('visits/{id}/activities', [FieldForceController::class, 'addActivities'])->whereUlid('id')->name('visits.activities');
+                Route::post('visits/{id}/check-out', [FieldForceController::class, 'checkOut'])->whereUlid('id')->name('visits.check-out');
+                Route::post('visits/{id}/cancel', [FieldForceController::class, 'cancelVisit'])->whereUlid('id')->name('visits.cancel');
+
+                Route::get('orders', [FieldForceController::class, 'orders'])->name('orders.index');
+                Route::post('orders', [FieldForceController::class, 'storeOrder'])->name('orders.store');
+                Route::get('orders/{id}', [FieldForceController::class, 'order'])->whereUlid('id')->name('orders.show');
+                Route::patch('orders/{id}', [FieldForceController::class, 'updateOrder'])->whereUlid('id')->name('orders.update');
+                Route::post('orders/{id}/submit', [FieldForceController::class, 'submitOrder'])->whereUlid('id')->name('orders.submit');
+                Route::post('orders/{id}/cancel', [FieldForceController::class, 'cancelOrder'])->whereUlid('id')->name('orders.cancel');
+
+                Route::get('follow-ups', [FieldForceController::class, 'followUps'])->name('follow-ups.index');
+                Route::post('follow-ups', [FieldForceController::class, 'storeFollowUp'])->name('follow-ups.store');
+                Route::post('follow-ups/{id}/{action}', [FieldForceController::class, 'closeFollowUp'])->whereUlid('id')->whereIn('action', ['complete', 'cancel'])->name('follow-ups.close');
+
+                Route::get('reports/activity', [FieldForceController::class, 'activityReport'])->name('reports.activity');
             });
 
             Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {

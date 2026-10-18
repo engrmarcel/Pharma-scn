@@ -116,6 +116,8 @@ class SalesTest extends FeatureTestCase
     {
         [$owner, $org, $product, $main, $customer] = $this->selling();
         [$rep] = $this->organizationMember(['sales_representative'], organization: $org);
+        // Representatives only reach customers assigned to them (field-force assignments).
+        $this->inTenant($org, fn () => $customer->forceFill(['assigned_representative_id' => $rep->id])->save());
 
         $this->actingAsApi($rep, $org)->api('POST', 'sales-orders', ['customer_id' => $customer->id, 'warehouse_id' => $main->id, 'lines' => [
             ['product_id' => $product->id, 'package_level_code' => 'pack', 'quantity' => '1', 'unit_price' => '2500'],

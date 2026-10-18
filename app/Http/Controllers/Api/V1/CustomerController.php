@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\FieldForce\Services\FieldForceScope;
 use App\Domain\Parties\Models\Customer;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +16,17 @@ class CustomerController extends PartyController
     protected function permissionPrefix(): string
     {
         return 'customers';
+    }
+
+    /** Members with customers.view_assigned see only customers in their territories or assigned to them. */
+    protected function authorizeView(): void
+    {
+        abort_unless(app(FieldForceScope::class)->canSeeCustomers(), 403);
+    }
+
+    protected function visible($query)
+    {
+        return app(FieldForceScope::class)->scopeCustomers($query, 'id');
     }
 
     protected function typeRules(): array

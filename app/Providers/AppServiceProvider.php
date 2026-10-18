@@ -11,6 +11,11 @@ use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductChangeRequest;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
 use App\Domain\Catalogue\Services\UnitConverter;
+use App\Domain\FieldForce\Models\FieldFollowUp;
+use App\Domain\FieldForce\Models\FieldOrder;
+use App\Domain\FieldForce\Models\FieldVisit;
+use App\Domain\FieldForce\Models\Territory;
+use App\Domain\FieldForce\Services\FieldForceScope;
 use App\Domain\Finance\Models\Account;
 use App\Domain\Finance\Models\FinancialPeriod;
 use App\Domain\Finance\Models\JournalEntry;
@@ -77,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(LocationAccess::class);
         $this->app->scoped(UnitConverter::class);
         $this->app->scoped(ChartOfAccounts::class);
+        $this->app->scoped(FieldForceScope::class);
     }
 
     /**
@@ -130,6 +136,10 @@ class AppServiceProvider extends ServiceProvider
             'pos_shift' => PosShift::class,
             'pos_sale' => PosSale::class,
             'pos_refund' => PosRefund::class,
+            'territory' => Territory::class,
+            'field_visit' => FieldVisit::class,
+            'field_follow_up' => FieldFollowUp::class,
+            'field_order' => FieldOrder::class,
             'attachment' => Attachment::class,
         ]);
 

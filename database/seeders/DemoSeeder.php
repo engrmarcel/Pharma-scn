@@ -7,6 +7,10 @@ use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductCategory;
 use App\Domain\Catalogue\Services\ProductCatalogueService;
+use App\Domain\FieldForce\Models\FieldVisit;
+use App\Domain\FieldForce\Services\FieldOrderService;
+use App\Domain\FieldForce\Services\TerritoryService;
+use App\Domain\FieldForce\Services\VisitService;
 use App\Domain\Inventory\Services\DirectReceiptService;
 use App\Domain\Organizations\Enums\VerificationStatus;
 use App\Domain\Organizations\Models\Branch;
@@ -61,7 +65,7 @@ class DemoSeeder extends Seeder
             // email prefix, name, type, verified, extra members [email prefix => role]
             ['manufacturer', 'Demo Pharma Manufacturing Ltd', 'manufacturer', true, ['mfr.rep' => 'sales_representative', 'mfr.integration' => 'integration_admin']],
             ['importer', 'Demo Pharma Imports Ltd', 'importer', true, ['imp.inventory' => 'inventory_manager']],
-            ['distributor', 'Demo National Distribution Ltd', 'national_distributor', true, ['dist.sales' => 'sales_manager', 'dist.rep1' => 'sales_representative', 'dist.rep2' => 'sales_representative', 'dist.warehouse' => 'warehouse_officer']],
+            ['distributor', 'Demo National Distribution Ltd', 'national_distributor', true, ['dist.sales' => 'sales_manager', 'dist.rep1' => 'sales_representative', 'dist.rep2' => 'sales_representative', 'dist.supervisor' => 'field_supervisor', 'dist.warehouse' => 'warehouse_officer']],
             ['wholesaler', 'Demo Wholesale Medicines', 'wholesaler', false, ['whl.procurement' => 'procurement_officer']],
             ['pharmacy1', 'Demo Community Pharmacy', 'pharmacy', true, ['ph1.pharmacist' => 'pharmacist', 'ph1.cashier' => 'pos_cashier', 'ph1.supervisor' => 'pos_supervisor']],
             ['pharmacy2', 'Demo Neighbourhood Pharmacy', 'pharmacy', false, ['ph2.cashier' => 'pos_cashier']],
@@ -77,6 +81,7 @@ class DemoSeeder extends Seeder
         $this->stock();
         $this->purchasing();
         $this->pointOfSale();
+        $this->fieldForce();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -254,6 +259,64 @@ class DemoSeeder extends Seeder
 
         Auth::setUser($supervisor->user);
         $context->runAs($org, fn () => app(PosSessionService::class)->reviewShift($shift, $supervisor->user, null), $supervisor);
+    }
+
+    /**
+     * Field-force demo (spec §12, §32): two territories at the distributor, a verified
+     * visit with an accepted mobile order, and a visit where location permission was
+     * denied, recorded as such. Coordinates and client references are synthetic.
+     */
+    private function fieldForce(): void
+    {
+        $org = Organization::query()->where('name', 'Demo National Distribution Ltd')->first();
+        if ($org === null || FieldVisit::acrossTenants()->where('organization_id', $org->id)->exists()) {
+            return;
+        }
+        $member = fn (string $email) => $org->memberships()->whereHas('user', fn ($q) => $q->where('email', $email))->with('user')->firstOrFail();
+        [$manager, $rep1, $rep2, $supervisor] = [$member('dist.sales@demo.test'), $member('dist.rep1@demo.test'), $member('dist.rep2@demo.test'), $member('dist.supervisor@demo.test')];
+        $context = app(TenantContext::class);
+
+        Auth::setUser($manager->user);
+        $context->runAs($org, function () use ($rep1, $rep2, $supervisor) {
+            $territories = app(TerritoryService::class);
+            $warehouse = Warehouse::query()->where('code', 'WH-MAIN')->value('id');
+            $island = $territories->save(null, ['code' => 'DEMO-LAG-ISL', 'name' => 'Demo Lagos Island', 'warehouse_id' => $warehouse]);
+            $mainland = $territories->save(null, ['code' => 'DEMO-LAG-MLD', 'name' => 'Demo Lagos Mainland', 'warehouse_id' => $warehouse]);
+            $territories->setMembers($island, [['user_id' => $rep1->user_id, 'role' => 'representative'], ['user_id' => $supervisor->user_id, 'role' => 'supervisor']]);
+            $territories->setMembers($mainland, [['user_id' => $rep2->user_id, 'role' => 'representative'], ['user_id' => $supervisor->user_id, 'role' => 'supervisor']]);
+            $territories->assignCustomers($island, [Customer::query()->where('code', 'DEMO-CUS-1')->value('id')], $rep1->user_id, true);
+            $territories->assignCustomers($mainland, [Customer::query()->where('code', 'DEMO-CUS-2')->value('id')], $rep2->user_id, true);
+        }, $manager);
+
+        $device = ['platform' => 'android', 'app_version' => 'demo'];
+
+        Auth::setUser($rep1->user);
+        $context->runAs($org, function () use ($device) {
+            $customer = Customer::query()->where('code', 'DEMO-CUS-1')->firstOrFail();
+            $at = now()->subHours(3);
+            $fix = fn ($t) => ['occurred_at' => $t->toIso8601String(), 'location_status' => 'granted', 'latitude' => (float) $customer->latitude + 0.0003,
+                'longitude' => (float) $customer->longitude, 'accuracy_m' => 12, 'mock_location' => false, 'device' => $device];
+            $visits = app(VisitService::class);
+            $visit = $visits->checkIn(['client_reference' => 'demo-visit-1', 'customer_id' => $customer->id, 'visit_type' => 'order_taking',
+                'objectives' => 'SYNTHETIC DEMO VISIT: restock and introduce the 20-pack', 'check_in' => $fix($at)])['visit'];
+            $visits->checkOut($visit, ['check_out' => $fix($at->copy()->addMinutes(25)), 'outcome' => 'successful', 'order_opportunity' => true,
+                'discussion_notes' => 'Synthetic notes.', 'activities' => [['activity_type' => 'detailing', 'recorded_at' => $at->copy()->addMinutes(5)->toIso8601String()]]]);
+
+            app(FieldOrderService::class)->capture(['client_reference' => 'demo-order-1', 'customer_id' => $customer->id, 'field_visit_id' => $visit->id,
+                'captured_at' => $at->copy()->addMinutes(20)->toIso8601String(), 'submit' => true, 'notes' => 'SYNTHETIC DEMO ORDER',
+                'lines' => [['product_id' => Product::query()->where('generic_name', 'Paracetamol')->value('id'), 'package_level_code' => 'pack', 'quantity' => '2']]]);
+        }, $rep1);
+
+        Auth::setUser($rep2->user);
+        $context->runAs($org, function () use ($device) {
+            $customer = Customer::query()->where('code', 'DEMO-CUS-2')->firstOrFail();
+            $at = now()->subHours(2);
+            $visits = app(VisitService::class);
+            $visit = $visits->checkIn(['client_reference' => 'demo-visit-2', 'customer_id' => $customer->id, 'visit_type' => 'follow_up',
+                'check_in' => ['occurred_at' => $at->toIso8601String(), 'location_status' => 'denied', 'device' => $device]])['visit'];
+            $visits->checkOut($visit, ['check_out' => ['occurred_at' => $at->copy()->addMinutes(15)->toIso8601String(), 'location_status' => 'denied', 'device' => $device],
+                'outcome' => 'rescheduled', 'next_action' => 'Return with the pharmacist present', 'follow_up_date' => today()->addDays(5)->toDateString()]);
+        }, $rep2);
     }
 
     private function products(User $admin): void

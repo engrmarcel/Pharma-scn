@@ -21,6 +21,8 @@
 | Audit | Append-only audit log of privileged and business events | `AuditLogger` |
 | Entitlements | Plan limits and module access enforced in services and middleware under a row lock; direct API calls cannot bypass them | `EntitlementService`, `EnsureModuleEnabled` |
 | Operations data | Failed-job listings omit payloads; the health endpoint returns pass/fail only | `OperationsController` |
+| Field-force location | Location read only at check-in and check-out (no background tracking); the server classifies the evidence and never invents coordinates; raw coordinates are purged after `FIELD_FORCE_LOCATION_RETENTION_DAYS` (default 365); visits are visible only to the representative, supervisors of their territories and `field_force.view_all` (ADR-0010) | `LocationEvidence`, `FieldForceScope`, `field-force:purge-locations` |
+| Representative privacy | `customers.view_assigned` limits representatives to their territories' customers and those customers' documents; hidden records return 404 | `FieldForceScope` |
 
 ## Regulatory integrity rules
 

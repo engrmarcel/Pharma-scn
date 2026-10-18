@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-21: Phase 2.6a, field-force API
+- Territories (code, parent, fulfilment warehouse) with representative and supervisor members (limited by the `mobile_users` entitlement) and customer assignments (territory and/or representative).
+- New permission `customers.view_assigned` (sales representatives, new `field_supervisor` role): customers, quotations, sales orders, invoices and statements are limited to assigned customers; hidden records return 404; organization-wide receivables aging is closed to them.
+- Visits: check-in and check-out with device-reported location status, coordinates, accuracy, mock flag and device context; the server classifies the evidence (verified within the radius, outside radius, low accuracy, mock location, no location, customer location unknown), refuses contradictory reports and implausible clocks, and never edits evidence afterwards. Visit details, activities, competitor information (permission-gated), and automatic follow-ups from the follow-up date.
+- Mobile orders: draft, then submit, then accepted (the ERP sales order is created and confirmed, or held for approval) or rejected with reasons inside a savepoint (no sales order or reservation left behind); edit and resubmit; indicative device prices never override ERP pricing.
+- Customer-priced mobile catalogue (per sellable pack) with a stamped stock snapshot; customer directory with location-verification and visit history; follow-up tasks; supervisor activity report (visits, verification, orders, accepted value, follow-up compliance).
+- Replay-safe device `client_reference` on visits, orders and follow-ups. Daily `field-force:purge-locations` removes raw coordinates after the retention period. ADR-0010.
+- Synthetic demo: two distributor territories, a supervisor, a verified visit with an accepted mobile order, and a visit recorded with location permission denied. 184 tests passing.
+
 ### 2026-10-20: Web interface redesign
 - Corporate navy and gold design system (Tailwind 4 tokens and components); brand colours still come from `BrandingService`, with new defaults `#0b4ea2` / `#0b1f42`. Inter and Playfair Display are self-hosted through `@fontsource` (no third-party font requests). Icons from `blade-ui-kit/blade-heroicons`.
 - Header with a utility bar (support contacts, date, non-production badge, current organization), sticky main bar and hover/click/keyboard dropdown menus (Operations, Organization switcher, Administration, account menu), plus a mobile menu. Page banners with breadcrumbs; a multi-column footer.

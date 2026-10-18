@@ -83,7 +83,7 @@ All of these tables are tenant-owned (`organization_id`) unless marked *shared*.
 Sales          price_lists(+items) · quotations → sales_orders(+items) → invoices(+items) · credit_notes · sales_returns
 Finance        accounts (chart) · journal_entries(+lines, balanced) · financial_periods · payments · payment_allocations · tax_rules (effective-dated, per country)
 POS            pos_terminals · pos_shifts (opening/expected/counted/variance) · pos_cash_movements · pos_sales(+items with batch_id) · pos_payments · pos_refunds · receipts
-FieldForce     territories · territory_assignments · customer_assignments · visits (check-in/out lat/lng/accuracy/permission/evidence status) · visit_activities · follow_up_tasks · mobile_orders
+FieldForce     territories (warehouse for mobile orders) · territory_members (representative|supervisor) · customers.territory_id / assigned_representative_id · field_visits (client_reference unique; check-in/out device time, server time, location status, lat/lng/accuracy, mock flag, distance, verification, device; location_purged_at) · field_visit_activities · field_follow_ups · field_orders (draft→submitted→accepted|rejected, sales_order_id) + field_order_lines (indicative prices)   [built in 2.6a]
 Sync           devices (registration, revoked_at) · sync_inbox (client_txn_id unique, envelope, status, error_code) · sync_conflicts
 Marketplace    listings · rfqs(+items) · quotations · b2b_orders(+items) · fulfilments · disputes · marketplace_fees
 Integrations   connector_configurations · external_references · field_mappings · integration_inbox · integration_outbox · integration_runs · failed_messages · webhook_subscriptions · delivery_attempts

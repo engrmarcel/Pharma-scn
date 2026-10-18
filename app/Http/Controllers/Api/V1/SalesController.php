@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\FieldForce\Services\FieldForceScope;
 use App\Domain\Finance\Models\Payment;
 use App\Domain\Finance\Services\FinanceReports;
 use App\Domain\Finance\Services\PaymentService;
@@ -33,6 +34,7 @@ class SalesController extends Controller
         private readonly LocationAccess $locations,
         private readonly SalesOrderService $orders,
         private readonly FulfilmentService $fulfilment,
+        private readonly FieldForceScope $visibility,
     ) {}
 
     // ---- Price lists ----------------------------------------------------------
@@ -89,7 +91,7 @@ class SalesController extends Controller
     {
         Gate::authorize('sales.view');
 
-        return response()->json($this->locations->scope(Quotation::query()->with('lines'))->latest()->paginate(50));
+        return response()->json($this->visibility->scopeCustomers($this->locations->scope(Quotation::query()->with('lines')))->latest()->paginate(50));
     }
 
     public function storeQuotation(Request $request): JsonResponse
@@ -98,7 +100,7 @@ class SalesController extends Controller
         $data = $request->validate($this->documentRules() + ['valid_until' => ['nullable', 'date', 'after_or_equal:today']]);
         $this->locations->assertWarehouse($data['warehouse_id']);
 
-        return response()->json(['data' => $this->orders->createQuotation(Customer::query()->findOrFail($data['customer_id']), Warehouse::query()->findOrFail($data['warehouse_id']),
+        return response()->json(['data' => $this->orders->createQuotation($this->visibility->visibleCustomer($data['customer_id']), Warehouse::query()->findOrFail($data['warehouse_id']),
             $data['lines'], $data['valid_until'] ?? null, $data['notes'] ?? null)], 201);
     }
 
@@ -106,7 +108,7 @@ class SalesController extends Controller
     {
         Gate::authorize('sales.order');
 
-        return response()->json(['data' => $this->orders->convertQuotation(Quotation::query()->findOrFail($id))], 201);
+        return response()->json(['data' => $this->orders->convertQuotation($this->visibility->scopeCustomers(Quotation::query())->findOrFail($id))], 201);
     }
 
     public function salesOrders(Request $request): JsonResponse
@@ -114,7 +116,7 @@ class SalesController extends Controller
         Gate::authorize('sales.view');
         $f = $request->validate(['status' => ['nullable', 'string', 'max:24'], 'customer_id' => ['nullable', 'ulid']]);
 
-        return response()->json($this->locations->scope(SalesOrder::query()->with('lines'))
+        return response()->json($this->visibility->scopeCustomers($this->locations->scope(SalesOrder::query()->with('lines')))
             ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($f['customer_id'] ?? null, fn ($q, $v) => $q->where('customer_id', $v))
             ->latest()->paginate(50));
@@ -123,7 +125,7 @@ class SalesController extends Controller
     public function showSalesOrder(string $id): JsonResponse
     {
         Gate::authorize('sales.view');
-        $order = SalesOrder::query()->with('lines')->findOrFail($id);
+        $order = $this->visibility->scopeCustomers(SalesOrder::query()->with('lines'))->findOrFail($id);
         abort_unless($this->locations->canAccessWarehouse($order->warehouse_id), 404);
 
         return response()->json(['data' => $order->toArray() + [
@@ -138,7 +140,7 @@ class SalesController extends Controller
         $data = $request->validate($this->documentRules() + ['requested_date' => ['nullable', 'date']]);
         $this->locations->assertWarehouse($data['warehouse_id']);
 
-        return response()->json(['data' => $this->orders->createOrder(Customer::query()->findOrFail($data['customer_id']), Warehouse::query()->findOrFail($data['warehouse_id']),
+        return response()->json(['data' => $this->orders->createOrder($this->visibility->visibleCustomer($data['customer_id']), Warehouse::query()->findOrFail($data['warehouse_id']),
             $data['lines'], $data['requested_date'] ?? null, $data['notes'] ?? null)], 201);
     }
 
@@ -147,12 +149,12 @@ class SalesController extends Controller
         Gate::authorize('sales.order');
         $data = $request->validate(array_intersect_key($this->documentRules(), array_flip(['lines', 'lines.*.product_id', 'lines.*.quantity', 'lines.*.package_level_code', 'lines.*.unit_price', 'lines.*.discount_percent'])));
 
-        return response()->json(['data' => $this->orders->updateOrder(SalesOrder::query()->findOrFail($id), $data['lines'])]);
+        return response()->json(['data' => $this->orders->updateOrder($this->visibility->scopeCustomers(SalesOrder::query())->findOrFail($id), $data['lines'])]);
     }
 
     public function salesOrderAction(Request $request, string $id, string $action): JsonResponse
     {
-        $order = SalesOrder::query()->findOrFail($id);
+        $order = $this->visibility->scopeCustomers(SalesOrder::query())->findOrFail($id);
         $this->locations->assertWarehouse($order->warehouse_id);
         $reason = fn () => $request->validate(['reason' => ['required', 'string', 'max:2000']])['reason'];
 
@@ -198,7 +200,7 @@ class SalesController extends Controller
         Gate::authorize('sales.view');
         $f = $request->validate(['customer_id' => ['nullable', 'ulid'], 'payment_status' => ['nullable', Rule::in(['unpaid', 'partial', 'paid'])]]);
 
-        return response()->json(SalesInvoice::query()->with('lines')
+        return response()->json($this->visibility->scopeCustomers(SalesInvoice::query()->with('lines'))
             ->when($f['customer_id'] ?? null, fn ($q, $v) => $q->where('customer_id', $v))
             ->when($f['payment_status'] ?? null, fn ($q, $v) => $q->where('payment_status', $v))
             ->latest('invoice_date')->paginate(50));
@@ -207,7 +209,7 @@ class SalesController extends Controller
     public function showInvoice(string $id): JsonResponse
     {
         Gate::authorize('sales.view');
-        $invoice = SalesInvoice::query()->with('lines')->findOrFail($id);
+        $invoice = $this->visibility->scopeCustomers(SalesInvoice::query()->with('lines'))->findOrFail($id);
 
         return response()->json(['data' => $invoice->toArray() + [
             'open_balance' => $invoice->openBalance(),
@@ -258,7 +260,7 @@ class SalesController extends Controller
     public function customerStatement(Request $request, string $customerId, FinanceReports $reports): JsonResponse
     {
         Gate::authorize('sales.view');
-        $customer = Customer::query()->findOrFail($customerId);
+        $customer = $this->visibility->visibleCustomer($customerId);
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from']]);
 
         return response()->json(['data' => $reports->customerStatement($customer->id, $d['from'] ?? today()->subMonths(3)->toDateString(), $d['to'] ?? today()->toDateString())]);
@@ -267,6 +269,8 @@ class SalesController extends Controller
     public function receivablesAging(Request $request, FinanceReports $reports): JsonResponse
     {
         Gate::authorize('sales.view');
+        // Organization-wide figures: not for members restricted to assigned customers.
+        abort_unless($this->visibility->seesAllCustomers(), 403);
 
         return response()->json(['data' => $reports->receivablesAging($request->validate(['as_of' => ['nullable', 'date']])['as_of'] ?? today()->toDateString())]);
     }
