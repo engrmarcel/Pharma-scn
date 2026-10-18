@@ -20,7 +20,7 @@ Phases and acceptance criteria follow master spec §31 (`docs/source/MASTER_SPEC
 
 Each increment ships migrations, services, API, permissions, tests and docs before the next one starts.
 
-1. **2.0 Security carry-over:** TOTP MFA (required for platform roles; optional organization policy), email verification, password-reset test.
+1. **2.0 Security carry-over ✅:** TOTP two-factor with recovery codes (modes off / optional / required_for_platform_staff / required_for_all, default **off**), organization-level requirement, email verification (default **off**), self-registration, password-reset test.
 2. **2.1 Parties:** suppliers and customers (tenant), with contacts and credit terms.
 3. **2.2 Inventory core:**
    - `batches` (lot, manufacturing and expiry dates, quality/quarantine/recall status, source);

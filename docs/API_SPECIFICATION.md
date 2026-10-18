@@ -23,6 +23,9 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 |---|---|---|
 | GET | `/branding` | Display name, colours, support contacts |
 | POST | `/auth/tokens` | `{email, password, device_name}` → `{token, token_type, expires_at}` |
+| POST | `/auth/register` | `{name, email, password, password_confirmation, device_name}` → token. Sends a verification link only when verification is required |
+| POST | `/auth/tokens` (two-factor) | When two-factor is on and the user is enrolled: add `mfa_code` or `recovery_code`; without it the response is `401 mfa_required` |
+| GET | `/email/verify/{id}/{hash}` (web, signed) | Verification link target |
 | POST | `/auth/forgot-password` | Always returns the same message |
 | POST | `/auth/reset-password` | Revokes all existing tokens |
 
@@ -31,6 +34,10 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 |---|---|---|
 | GET | `/auth/me` | User, platform roles, memberships with roles |
 | GET | `/auth/tokens` · DELETE `/auth/tokens/{id}` · DELETE `/auth/tokens/current` | Device/session management |
+| GET | `/auth/security` | Policy, `email_verified`, `mfa_enabled`, `mfa_required` |
+| POST | `/auth/mfa/setup` `{password}` → `{secret, otpauth_uri, qr_svg}` · `/auth/mfa/confirm` `{code}` → recovery codes (shown once) | `403 mfa_disabled` while the platform mode is `off` |
+| DELETE | `/auth/mfa` `{password, code \| recovery_code}` · POST `/auth/mfa/recovery-codes` `{code}` | |
+| POST | `/auth/email/verification-notification` | Resend link (6/min) |
 | GET | `/reference/countries` · `/reference/organization-types` · `/reference/regulatory-authorities` · `/reference/catalogue` | |
 | POST | `/organizations` | Register an organization; caller becomes owner; default modules by type |
 | POST | `/invitations/accept` | `{token}`; must match the invited email |
@@ -75,6 +82,9 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET / POST | `/admin/operations/failed-jobs`, `…/{uuid}/retry` (payloads never returned) | `platform.operations.manage` |
 | GET | `/admin/users?q=` (identity fields only) | `platform.users.manage` |
 | GET / PATCH | `/admin/countries`, `/admin/countries/{code}` | `platform.settings.manage` |
+| GET / PUT | `/admin/security-settings` `{mfa_mode, email_verification_required}` | `platform.settings.manage` |
+| POST | `/admin/users/{id}/mfa-reset` `{reason}` | `platform.users.manage` |
+| PATCH | `/organization/security` `{require_mfa}` (tenant) | `organization.manage` |
 
 Tenant addition: `GET /organization/subscription` (plan, status, effective entitlements, usage), which needs `organization.billing.view`.
 
@@ -82,7 +92,7 @@ Public addition: `GET /health`, which returns `200 {"status":"ok","checks":{"dat
 
 ## Stable error codes (selection)
 
-`entitlement_limit_reached` (403), `subscription_inactive` (403), `module_not_entitled` (403), `synthetic_identifier_unverifiable` (422), `synthetic_identifier_rejected` (422), `organization_required` (400), `organization_access_denied` (403), `organization_suspended` (403), `account_suspended` (403), `module_not_enabled` (403), `organization_not_verified` (403), `review_conflict_of_interest` (403), `verification_conflict_of_interest` (403), `verification_documents_missing` (422), `verification_transition_invalid` (409), `product_version_conflict` (409), `package_hierarchy_invalid` (422), `gtin_invalid` (422), `product_identifier_duplicate` (409), `roles_invalid` (422), `last_owner` (409), `invitation_invalid` (404), `invitation_email_mismatch` (403), `idempotency_key_required|invalid` (400), `idempotency_key_reused` (422), `idempotency_request_in_progress` (409).
+`mfa_required` (401), `mfa_code_invalid` (401/422), `mfa_disabled` (403), `mfa_enrollment_required` (403/409), `mfa_required_by_policy` (403), `email_unverified` (403), `entitlement_limit_reached` (403), `subscription_inactive` (403), `module_not_entitled` (403), `synthetic_identifier_unverifiable` (422), `synthetic_identifier_rejected` (422), `organization_required` (400), `organization_access_denied` (403), `organization_suspended` (403), `account_suspended` (403), `module_not_enabled` (403), `organization_not_verified` (403), `review_conflict_of_interest` (403), `verification_conflict_of_interest` (403), `verification_documents_missing` (422), `verification_transition_invalid` (409), `product_version_conflict` (409), `package_hierarchy_invalid` (422), `gtin_invalid` (422), `product_identifier_duplicate` (409), `roles_invalid` (422), `last_owner` (409), `invitation_invalid` (404), `invitation_email_mismatch` (403), `idempotency_key_required|invalid` (400), `idempotency_key_reused` (422), `idempotency_request_in_progress` (409).
 
 ## Example: register, upload, submit
 

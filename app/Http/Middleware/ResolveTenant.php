@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Access\Services\AccessControl;
+use App\Domain\Access\Services\SecurityPolicy;
+use App\Domain\Access\Services\TwoFactorService;
 use App\Domain\Organizations\Models\OrganizationMembership;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
@@ -25,6 +27,8 @@ class ResolveTenant
     public function __construct(
         private readonly TenantContext $tenant,
         private readonly AccessControl $access,
+        private readonly SecurityPolicy $policy,
+        private readonly TwoFactorService $twoFactor,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -55,6 +59,11 @@ class ResolveTenant
 
         if (! $membership->organization->isActive()) {
             throw new BusinessRuleViolation('organization_suspended', 'This organization is suspended. Contact platform support.', 403);
+        }
+
+        // Organization-level two-factor requirement (only effective when the platform policy allows two-factor).
+        if ($this->policy->mfaRequiredFor($user, $membership->organization) && ! $this->twoFactor->isEnabled($user)) {
+            throw new BusinessRuleViolation('mfa_enrollment_required', 'This organization requires two-factor authentication. Set it up to continue.', 403);
         }
 
         $this->tenant->set($membership->organization, $membership);

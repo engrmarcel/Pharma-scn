@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Domain\Access\Services\SecurityPolicy;
+use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Models\User;
@@ -52,6 +54,21 @@ class WebInterfaceTest extends FeatureTestCase
             ->assertSee('Visiblemox')
             ->call('select', $active->id)
             ->assertSee('Active ingredients');
+    }
+
+    public function test_account_security_page_reflects_policy(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)->test(SecuritySettings::class)
+            ->assertSee('not enabled on this platform');
+
+        app(SecurityPolicy::class)->update(['mfa_mode' => 'optional'], $user);
+
+        Livewire::actingAs($user)->test(SecuritySettings::class)
+            ->set('password', 'wrong')->call('startSetup')->assertHasErrors('password')
+            ->set('password', 'password')->call('startSetup')
+            ->assertSee('Scan this code');
     }
 
     public function test_verification_queue_is_restricted_to_platform_staff(): void

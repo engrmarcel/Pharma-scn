@@ -26,6 +26,7 @@
                 <nav class="flex items-center gap-5 text-sm">
                     <a href="{{ route('dashboard') }}" class="hover:underline">Dashboard</a>
                     <a href="{{ route('catalogue') }}" class="hover:underline">Catalogue</a>
+                    <a href="{{ route('account.security') }}" class="hover:underline">Security</a>
                     @can('platform.organizations.view')
                         <a href="{{ route('admin.verifications') }}" class="hover:underline">Verification queue</a>
                     @endcan

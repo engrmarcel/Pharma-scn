@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Api\V1\Admin\CatalogueAdminController;
 use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
@@ -32,13 +33,22 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     Route::middleware('throttle:auth')->prefix('auth')->group(function () {
         Route::post('tokens', [AuthController::class, 'issueToken'])->name('auth.tokens.issue');
+        Route::post('register', [AuthController::class, 'register'])->name('auth.register');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('auth.forgot');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('auth.reset');
     });
 
     // Authenticated, no tenant
-    Route::middleware(['auth:sanctum', 'active', 'throttle:api'])->group(function () {
+    Route::middleware(['auth:sanctum', 'active', 'secure', 'throttle:api'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
+
+        // Reachable before the account satisfies the security policy (see EnsureAccountSecurity).
+        Route::get('auth/security', [AccountSecurityController::class, 'status'])->name('auth.mfa.status');
+        Route::post('auth/mfa/setup', [AccountSecurityController::class, 'setupMfa'])->middleware('throttle:10,1')->name('auth.mfa.setup');
+        Route::post('auth/mfa/confirm', [AccountSecurityController::class, 'confirmMfa'])->middleware('throttle:10,1')->name('auth.mfa.confirm');
+        Route::delete('auth/mfa', [AccountSecurityController::class, 'disableMfa'])->middleware('throttle:10,1')->name('auth.mfa.disable');
+        Route::post('auth/mfa/recovery-codes', [AccountSecurityController::class, 'regenerateRecoveryCodes'])->middleware('throttle:10,1')->name('auth.mfa.recovery-codes');
+        Route::post('auth/email/verification-notification', [AccountSecurityController::class, 'resendVerification'])->middleware('throttle:6,1')->name('auth.email.resend');
         Route::get('auth/tokens', [AuthController::class, 'tokens'])->name('auth.tokens.index');
         Route::delete('auth/tokens/current', [AuthController::class, 'logout'])->name('auth.logout');
         Route::delete('auth/tokens/{tokenId}', [AuthController::class, 'revokeToken'])->whereNumber('tokenId')->name('auth.tokens.revoke');
@@ -91,6 +101,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
             Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
             Route::get('organization/subscription', [SubscriptionController::class, 'current'])->name('organization.subscription');
+            Route::patch('organization/security', [AccountSecurityController::class, 'updateOrganizationSecurity'])->name('organization.security');
         });
 
         // Platform administration
@@ -112,6 +123,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('product-change-requests/{changeRequest}/reject', [CatalogueAdminController::class, 'rejectChangeRequest'])->whereUlid('changeRequest')->name('product-change-requests.reject');
 
             Route::put('branding', [PlatformAdminController::class, 'updateBranding'])->name('branding.update');
+            Route::get('security-settings', [AccountSecurityController::class, 'platformSettings'])->name('security-settings.show');
+            Route::put('security-settings', [AccountSecurityController::class, 'updatePlatformSettings'])->name('security-settings.update');
+            Route::post('users/{user}/mfa-reset', [AccountSecurityController::class, 'resetUserMfa'])->whereNumber('user')->name('users.mfa-reset');
             Route::post('users/{user}/suspend', [PlatformAdminController::class, 'suspendUser'])->whereNumber('user')->name('users.suspend');
             Route::post('users/{user}/reactivate', [PlatformAdminController::class, 'reactivateUser'])->whereNumber('user')->name('users.reactivate');
             Route::get('audit-logs', [AuditLogController::class, 'platform'])->name('audit-logs.index');

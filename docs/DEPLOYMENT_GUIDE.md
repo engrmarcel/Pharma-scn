@@ -35,6 +35,14 @@ XAMPP is a development convenience only. Its MariaDB 10.4 is end-of-life and is 
 
 Settings: `APP_ENV=production`, `APP_DEBUG=false`, `LOG_CHANNEL=json` (structured JSON to stderr; every record carries `correlation_id`), `LOG_LEVEL=info`.
 
+### Switching on two-factor and email verification
+
+Both are off after deployment. When you are ready:
+1. Make sure mail delivery works (`MAIL_*`); verification links and resets depend on it.
+2. A platform super admin enrols their own two-factor (web **Security** page or `POST /api/v1/auth/mfa/setup` + `/confirm`).
+3. `PUT /api/v1/admin/security-settings` with `{"mfa_mode": "required_for_platform_staff"}` (or `optional` / `required_for_all`) and/or `{"email_verification_required": true}`. Alternatively set `SECURITY_MFA_MODE` / `SECURITY_EMAIL_VERIFICATION_REQUIRED` and run `php artisan config:cache`.
+4. To roll back, set the mode back to `off` / `false`. No data is lost.
+
 ### Health and monitoring
 - `GET /up` is the liveness check (framework).
 - `GET /api/v1/health` is the readiness check (database, cache and storage, returning 503 when degraded). Point the load balancer at it.

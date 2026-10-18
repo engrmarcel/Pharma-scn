@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AssignCorrelationId;
 use App\Http\Middleware\EnforceIdempotency;
+use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveTenant;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => EnsureModuleEnabled::class,
             'idempotent' => EnforceIdempotency::class,
             'active' => EnsureUserIsActive::class,
+            'secure' => EnsureAccountSecurity::class,
         ]);
 
         // Tenant resolution must follow authentication and precede route-model

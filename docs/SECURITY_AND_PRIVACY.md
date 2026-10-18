@@ -28,11 +28,41 @@
 - Storing a regulatory identifier records a **claim**. Verification is a separate, evidenced, append-only record made by someone with `regulatory.verify`, who cannot be the submitter.
 - Synthetic data follows spec §32. Demo regulatory identifiers use the reserved `DEMO-` prefix (tests use `TEST-` or `ZZ-FIXTURE…`), are held by "FICTIONAL DEMO HOLDER", and belong to products described as synthetic. The service **refuses to mark any `DEMO-`/`TEST-` identifier verified** and rejects these prefixes entirely in production.
 
+## Two-factor authentication and email verification (OFF by default)
+
+Both controls ship **disabled**, at the owner's request, and are switched on deliberately after deployment.
+
+| Setting | Values | Default |
+|---|---|---|
+| `mfa_mode` | `off` · `optional` (users may enrol; organizations may require it for their members) · `required_for_platform_staff` · `required_for_all` | `off` |
+| `email_verification_required` | `true` / `false` | `false` |
+
+There are two ways to switch them:
+- Set `SECURITY_MFA_MODE` and `SECURITY_EMAIL_VERIFICATION_REQUIRED` in the environment.
+- Change them **at runtime without a redeploy**: `PUT /api/v1/admin/security-settings` (needs `platform.settings.manage`). This is audited and overrides the environment values.
+
+Behaviour:
+- **Two-factor login** uses RFC 6238 time-based codes (any authenticator app):
+  - The secret is encrypted at rest. A code is accepted only once (the last-used time step is tracked under a row lock), with ±30 s tolerance for clock drift.
+  - There are 8 single-use recovery codes, stored as SHA-256 hashes inside an encrypted column.
+  - Setup requires the account password. Turning it off requires the password plus a code, and is refused when policy requires two-factor for the user.
+- **Login challenge:**
+  - API: `POST /auth/tokens` returns `401 mfa_required` until `mfa_code` or `recovery_code` is supplied.
+  - Web: after the password step, a separate challenge page is valid for 5 minutes.
+- **When the platform mode is `off`, nobody is challenged.** Enrolments are kept, so turning it back on resumes challenges.
+- **Unenrolled users under a mandatory mode** can only reach their profile, sign-out and two-factor setup (`403 mfa_enrollment_required` elsewhere).
+- **Organization requirements:**
+  - An organization requirement (`PATCH /organization/security`) applies only while acting in that organization, and only when the platform mode is not `off`.
+  - The person enabling a requirement must be enrolled themselves, to avoid lock-out.
+- **Lost device:** platform staff reset a user's two-factor with `POST /admin/users/{id}/mfa-reset` (reason required, audited, all tokens revoked).
+- **Email verification:**
+  - Sign-up (`POST /auth/register`) sends a signed verification link only when verification is required.
+  - Unverified users can then only view their profile, resend the link and sign out (`403 email_unverified`).
+
 ## Gaps and planned controls
 
 | Gap | Plan |
 |---|---|
-| MFA not enforced | TOTP in Phase 1B; required for platform roles and optionally by organization policy |
 | No upload malware scanning | ClamAV (or a cloud scanner) via a queued job that updates `scan_status`; block downloads of `infected` files |
 | Content-Security-Policy not set | Add once the asset pipeline is final (Livewire needs nonce support) |
 | Dependency scanning | `composer audit` and `npm audit` in CI |

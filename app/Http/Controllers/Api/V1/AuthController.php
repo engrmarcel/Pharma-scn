@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Access\Services\SecurityPolicy;
+use App\Domain\Access\Services\TwoFactorService;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\MembershipResource;
@@ -18,7 +20,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly AuditLogger $audit) {}
+    public function __construct(
+        private readonly AuditLogger $audit,
+        private readonly SecurityPolicy $policy,
+        private readonly TwoFactorService $twoFactor,
+    ) {}
 
     public function issueToken(Request $request): JsonResponse
     {
@@ -26,6 +32,8 @@ class AuthController extends Controller
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:100'],
+            'mfa_code' => ['nullable', 'string', 'max:10'],
+            'recovery_code' => ['nullable', 'string', 'max:20'],
         ]);
 
         $user = User::query()->where('email', strtolower($data['email']))->first();
@@ -37,17 +45,65 @@ class AuthController extends Controller
             throw new BusinessRuleViolation('account_suspended', 'This account is suspended.', 403);
         }
 
-        $token = $user->createToken($data['device_name'], ['*'], now()->addDays(30));
+        // Enrolled users are challenged whenever the platform has two-factor switched on.
+        if ($this->policy->mfaAvailable() && $this->twoFactor->isEnabled($user)) {
+            if (blank($data['mfa_code'] ?? null) && blank($data['recovery_code'] ?? null)) {
+                throw new BusinessRuleViolation('mfa_required', 'Enter the code from your authenticator app (or a recovery code).', 401, ['methods' => ['mfa_code', 'recovery_code']]);
+            }
+            if (! $this->twoFactor->verifyChallenge($user, $data['mfa_code'] ?? null, $data['recovery_code'] ?? null)) {
+                $this->audit->record('auth.mfa_challenge_failed', $user, organizationId: false);
+                throw new BusinessRuleViolation('mfa_code_invalid', 'The authentication code is invalid or expired.', 401);
+            }
+        }
+
+        return $this->tokenResponse($user, $data['device_name']);
+    }
+
+    /** Self-service sign-up. The account can then register or join organizations. */
+    public function register(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email:rfc', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'max:32'],
+            'password' => ['required', 'confirmed', PasswordRule::min(10)->letters()->numbers()],
+            'device_name' => ['required', 'string', 'max:100'],
+        ]);
+
+        $user = User::query()->create([
+            'name' => $data['name'],
+            'email' => strtolower($data['email']),
+            'phone' => $data['phone'] ?? null,
+            'password' => $data['password'],
+        ]);
+
+        Auth::setUser($user);
+        $this->audit->record('auth.registered', $user, organizationId: false);
+
+        if ($this->policy->emailVerificationRequired()) {
+            $user->sendEmailVerificationNotification();
+        }
+
+        return $this->tokenResponse($user, $data['device_name']);
+    }
+
+    private function tokenResponse(User $user, string $deviceName): JsonResponse
+    {
+        $token = $user->createToken($deviceName, ['*'], now()->addDays(30));
         $user->forceFill(['last_login_at' => now()])->save();
 
         Auth::setUser($user);
-        $this->audit->record('auth.token_issued', $user, metadata: ['device_name' => $data['device_name'], 'token_id' => $token->accessToken->id], organizationId: false);
+        $this->audit->record('auth.token_issued', $user, metadata: ['device_name' => $deviceName, 'token_id' => $token->accessToken->id], organizationId: false);
 
         return response()->json([
             'data' => [
                 'token' => $token->plainTextToken,
                 'token_type' => 'Bearer',
                 'expires_at' => $token->accessToken->expires_at?->toIso8601String(),
+                // Lets clients route straight to verification / two-factor setup when the policy requires it.
+                'email_verified' => $user->email_verified_at !== null,
+                'email_verification_required' => $this->policy->emailVerificationRequired(),
+                'mfa_enrollment_required' => $this->policy->mfaRequiredFor($user) && ! $this->twoFactor->isEnabled($user),
             ],
         ], 201);
     }

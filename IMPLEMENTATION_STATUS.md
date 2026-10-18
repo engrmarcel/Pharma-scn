@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ (against §31 acceptance criteria; open items below) · Phase 2: Product Master done early; ERP, POS and field force not started.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 in progress: Product Master ✅ (done early), 2.0 account security ✅; ERP, POS and field force not started.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -19,7 +19,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **98 tests, 420 assertions, all passing** (MariaDB `pharma_network_test`).
+- `php artisan test`: **110 tests, 512 assertions, all passing** (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -42,8 +42,9 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 |---|---|---|
 | Branding (platform + permitted organization keys) | ✅ | |
 | Token auth, device revoke, logout; web login; throttling | ✅ | |
-| Password reset | 🟡 | Wired; no automated test yet |
-| Email verification, MFA | ⬜ | Carried to Phase 2.0. Privileged operations currently rely on RBAC only (§8.3 asks for extra protection) |
+| Password reset | ✅ | Revokes all tokens; no account enumeration |
+| Email verification, two-factor (TOTP + recovery codes) | ✅ | **OFF by default**; switchable via env or `PUT /admin/security-settings`; organization-level requirement; platform reset for lost devices |
+| Self-service registration | ✅ | `POST /auth/register` |
 | Account suspension (revokes tokens and sessions) | ✅ | |
 | Multi-tenancy (fail-closed scope, resolution, jobs, files) | ✅ | |
 | RBAC: registry, all §5.2 roles, organization-scoped evaluation | ✅ | Custom-role CRUD endpoints not built (model supports it) |
