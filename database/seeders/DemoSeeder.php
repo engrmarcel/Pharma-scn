@@ -12,9 +12,16 @@ use App\Domain\FieldForce\Services\FieldOrderService;
 use App\Domain\FieldForce\Services\TerritoryService;
 use App\Domain\FieldForce\Services\VisitService;
 use App\Domain\Inventory\Services\DirectReceiptService;
+use App\Domain\Marketplace\Models\MarketplaceOrder;
+use App\Domain\Marketplace\Models\MarketplaceShipment;
+use App\Domain\Marketplace\Services\ListingService;
+use App\Domain\Marketplace\Services\MarketplaceFulfilmentService;
+use App\Domain\Marketplace\Services\MarketplaceOrderService;
+use App\Domain\Marketplace\Services\RelationshipService;
 use App\Domain\Organizations\Enums\VerificationStatus;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
+use App\Domain\Organizations\Models\OrganizationModule;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
 use App\Domain\Parties\Models\Customer;
@@ -82,6 +89,7 @@ class DemoSeeder extends Seeder
         $this->purchasing();
         $this->pointOfSale();
         $this->fieldForce();
+        $this->marketplace();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -317,6 +325,67 @@ class DemoSeeder extends Seeder
             $visits->checkOut($visit, ['check_out' => ['occurred_at' => $at->copy()->addMinutes(15)->toIso8601String(), 'location_status' => 'denied', 'device' => $device],
                 'outcome' => 'rescheduled', 'next_action' => 'Return with the pharmacist present', 'follow_up_date' => today()->addDays(5)->toDateString()]);
         }, $rep2);
+    }
+
+    /**
+     * Marketplace demo (spec §14, §32): the distributor lists two products, the community
+     * pharmacy trades with it, and one order runs through acceptance, shipment, receipt
+     * and invoice. Prices and quantities are synthetic.
+     */
+    private function marketplace(): void
+    {
+        $dist = Organization::query()->where('name', 'Demo National Distribution Ltd')->first();
+        $pharmacy = Organization::query()->where('name', 'Demo Community Pharmacy')->first();
+        if ($dist === null || $pharmacy === null || MarketplaceOrder::query()->where('supplier_organization_id', $dist->id)->exists()) {
+            return;
+        }
+        foreach (Organization::query()->whereIn('name', ['Demo National Distribution Ltd', 'Demo Community Pharmacy', 'Demo Wholesale Medicines', 'Demo General Hospital'])->get() as $org) {
+            if (! OrganizationModule::query()->where('organization_id', $org->id)->where('module', 'marketplace')->exists()) {
+                OrganizationModule::query()->create(['organization_id' => $org->id, 'module' => 'marketplace', 'enabled' => true]);
+            }
+        }
+        $owner = fn (Organization $org) => $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->with('user')->firstOrFail();
+        [$distOwner, $phOwner] = [$owner($dist), $owner($pharmacy)];
+        $context = app(TenantContext::class);
+
+        Auth::setUser($distOwner->user);
+        $listings = $context->runAs($dist, function () {
+            $service = app(ListingService::class);
+            $service->saveProfile(['listed' => true, 'headline' => 'SYNTHETIC DEMO: nationwide pharmaceutical distribution', 'regions_served' => ['Lagos', 'Ogun', 'Oyo'],
+                'delivery_options' => ['delivery', 'pickup'], 'minimum_order_value' => '5000', 'contact_email' => 'marketplace.distributor@demo.test']);
+
+            return [
+                $service->save(null, ['product_id' => Product::query()->where('generic_name', 'Paracetamol')->value('id'), 'package_level_code' => 'blister', 'unit_price' => '70', 'minimum_order_quantity' => '2', 'lead_time_days' => 2]),
+                $service->save(null, ['product_id' => Product::query()->where('generic_name', 'Oral rehydration salts')->value('id'), 'package_level_code' => 'box', 'unit_price' => '1800',
+                    'minimum_order_quantity' => '1', 'availability_mode' => 'declared', 'declared_availability' => 'in_stock']),
+            ];
+        }, $distOwner);
+
+        Auth::setUser($phOwner->user);
+        $relationship = $context->runAs($pharmacy, fn () => app(RelationshipService::class)->request($dist, 'SYNTHETIC DEMO: weekly replenishment'), $phOwner);
+        Auth::setUser($distOwner->user);
+        $context->runAs($dist, fn () => app(RelationshipService::class)->decide($relationship, true, 'Approved for demo trading', 30), $distOwner);
+
+        Auth::setUser($phOwner->user);
+        $order = $context->runAs($pharmacy, function () use ($listings, $dist, $phOwner) {
+            $orders = app(MarketplaceOrderService::class);
+            $order = $orders->createFromListings($dist, [['listing_id' => $listings[0]->id, 'quantity' => '2']],
+                Warehouse::query()->where('code', 'WH-MAIN')->value('id'), null, 'SYNTHETIC DEMO ORDER');
+
+            return $orders->submit($order, $phOwner->user);
+        }, $phOwner);
+
+        Auth::setUser($distOwner->user);
+        $shipment = $context->runAs($dist, function () use ($order) {
+            app(MarketplaceOrderService::class)->accept($order, null, 'Demo acceptance');
+
+            return app(MarketplaceFulfilmentService::class)->ship($order, [['order_line_id' => $order->lines()->value('id'), 'quantity' => '2']], 'Demo Haulage', 'DEMO-TRK-0001');
+        }, $distOwner);
+
+        Auth::setUser($phOwner->user);
+        $context->runAs($pharmacy, fn () => app(MarketplaceFulfilmentService::class)->receive(MarketplaceShipment::query()->findOrFail($shipment->id)), $phOwner);
+        Auth::setUser($distOwner->user);
+        $context->runAs($dist, fn () => app(MarketplaceFulfilmentService::class)->invoice(MarketplaceOrder::query()->findOrFail($order->id)), $distOwner);
     }
 
     private function products(User $admin): void

@@ -27,7 +27,9 @@ use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\Inventory\Models\StockCount;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Services\LocationAccess;
+use App\Domain\Marketplace\Models\MarketplaceDispute;
 use App\Domain\Marketplace\Models\MarketplaceListing;
+use App\Domain\Marketplace\Models\MarketplaceOrder;
 use App\Domain\Marketplace\Models\MarketplaceProfile;
 use App\Domain\Marketplace\Models\TradingRelationship;
 use App\Domain\Organizations\Models\Branch;
@@ -149,6 +151,8 @@ class AppServiceProvider extends ServiceProvider
             'marketplace_profile' => MarketplaceProfile::class,
             'marketplace_listing' => MarketplaceListing::class,
             'trading_relationship' => TradingRelationship::class,
+            'marketplace_order' => MarketplaceOrder::class,
+            'marketplace_dispute' => MarketplaceDispute::class,
             'sync_issue' => SyncIssue::class,
             'attachment' => Attachment::class,
         ]);

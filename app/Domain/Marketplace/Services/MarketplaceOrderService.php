@@ -133,6 +133,7 @@ class MarketplaceOrderService
             }
             $po = $this->purchaseOrders->submitOrder($po, $user);
             $locked->forceFill(['buyer_purchase_order_id' => $po->id])->save();
+            $this->mapLines($locked, $po->lines()->get(), 'buyer_purchase_order_line_id');
 
             return $this->afterBuyerApproval($locked, $po);
         });
@@ -183,14 +184,19 @@ class MarketplaceOrderService
                 $this->access->assertMayObtain($buyer, $this->tenant->organization(), $line->product_id); // re-checked: verification may have changed
             }
 
+            // Fulfilment warehouse: as chosen, else the listing's, else the one holding most sellable stock of these products.
             $warehouse = $warehouseId ? Warehouse::query()->findOrFail($warehouseId)
                 : Warehouse::query()->whereIn('id', MarketplaceListing::query()->whereIn('id', $locked->lines()->pluck('marketplace_listing_id')->filter())->pluck('warehouse_id')->filter())->first()
+                ?? Warehouse::query()->whereKey(DB::table('inventory_balances')->where('organization_id', $this->tenant->id())->where('stock_state', 'available')
+                    ->whereIn('product_id', $locked->lines()->pluck('product_id'))->groupBy('warehouse_id')
+                    ->orderByRaw('SUM(quantity - reserved_quantity) DESC')->value('warehouse_id'))->first()
                 ?? Warehouse::query()->orderBy('code')->firstOrFail();
             $sales = $this->salesOrders->createOrder(Customer::query()->findOrFail($relationship->supplier_customer_id), $warehouse,
                 $locked->lines()->get()->map(fn ($l) => ['product_id' => $l->product_id, 'package_level_code' => $l->package_level_code, 'quantity' => (string) $l->quantity,
                     'unit_price' => (string) $l->unit_price, '_quoted' => true])->all(),
                 $locked->requested_date?->toDateString(), "Marketplace order {$locked->number} from {$buyer->name}");
             $sales = $this->salesOrders->confirm($sales);
+            $this->mapLines($locked, $sales->lines()->get(), 'supplier_sales_order_line_id');
 
             $locked->forceFill(['status' => 'accepted', 'supplier_sales_order_id' => $sales->id, 'decided_by' => Auth::id(), 'decided_at' => now(), 'decision_notes' => $notes])->save();
             $this->audit->record('marketplace_order.accepted', $sales, new: ['order' => $locked->number, 'sales_order' => $sales->number, 'sales_order_status' => $sales->status]);
@@ -291,6 +297,21 @@ class MarketplaceOrderService
                 $this->purchaseOrders->cancel($po, "[via marketplace] {$reason}");
             }
         });
+    }
+
+    /** Link each marketplace line to the matching ERP line (same product and pack, in order). */
+    private function mapLines(MarketplaceOrder $order, $erpLines, string $column): void
+    {
+        $pool = $erpLines->values()->all();
+        foreach ($order->lines()->orderBy('id')->get() as $line) {
+            foreach ($pool as $k => $erp) {
+                if ($erp->product_id === $line->product_id && $erp->package_level_code === $line->package_level_code) {
+                    $line->forceFill([$column => $erp->id])->save();
+                    unset($pool[$k]);
+                    break;
+                }
+            }
+        }
     }
 
     /** The buyer receives into its own catalogue, so the product is added there if missing. */

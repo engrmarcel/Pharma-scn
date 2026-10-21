@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Api\V1\Admin\CatalogueAdminController;
+use App\Http\Controllers\Api\V1\Admin\MarketplaceAdminController;
 use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
@@ -15,6 +16,7 @@ use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
+use App\Http\Controllers\Api\V1\MarketplaceFulfilmentController;
 use App\Http\Controllers\Api\V1\MarketplaceTradingController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
@@ -234,6 +236,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('orders', [MarketplaceTradingController::class, 'storeOrder'])->name('orders.store');
                 Route::get('orders/{id}', [MarketplaceTradingController::class, 'order'])->whereUlid('id')->name('orders.show');
                 Route::post('orders/{id}/{action}', [MarketplaceTradingController::class, 'orderAction'])->whereUlid('id')->whereIn('action', ['submit', 'approve', 'disapprove', 'accept', 'reject', 'cancel'])->name('orders.action');
+
+                Route::get('orders/{id}/shipments', [MarketplaceFulfilmentController::class, 'shipments'])->whereUlid('id')->name('orders.shipments.index');
+                Route::post('orders/{id}/shipments', [MarketplaceFulfilmentController::class, 'ship'])->whereUlid('id')->middleware('idempotent:required')->name('orders.shipments.store');
+                Route::post('shipments/{id}/receive', [MarketplaceFulfilmentController::class, 'receive'])->whereUlid('id')->middleware('idempotent:required')->name('shipments.receive');
+                Route::get('orders/{id}/invoices', [MarketplaceFulfilmentController::class, 'invoices'])->whereUlid('id')->name('orders.invoices.index');
+                Route::post('orders/{id}/invoices', [MarketplaceFulfilmentController::class, 'invoice'])->whereUlid('id')->middleware('idempotent:required')->name('orders.invoices.store');
+                Route::post('invoices/{id}/record', [MarketplaceFulfilmentController::class, 'recordSupplierInvoice'])->whereUlid('id')->name('invoices.record');
+                Route::get('orders/{id}/history', [MarketplaceFulfilmentController::class, 'history'])->whereUlid('id')->name('orders.history');
+                Route::get('fees', [MarketplaceFulfilmentController::class, 'fees'])->name('fees');
+                Route::get('disputes', [MarketplaceFulfilmentController::class, 'disputes'])->name('disputes.index');
+                Route::post('orders/{id}/disputes', [MarketplaceFulfilmentController::class, 'raiseDispute'])->whereUlid('id')->name('disputes.store');
+                Route::get('disputes/{id}', [MarketplaceFulfilmentController::class, 'dispute'])->whereUlid('id')->name('disputes.show');
+                Route::post('disputes/{id}/{action}', [MarketplaceFulfilmentController::class, 'disputeAction'])->whereUlid('id')->whereIn('action', ['messages', 'escalate', 'resolve', 'return'])->name('disputes.action');
             });
 
             // Devices and offline synchronization (spec §13).
@@ -365,6 +380,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Platform administration
         Route::prefix('admin')->name('admin.')->middleware('idempotent')->group(function () {
+            Route::get('marketplace/fees', [MarketplaceAdminController::class, 'fees'])->name('marketplace.fees');
+            Route::post('marketplace/fees/{id}/waive', [MarketplaceAdminController::class, 'waive'])->whereUlid('id')->name('marketplace.fees.waive');
+            Route::get('marketplace/disputes', [MarketplaceAdminController::class, 'disputes'])->name('marketplace.disputes');
+            Route::post('marketplace/disputes/{id}/notes', [MarketplaceAdminController::class, 'note'])->whereUlid('id')->name('marketplace.disputes.notes');
             Route::get('organizations', [OrganizationAdminController::class, 'index'])->name('organizations.index');
             Route::get('organizations/{organization}', [OrganizationAdminController::class, 'show'])->whereUlid('organization')->name('organizations.show');
             Route::get('organizations/{organization}/documents/{attachmentId}', [OrganizationAdminController::class, 'downloadDocument'])->whereUlid(['organization', 'attachmentId'])->name('organizations.documents.download');

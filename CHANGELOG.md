@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 4c, marketplace fulfilment, invoicing, fees and disputes (Phase 4 complete)
+- Shipments are posted through the supplier's sales-order delivery (FEFO, cost of goods) and carry batch numbers and expiries, plus carrier and tracking. The buyer receives into its purchase order with those batches, and short receipts are flagged.
+- The supplier invoices delivered quantities; the buyer records the supplier invoice in its own books, three-way matched. Payment status is read from the supplier's receivables and labelled.
+- Fees: an append-only ledger (`marketplace_fees`) charged on net invoiced value (`MARKETPLACE_FEE_PERCENT`, default 1.5%). Suppliers see a fee statement; platform staff see the ledger by supplier and can waive a fee with a reason. Amounts are never edited.
+- Disputes: raised by either side, with messages. The supplier resolves (credit note in its books, returned goods restocked as quarantined; or a replacement or reasoned rejection). The buyer posts the supplier return in its own books. Either side can escalate; the platform comments but does not post.
+- Order history timeline. Synthetic demo: the distributor lists two products and an order with the community pharmacy runs through receipt and invoice.
+- Fix: when accepting without a chosen warehouse, the supplier now fulfils from the warehouse holding the most sellable stock of the ordered products. Found while building the demo.
+- 205 tests passing.
+
 ### 2026-10-23: Phase 4b, RFQs, quotations and B2B orders
 - RFQs: draft, then open to invited suppliers (who do not see each other), then closed, awarded or cancelled. Restrictions are checked per supplier and product when inviting.
 - Quotations: answers to RFQ lines, or direct quotes to buyers with an approved relationship. A newer quote replaces the earlier one; quotes can be withdrawn, rejected or accepted. Comparison shows every offer per line, cheapest first. Accepting creates a draft order at the quoted prices and awards the RFQ.
