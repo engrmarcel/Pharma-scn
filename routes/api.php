@@ -54,6 +54,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::middleware('connector')->prefix('integration/inbound')->name('integration.inbound.')->group(function () {
         Route::get('ping', [IntegrationInboundController::class, 'ping'])->name('ping');
         Route::post('messages', [IntegrationInboundController::class, 'store'])->name('messages.store');
+        Route::post('files', [IntegrationInboundController::class, 'file'])->name('files.store');
+        Route::post('idoc', [IntegrationInboundController::class, 'idoc'])->name('idoc.store');
         Route::get('messages/{messageId}', [IntegrationInboundController::class, 'message'])->where('messageId', '[A-Za-z0-9._:\/-]{1,128}')->name('messages.show');
         Route::get('runs/{runId}', [IntegrationInboundController::class, 'run'])->whereUlid('runId')->name('runs.show');
     });
@@ -264,6 +266,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Enterprise integration gateway (spec §15).
             Route::middleware('module:integrations')->prefix('integration')->name('integration.')->group(function () {
                 Route::get('canonical-model', [IntegrationController::class, 'canonicalModel'])->name('canonical-model');
+                Route::get('mapping-templates', [IntegrationController::class, 'mappingTemplates'])->name('mapping-templates');
                 Route::get('health', [IntegrationController::class, 'health'])->name('health');
                 Route::get('connectors', [IntegrationController::class, 'connectors'])->name('connectors.index');
                 Route::post('connectors', [IntegrationController::class, 'storeConnector'])->name('connectors.store');
@@ -276,6 +279,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('connectors/{id}/mappings', [IntegrationController::class, 'mappings'])->whereUlid('id')->name('connectors.mappings');
                 Route::put('connectors/{id}/mappings/{entity}', [IntegrationController::class, 'replaceMappings'])->whereUlid('id')->where('entity', '[a-z_]+')->name('connectors.mappings.replace');
                 Route::post('connectors/{id}/mappings/{entity}/preview', [IntegrationController::class, 'previewMappings'])->whereUlid('id')->where('entity', '[a-z_]+')->name('connectors.mappings.preview');
+                Route::post('connectors/{id}/mappings/{entity}/template', [IntegrationController::class, 'applyTemplate'])->whereUlid('id')->where('entity', '[a-z_]+')->name('connectors.mappings.template');
+                Route::post('connectors/{id}/files', [IntegrationController::class, 'uploadFile'])->whereUlid('id')->name('connectors.files');
+                Route::post('connectors/{id}/sftp/poll', [IntegrationController::class, 'pollSftp'])->whereUlid('id')->name('connectors.sftp.poll');
+                Route::get('connectors/{id}/exports/{dataset}', [IntegrationController::class, 'export'])->whereUlid('id')->whereIn('dataset', ['inventory', 'catalogue'])->name('connectors.exports');
                 Route::get('connectors/{id}/reconciliation/inventory', [IntegrationController::class, 'inventoryReconciliation'])->whereUlid('id')->name('connectors.reconciliation.inventory');
                 Route::get('messages', [IntegrationController::class, 'messages'])->name('messages.index');
                 Route::get('messages/{id}', [IntegrationController::class, 'message'])->whereNumber('id')->name('messages.show');

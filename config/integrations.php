@@ -34,6 +34,12 @@ return [
     // A message stuck in "processing" this long (worker crash) is picked up again.
     'stale_processing_minutes' => 15,
 
+    // Files (upload, push, SFTP). Larger extracts are split by the source system.
+    'files' => [
+        'max_bytes' => 20 * 1024 * 1024,
+        'max_records' => 10000,
+    ],
+
     // Signed requests: X-Timestamp must be within this many seconds of server time.
     'signature_tolerance_seconds' => 300,
 

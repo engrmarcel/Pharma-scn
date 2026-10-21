@@ -3,6 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Integration\Canonical\CanonicalModel;
+use App\Domain\Integration\Canonical\MappingTemplates;
+use App\Domain\Integration\Files\ExportService;
+use App\Domain\Integration\Files\FileImporter;
+use App\Domain\Integration\Files\FileParser;
+use App\Domain\Integration\Files\SftpTransfer;
 use App\Domain\Integration\Models\ExternalReference;
 use App\Domain\Integration\Models\IntegrationConnector;
 use App\Domain\Integration\Models\IntegrationFieldMapping;
@@ -181,6 +186,71 @@ class IntegrationController extends Controller
         return response()->json(['data' => array_map(fn ($record) => $this->redact($mapper->preview($connector, $entity, $record)), $records)]);
     }
 
+    public function mappingTemplates(): JsonResponse
+    {
+        Gate::authorize('integrations.view');
+
+        return response()->json(['data' => MappingTemplates::describe()]);
+    }
+
+    /** Copies a template's mappings to the connector (replacing that entity's mappings). */
+    public function applyTemplate(Request $request, string $id, string $entity): JsonResponse
+    {
+        Gate::authorize('integrations.manage');
+        $connector = IntegrationConnector::query()->findOrFail($id);
+        $template = MappingTemplates::get($request->validate(['template' => ['required', 'string', 'max:64']])['template']);
+        if ($template['entity'] !== $entity) {
+            throw new BusinessRuleViolation('mapping_template_entity_mismatch', "This template maps {$template['entity']} records, not {$entity}.", 422);
+        }
+        $this->connectors->replaceMappings($connector, $entity, $template['mappings']);
+
+        return $this->mappings($id);
+    }
+
+    // ---- Files, SFTP and exports ---------------------------------------------------------------
+
+    /** Manual upload of a CSV, JSON or XML file (multipart: file, entity_type, format?). */
+    public function uploadFile(Request $request, string $id, FileImporter $importer): JsonResponse
+    {
+        Gate::authorize('integrations.manage');
+        $connector = IntegrationConnector::query()->findOrFail($id);
+        $data = $request->validate([
+            'file' => ['required', 'file', 'max:'.(int) (config('integrations.files.max_bytes') / 1024)],
+            'entity_type' => ['required', 'string', 'max:32'],
+            'format' => ['nullable', Rule::in(FileParser::FORMATS)],
+        ]);
+        $file = $data['file'];
+        $result = $importer->import($connector, (string) file_get_contents($file->getRealPath()), $file->getClientOriginalName(), $data['entity_type'],
+            $data['format'] ?? null, 'file', $request->user());
+
+        return response()->json(['run' => $result['run']->summary(), 'duplicate_file' => $result['duplicate_file'], 'data' => $result['acknowledgements']], 202);
+    }
+
+    /** Runs the SFTP exchange now (it also runs on schedule every five minutes). */
+    public function pollSftp(string $id, SftpTransfer $transfer): JsonResponse
+    {
+        Gate::authorize('integrations.manage');
+        $connector = IntegrationConnector::query()->findOrFail($id);
+        if ($connector->inbound_transport !== 'sftp' || $connector->status !== 'active') {
+            throw new BusinessRuleViolation('connector_not_sftp', 'Only active SFTP connectors can be polled.', 409);
+        }
+
+        return response()->json(['data' => $transfer->poll($connector)]);
+    }
+
+    /** CSV download of an outbound dataset, with the connector's own product keys. */
+    public function export(Request $request, string $id, string $dataset, ExportService $exports)
+    {
+        Gate::authorize('integrations.manage');
+        $file = $exports->export(IntegrationConnector::query()->findOrFail($id), $dataset, 'download', $request->user());
+
+        return response($file['content'], 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$file['file_name'].'"',
+            'X-Integration-Run-Id' => $file['run']->id,
+        ]);
+    }
+
     // ---- Messages -------------------------------------------------------------------------
 
     public function messages(Request $request): JsonResponse
@@ -353,6 +423,8 @@ class IntegrationController extends Controller
             'last_message_at' => $c->last_message_at?->toIso8601String(),
             'last_processed_at' => $c->last_processed_at?->toIso8601String(),
             'last_failure_at' => $c->last_failure_at?->toIso8601String(),
+            'last_error' => $c->last_error,
+            'last_transfer_at' => $c->last_transfer_at?->toIso8601String(),
             'created_at' => $c->created_at?->toIso8601String(),
         ];
     }

@@ -158,7 +158,11 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · PUT `{entity}` `{mappings[{target_field, source_path?, transform?, options?, default_value?}]}` · POST `{entity}/preview {records[]}` | `/integration/connectors/{id}/mappings` | view / manage / view |
 | GET | `/integration/connectors/{id}/reconciliation/inventory` | `integrations.view`; source vs platform quantity per warehouse, product and batch: `match\|mismatch\|not_on_platform\|not_reported_by_source` |
 | GET · GET `{id}` · POST `{id}/retry` · POST `{id}/ignore {reason}` · POST `{id}/map {product_id\|warehouse_id}` | `/integration/messages` (`status`, `connector_id`, `entity_type`, `run_id`, `message_id`) | view / manage; payloads and error details redacted |
-| GET · GET `{id}` | `/integration/runs` | `integrations.view` |
+| GET · GET `{id}` | `/integration/runs` | `integrations.view`; inbound runs: counts and `state: processing\|completed\|completed_with_errors\|file_rejected`; outbound runs: dataset and record count |
+| GET · POST `{entity}/template {template}` | `/integration/mapping-templates` · `/integration/connectors/{id}/mappings` | view / manage; applying copies the template's mappings for that entity |
+| POST (multipart `file`, `entity_type`, `format?`) | `/integration/connectors/{id}/files` | `integrations.manage`; 202 with the run; `duplicate_file: true` for content already imported; 422 `file_unreadable` with `line` and `run_id` |
+| POST | `/integration/connectors/{id}/sftp/poll` | `integrations.manage`; imports, archives, rejects and pushes due exports now; summary counts |
+| GET | `/integration/connectors/{id}/exports/inventory\|catalogue` | `integrations.manage`; CSV download; `X-Integration-Run-Id` header |
 | GET · POST `{connector_id, entity_type: product\|warehouse, external_id, internal_id}` · DELETE `{id}` | `/integration/external-references` | view / manage |
 
 ### Integration gateway, external systems (`/integration/inbound`, `Authorization: Bearer ck_…`; no user or tenant header)
@@ -166,6 +170,8 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 |---|---|---|
 | GET | `/integration/inbound/ping` | connector, organization, ingestible entities, limits, server time |
 | POST | `/integration/inbound/messages` `{messages[{message_id, entity_type, schema_version?, record{}}]}` (max 500) | 202; per record `accepted\|duplicate\|rejected`; never `processed` at intake. Signed connectors also send `X-Timestamp` and `X-Signature: sha256=HMAC(timestamp.body)` |
+| POST | `/integration/inbound/files?entity_type&format?&file_name?` (raw body: CSV, JSON or XML) | as the upload above |
+| POST | `/integration/inbound/idoc` (raw IDoc XML, one or more `<IDOC>`) | message id `IDOC-<DOCNUM>`; MATMAS → product, BATMAS → batch (more via connector `settings.idoc_message_types`); other types `idoc_type_unsupported` |
 | GET | `/integration/inbound/messages/{message_id}` · `/integration/inbound/runs/{id}` | business outcome: `received\|processing\|processed\|quarantined\|failed\|ignored`, result ids, actionable error |
 
 ### Platform administration (`/admin`, platform roles; no tenant context)

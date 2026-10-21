@@ -93,7 +93,7 @@ class ConnectorService
             throw new BusinessRuleViolation('connector_key_missing', 'Issue an inbound key before activating a connector that pushes data.', 422);
         }
         $before = $connector->status;
-        $connector->forceFill(['status' => $status])->save();
+        $connector->forceFill(['status' => $status] + ($status === 'active' ? ['last_error' => null] : []))->save();
         $this->audit->record('integration.connector.status_changed', $connector, ['status' => $before], ['status' => $status]);
 
         if ($status === 'active' && $before !== 'active') {

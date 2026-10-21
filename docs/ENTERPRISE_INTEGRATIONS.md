@@ -1,6 +1,6 @@
 # Enterprise integration gateway (Phase 5)
 
-**Status:** 5a built (registry, canonical model, mappings, durable inbox, product, batch and stock ingestion, quarantine and retry, health, inventory reconciliation; ADR-0013). 5b planned: file/SFTP intake, outbox and webhooks, SAP IDoc adapter, further reconciliation.
+**Status:** 5a built (registry, canonical model, mappings, durable inbox, product, batch and stock ingestion, quarantine and retry, health, inventory reconciliation; ADR-0013). 5b built (file import, SFTP exchange, SAP IDoc adapter, mapping templates, CSV exports). 5c planned: outbox and webhooks, reference reconciliation, demo data.
 
 Positioning: *keep your existing ERP and connect your pharmaceutical supply chain to the network.*
 
@@ -55,6 +55,31 @@ REST/JSON, SOAP, webhooks, SFTP + CSV/XML, scheduled import/export, EDI (X12/EDI
    - `GET /integration/health` shows connector status; `GET /integration/messages?status=quarantined` lists records that need attention.
    - For each quarantined record: fix the source data or the mapping and `retry`, `map` it to a product or warehouse, or `ignore` it with a reason.
    - `GET …/reconciliation/inventory` compares the source system's stock with platform stock.
+
+### Files and SFTP (5b)
+- **Upload or push.** Upload with `POST /integration/connectors/{id}/files` (multipart). Systems push with `POST /integration/inbound/files?entity_type=product&format=csv` (raw body).
+- **Formats.**
+  - CSV: header row; delimiter from `settings.csv_delimiter`, or detected from `,` `;` tab `|`; BOM allowed.
+  - JSON: a list, or `{"records": [...]}`.
+  - XML: `settings.xml_record_element` names the element holding one record.
+- **Message ids.** Each row gets the value of `settings.message_id_field` if set, else `<file hash>:<row>`. Identical file content is imported only once.
+- **SFTP settings** (`settings.sftp`):
+  - connection: `host`, `port`, `root`, and `host_fingerprint` (required);
+  - folders: `inbound_path`, `archive_path`, `error_path`;
+  - file rules: `files: [{pattern, entity_type, format?}]`, applied in order, so list product files before batch and stock files;
+  - exports: `exports: [{dataset: inventory|catalogue, path, interval_minutes}]`.
+  - Credentials go in `sftp_username` plus `sftp_password` or `sftp_private_key`/`sftp_passphrase`.
+- **Polling.** The scheduler runs `integration:sftp-poll` every five minutes, or trigger it with `POST …/sftp/poll`.
+
+### SAP connectivity
+Confirm the customer's SAP product, release, deployment and middleware first. The options, in order of preference:
+1. **IDoc XML over HTTP**, built: SAP sends MATMAS and BATMAS IDocs to `POST /integration/inbound/idoc` through its middleware (SAP Integration Suite/Cloud Integration, PI/PO, or an XML-HTTP port). DOCNUM is the idempotent message id, so SAP's own resends are recognized. Apply the `sap_idoc_matmas` and `sap_idoc_batmas` templates, then check the segments against the customer's IDoc definitions (WE60) with the mapping preview.
+2. **OData or REST through middleware**: the middleware calls S/4HANA APIs and pushes the results to `POST /integration/inbound/messages` as JSON. Use the `sap_table_*` templates as a starting point.
+3. **Scheduled extracts over SFTP**: material, batch and stock extracts as CSV files.
+4. **BAPI/RFC** only through the customer's approved, secured integration middleware. The platform never opens RFC or database connections to SAP.
+
+### Exports
+`GET /integration/connectors/{id}/exports/inventory|catalogue` returns a CSV, and SFTP exports push the same file. Product rows carry the target system's own key (from external references) next to our SKU and GTIN. Every export is an outbound run in the audit trail.
 
 ### Order of records
 Send product records before the batch and stock records that refer to them. A batch or stock record for an unknown product key is quarantined as `product_reference_unknown`; retry it once the product record has been processed or mapped. A GTIN on the record resolves the product directly.

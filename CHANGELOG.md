@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Phase 5b, integration files, SFTP, SAP IDoc and exports
+- File import (CSV, JSON, XML) by upload (`POST /integration/connectors/{id}/files`) or machine push (`POST /integration/inbound/files`), into the same durable inbox as the REST API. The same file content is imported only once. Unreadable files become rejected runs with the line number and appear in health.
+- SFTP exchange (`integration:sftp-poll`, every 5 minutes, or on demand). The host-key fingerprint must be pinned; credentials are encrypted. File rules run in order. Imported files move to an archive folder and unreadable files to an error folder. Inventory and catalogue exports are pushed on an interval. Adds `league/flysystem-sftp-v3`.
+- SAP IDoc adapter (`POST /integration/inbound/idoc`): IDoc XML from the customer's SAP middleware, with DOCNUM as the idempotent message id. MATMAS maps to product and BATMAS to batch; other message types are rejected with a reason. The platform makes no RFC or database connection to SAP.
+- Mapping templates (`GET /integration/mapping-templates`, `POST …/mappings/{entity}/template`): SAP IDoc MATMAS/BATMAS, SAP table extracts (material, batch, stock), Dynamics 365 released products and Oracle EBS items. Each is a starting point to confirm against the customer's system.
+- CSV exports (`GET /integration/connectors/{id}/exports/inventory|catalogue`) carry the target system's own product keys from external references, guard against formula injection, and are recorded as outbound runs and audited.
+- Security: XML with a DOCTYPE is refused (XXE), SFTP connections to unverified hosts are refused, and transport errors appear in health without secrets.
+- 219 tests passing.
+
 ### 2026-10-24: Phase 5a, enterprise integration gateway core
 - External-system registry (`integration_connectors`): system type and version, deployment model, confirmed interface notes, inbound transport, status (draft, active, paused, disabled). Inbound keys are stored hashed, shown once and rotatable. HMAC request signing is optional, rate limits apply per connector, and credentials are encrypted and write-only. Connectors count against the plan's `integration_connectors` limit.
 - Canonical Pharmaceutical Data Model covering all 17 §15.2 entities (`GET /integration/canonical-model`). Field mappings per connector and entity support trim, upper/lower, strip_leading_zeros, date formats, decimal separators and value maps, with a preview that has no side effects.

@@ -32,6 +32,7 @@ class IntegrationConnector extends Model
             'last_message_at' => 'datetime',
             'last_processed_at' => 'datetime',
             'last_failure_at' => 'datetime',
+            'last_transfer_at' => 'datetime',
         ];
     }
 

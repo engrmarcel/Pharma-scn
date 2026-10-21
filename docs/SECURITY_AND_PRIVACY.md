@@ -69,6 +69,9 @@ Behaviour:
 - Connector credentials and signing secrets are encrypted at rest (`APP_KEY`) and write-only. The API shows only credential names, and the audit trail records only names.
 - Payload previews and error details are redacted by key name (`config/integrations.php` `redact_keys`: passwords, tokens, keys, card and bank numbers, patient identifiers, contact details).
 - Unexpected exception text is logged and never stored on the message or returned to the source system.
+- Files and IDocs: XML with a DOCTYPE is refused and XML loads with no network access (protection against XXE and entity expansion). Files have size and record limits (20 MB, 10,000 records).
+- SFTP: the server's host-key fingerprint must be pinned (`settings.sftp.host_fingerprint`), and connections to unverified hosts are refused. Credentials are stored encrypted.
+- CSV exports neutralize cells that a spreadsheet would execute as a formula (`=`, `+`, `@`, and `-` not followed by a number).
 
 ## Gaps and planned controls
 

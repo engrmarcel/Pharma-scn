@@ -11,5 +11,6 @@ Artisan::command('inspire', function () {
 // GPS retention: raw visit coordinates are removed after field_force.location_retention_days.
 // Integration inbox safety net: due retries and messages a crashed worker left behind.
 Schedule::command('integration:process-due')->everyMinute()->withoutOverlapping();
+Schedule::command('integration:sftp-poll')->everyFiveMinutes()->withoutOverlapping();
 
 Schedule::command('field-force:purge-locations')->dailyAt('02:30')->withoutOverlapping();

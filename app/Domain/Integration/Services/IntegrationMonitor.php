@@ -38,6 +38,7 @@ class IntegrationMonitor
 
             $state = match (true) {
                 $c->status !== 'active' => 'inactive',
+                $c->last_error !== null => 'failing',
                 ($recentFailed[$c->id] ?? 0) > 0 || ($lastFailedAfterSuccess && ($counts['failed'] ?? 0) > 0) => 'failing',
                 ($counts['quarantined'] ?? 0) > 0 || $backlog > config('integrations.health.backlog_warning')
                     || ($oldestMinutes ?? 0) > config('integrations.health.oldest_pending_warning_minutes') => 'needs_attention',
@@ -60,6 +61,8 @@ class IntegrationMonitor
                 'last_message_at' => $c->last_message_at?->toIso8601String(),
                 'last_processed_at' => $c->last_processed_at?->toIso8601String(),
                 'last_failure_at' => $c->last_failure_at?->toIso8601String(),
+                'last_error' => $c->last_error,
+                'last_transfer_at' => $c->last_transfer_at?->toIso8601String(),
             ];
         })->all();
     }

@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Integration\Canonical\CanonicalModel;
+use App\Domain\Integration\Files\FileImporter;
+use App\Domain\Integration\Files\FileParser;
 use App\Domain\Integration\Models\IntegrationConnector;
 use App\Domain\Integration\Models\IntegrationMessage;
 use App\Domain\Integration\Models\IntegrationRun;
+use App\Domain\Integration\Sap\SapIdocAdapter;
 use App\Domain\Integration\Services\IntegrationInbox;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +49,36 @@ class IntegrationInboundController extends Controller
             'run' => $result['run']->summary(),
             'data' => $result['acknowledgements'],
         ], 202);
+    }
+
+    /**
+     * A whole file pushed by the source system (raw body). Query: entity_type, format?, file_name?.
+     * The same file content is imported once; a copy returns the first run.
+     */
+    public function file(Request $request, FileImporter $importer): JsonResponse
+    {
+        $q = $request->validate([
+            'entity_type' => ['required', 'string', 'max:32'],
+            'format' => ['nullable', 'in:'.implode(',', FileParser::FORMATS)],
+            'file_name' => ['nullable', 'string', 'max:200', 'regex:/^[\w.\- ]+$/'],
+        ]);
+        $result = $importer->import($this->connector($request), $request->getContent(), $q['file_name'] ?? 'upload-'.now()->format('Ymd-His'),
+            $q['entity_type'], $q['format'] ?? null, 'file');
+
+        return response()->json(['run' => $result['run']->summary(), 'duplicate_file' => $result['duplicate_file'], 'data' => $result['acknowledgements']], 202);
+    }
+
+    /** SAP IDoc XML (one or more <IDOC>), as sent by the customer's SAP middleware. */
+    public function idoc(Request $request, SapIdocAdapter $adapter, IntegrationInbox $inbox): JsonResponse
+    {
+        $connector = $this->connector($request);
+        $parsed = $adapter->parse($connector, $request->getContent());
+        $result = $inbox->receive($connector, $parsed['envelopes'], 'idoc');
+        if ($parsed['rejected'] !== []) {
+            $result['run']->increment('rejected_count', count($parsed['rejected']));
+        }
+
+        return response()->json(['run' => $result['run']->fresh()->summary(), 'data' => [...$result['acknowledgements'], ...$parsed['rejected']]], 202);
     }
 
     /** The business outcome of a message, by the source system's own message_id. */

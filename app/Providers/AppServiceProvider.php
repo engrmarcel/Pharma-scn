@@ -24,6 +24,7 @@ use App\Domain\Finance\Services\ChartOfAccounts;
 use App\Domain\Integration\Models\ExternalReference;
 use App\Domain\Integration\Models\IntegrationConnector;
 use App\Domain\Integration\Models\IntegrationMessage;
+use App\Domain\Integration\Models\IntegrationRun;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -160,6 +161,7 @@ class AppServiceProvider extends ServiceProvider
             'integration_connector' => IntegrationConnector::class,
             'integration_message' => IntegrationMessage::class,
             'integration_reference' => ExternalReference::class,
+            'integration_run' => IntegrationRun::class,
             'attachment' => Attachment::class,
         ]);
 
