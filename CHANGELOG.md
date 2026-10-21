@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 4a, marketplace foundations
+- Supplier marketplace profiles (listing switch, regions served, delivery options, minimum order) and product listings on the supplier's own catalogue item and pack. Availability is either live (read from the supplier's stock at search time, shown as a status band, never reserved) or declared (stated with its date, flagged stale after 7 days).
+- Discovery by product, brand, ingredient, strength, dosage form, pack, supplier, supplier type, country, region served, delivery option, verification and availability. Every result carries the supplier's platform-verification label (not a regulator's approval), the product's restriction and whether this buyer may buy it.
+- Pharmaceutical controls (`config/marketplace.php`): who may buy from whom by organization type. Prescription-only and controlled products need platform-verified parties and a licensed buyer type, and can only be listed by verified suppliers.
+- Buyer/supplier relationships: the buyer requests, the supplier approves or rejects, either side suspends. Each side's ERP party (Supplier / Customer, linked to the counterpart organization) is created by that side in its own tenant.
+- Permissions `marketplace.*` and `platform.marketplace.manage`. 199 tests passing.
+
 ### 2026-10-21: Phase 3c, encrypted offline app with till mode (Phase 3 complete)
 - App storage is now SQLCipher (`sqflite_sqlcipher`), with a random 256-bit key per database file in Keystore/Keychain. A wipe destroys the key and the file. The schema moves to v2 with a migration.
 - After sign-in the app registers the device (field or till), swaps the sign-in token for the device-bound token, and uses one database per user, organization and role.

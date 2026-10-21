@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ (sync engine, offline POS replay, encrypted offline app with till mode, six-hour outage tests); Phase 4 (B2B marketplace) next.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ · Phase 4 in progress: 4a marketplace foundations ✅; RFQs, quotes and orders (4b) next.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -19,7 +19,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **195 tests, 1690 assertions, all passing** (includes the six-hour outage scenario)
+- `php artisan test`: **199 tests, 1748 assertions, all passing** (includes the six-hour outage scenario)
 - `flutter test` (mobile/field_app): **14 passing** (sync protocol, till, money, six-hour outage with restarts, widgets), plus 2 live-API end-to-end tests (representative and cashier; run locally against `php artisan serve` with demo data; skipped in CI) (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
@@ -70,6 +70,7 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Finance foundations (2.4a) | ✅ | Chart of accounts (per org, by system key), monthly periods with close/reopen, balanced immutable journal with reversals, automatic postings from receipts, supplier invoices (GRNI/PPV/tax/AP), write-offs, counts, opening balances, supplier returns and payments; supplier payment allocation; trial balance, ledger, P&L, balance sheet, payables aging. Management books, not certified statutory accounts |
 | Procurement (2.3) | ✅ | Requisitions with approval → POs (supplier price lists, threshold-based approval, segregation of duties) → goods receipts with batch capture and over-receipt tolerance → supplier invoices with three-way match and audited override → supplier returns; supplier performance; purchase suggestions. |
 | Inventory core (2.2) | ✅ | Append-only ledger + locked balances, batches with expiry/quality/recall status, FEFO (min shelf life), reservations, receipts with package-level conversion, adjustments, transfers (in-transit, partial receipt), counts, bins, quarantine/release, expiry & low-stock reports, batch-cost valuation; two-connection locking test |
+| Marketplace foundations (4a) | ✅ | Supplier profiles and listings on the supplier's own catalogue; discovery by product, brand, ingredient, strength, dosage form, pack, supplier, type, country, region, delivery option and availability; availability labelled by source (live stock as a status band at search time, never reserved; or declared with date and staleness); supplier verification always labelled as platform verification, not regulator approval; trading matrix by organization type; restricted (prescription-only, controlled) products need verified parties of licensed types; buyer/supplier relationships creating each side's ERP party in its own tenant; nine marketplace permissions |
 | Offline app (3c) | ✅ | The Flutter app gains:
 - an SQLCipher database with Keystore/Keychain keys (crypto-shred on wipe) and a v2 schema migration;
 - device registration with token swap, a role chooser (field or till) and a terminal chooser;

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\V1\FieldForceController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationProductController;
@@ -202,6 +203,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            // B2B marketplace (spec §14).
+            Route::middleware('module:marketplace')->prefix('marketplace')->name('marketplace.')->group(function () {
+                Route::get('profile', [MarketplaceController::class, 'profile'])->name('profile');
+                Route::put('profile', [MarketplaceController::class, 'saveProfile'])->name('profile.save');
+                Route::get('listings', [MarketplaceController::class, 'listings'])->name('listings.index');
+                Route::post('listings', [MarketplaceController::class, 'storeListing'])->name('listings.store');
+                Route::patch('listings/{id}', [MarketplaceController::class, 'updateListing'])->whereUlid('id')->name('listings.update');
+                Route::get('discover', [MarketplaceController::class, 'discover'])->name('discover');
+                Route::get('suppliers/{organizationId}', [MarketplaceController::class, 'supplier'])->whereUlid('organizationId')->name('suppliers.show');
+                Route::get('relationships', [MarketplaceController::class, 'relationships'])->name('relationships.index');
+                Route::post('relationships', [MarketplaceController::class, 'requestRelationship'])->name('relationships.store');
+                Route::post('relationships/{id}/suspend', [MarketplaceController::class, 'suspendRelationship'])->whereUlid('id')->name('relationships.suspend');
+                Route::post('relationships/{id}/{decision}', [MarketplaceController::class, 'decideRelationship'])->whereUlid('id')->whereIn('decision', ['approve', 'reject'])->name('relationships.decide');
             });
 
             // Devices and offline synchronization (spec §13).

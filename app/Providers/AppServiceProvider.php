@@ -27,6 +27,9 @@ use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\Inventory\Models\StockCount;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Services\LocationAccess;
+use App\Domain\Marketplace\Models\MarketplaceListing;
+use App\Domain\Marketplace\Models\MarketplaceProfile;
+use App\Domain\Marketplace\Models\TradingRelationship;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\OrganizationInvitation;
@@ -143,6 +146,9 @@ class AppServiceProvider extends ServiceProvider
             'field_follow_up' => FieldFollowUp::class,
             'field_order' => FieldOrder::class,
             'device' => Device::class,
+            'marketplace_profile' => MarketplaceProfile::class,
+            'marketplace_listing' => MarketplaceListing::class,
+            'trading_relationship' => TradingRelationship::class,
             'sync_issue' => SyncIssue::class,
             'attachment' => Attachment::class,
         ]);
