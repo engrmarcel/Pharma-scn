@@ -14,6 +14,7 @@ use App\Domain\Sales\Models\CommercialDocument;
 use App\Domain\Sales\Models\Quotation;
 use App\Domain\Sales\Models\SalesOrder;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
@@ -95,7 +96,7 @@ class SalesOrderService
             ]);
             $this->writeLines($order, $customer, $warehouse, $lines);
             $this->audit->record('sales_order.created', $order, new: ['number' => $order->number, 'total' => (string) $order->total]);
-            event(new SalesOrderCreated($order->id, $order->organization_id));
+            DomainEvents::raise(new SalesOrderCreated($order->id, $order->organization_id));
 
             return $order->load('lines');
         });
@@ -205,7 +206,7 @@ class SalesOrderService
         }
         $order->forceFill(['status' => 'confirmed', 'approved_by' => $approver?->id, 'approved_at' => $approver ? now() : null])->save();
         $this->audit->record('sales_order.confirmed', $order, new: ['approved_by' => $approver?->id, 'total' => (string) $order->total]);
-        event(new SalesOrderConfirmed($order->id, $order->organization_id));
+        DomainEvents::raise(new SalesOrderConfirmed($order->id, $order->organization_id));
     }
 
     private function writeLines(CommercialDocument $document, Customer $customer, Warehouse $warehouse, array $lines): void

@@ -10,6 +10,7 @@ use App\Domain\Inventory\Events\BatchCreated;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Services\BatchQualityService;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 
 /**
@@ -53,7 +54,7 @@ class BatchHandler implements IntegrationHandler
                 'quality_status' => $desired ?? 'released',
                 'notes' => "Created from {$connector->name}",
             ]);
-            event(new BatchCreated($batch->id, $batch->organization_id, $product->id));
+            DomainEvents::raise(new BatchCreated($batch->id, $batch->organization_id, $product->id));
             $this->audit->record('integration.batch.created', $batch, new: ['batch_number' => $number, 'expiry_date' => $expiry, 'quality_status' => $batch->quality_status],
                 metadata: ['connector_id' => $connector->id, 'message_id' => $message->message_id]);
 

@@ -120,6 +120,37 @@ class IntegrationMonitor
             'summary' => ['positions' => count($rows)] + $summary, 'rows' => $rows];
     }
 
+    /**
+     * How completely the connector's keys cover the organization's records, and what is waiting
+     * for a person: catalogue items the source system has never sent, references to products no
+     * longer in the catalogue, warehouses without a mapping, and open quarantine by error code.
+     */
+    public function referenceReconciliation(IntegrationConnector $connector): array
+    {
+        $refs = DB::table('integration_external_references')->where('connector_id', $connector->id);
+        $productRefs = (clone $refs)->where('entity_type', 'product')->get(['external_id', 'internal_id', 'source']);
+        $catalogue = DB::table('organization_products')->where('organization_id', $connector->organization_id)->get(['id', 'product_id', 'sku']);
+        $mapped = $productRefs->pluck('internal_id')->unique();
+        $warehouseRefs = (clone $refs)->where('entity_type', 'warehouse')->pluck('internal_id')->unique();
+        $warehouses = DB::table('warehouses')->where('organization_id', $connector->organization_id)->orderBy('code')->get(['id', 'code']);
+
+        return [
+            'connector_id' => $connector->id,
+            'generated_at' => now()->toIso8601String(),
+            'products' => [
+                'catalogue_items' => $catalogue->count(),
+                'mapped' => $catalogue->whereIn('product_id', $mapped)->count(),
+                'manual_references' => $productRefs->where('source', 'manual')->count(),
+                'unmapped_catalogue_items' => $catalogue->whereNotIn('product_id', $mapped)->map(fn ($i) => ['organization_product_id' => $i->id, 'product_id' => $i->product_id, 'sku' => $i->sku])->values()->all(),
+                'references_without_catalogue_item' => $productRefs->whereNotIn('internal_id', $catalogue->pluck('product_id'))->map(fn ($r) => ['external_id' => $r->external_id, 'product_id' => $r->internal_id])->values()->all(),
+            ],
+            'warehouses' => $warehouses->map(fn ($w) => ['warehouse_id' => $w->id, 'code' => $w->code, 'mapped' => $warehouseRefs->contains($w->id)])->all(),
+            'open_quarantine_by_code' => IntegrationMessage::query()->where('connector_id', $connector->id)->where('status', 'quarantined')
+                ->toBase()->selectRaw('error_code, count(*) as n')->groupBy('error_code')->orderByDesc('n')->pluck('n', 'error_code')->map(fn ($n) => (int) $n)->all(),
+            'dead_lettered' => IntegrationMessage::query()->where('connector_id', $connector->id)->where('status', 'failed')->count(),
+        ];
+    }
+
     private function row(string $warehouse, string $product, ?string $batch, ?string $source, string $platform, ?string $asOf): array
     {
         $difference = bcsub($platform, $source ?? '0', 4);

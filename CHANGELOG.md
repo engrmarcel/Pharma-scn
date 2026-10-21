@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Phase 5c, integration outbox and webhooks (Phase 5 complete)
+- Transactional outbox (`integration_outbox`). Domain events now go through `DomainEvents::raise()`: the outbound event and its deliveries are written in the business transaction, only for organizations with a matching subscriber, and delivery jobs are queued after commit.
+- Webhook subscriptions (`/integration/webhooks`):
+  - signing secret generated, shown once and encrypted; rotatable;
+  - event catalogue at `/integration/webhooks/event-types`;
+  - test event, delivery log, manual redelivery, pause/activate/disable;
+  - payloads carry the subscriber connector's own product keys.
+- Delivery is at least once, signed (`X-Webhook-Signature` = HMAC-SHA256 over timestamp and body; `X-Webhook-Id` for deduplication). Retries use backoff of 1, 5, 15, 60, 240 and 720 minutes; a delivery goes dead after 8 attempts. Receivers are paused automatically after 25 consecutive failures. Redirects are not followed.
+- SSRF protection: HTTPS only, no credentials in URLs, no loopback, private, link-local or metadata addresses. Checked at creation and against the resolved addresses at every delivery, with the address pinned for the request.
+- Reference reconciliation report (`/integration/connectors/{id}/reconciliation/references`); integration counts in the platform operations status; `integration:process-due` also sweeps webhook retries.
+- Synthetic demo: an SAP S/4HANA connector for the demo manufacturer with processed and quarantined messages, and a paused webhook subscription to a `.invalid` address.
+- 224 tests passing.
+
 ### 2026-10-24: Phase 5b, integration files, SFTP, SAP IDoc and exports
 - File import (CSV, JSON, XML) by upload (`POST /integration/connectors/{id}/files`) or machine push (`POST /integration/inbound/files`), into the same durable inbox as the REST API. The same file content is imported only once. Unreadable files become rejected runs with the line number and appear in health.
 - SFTP exchange (`integration:sftp-poll`, every 5 minutes, or on demand). The host-key fingerprint must be pinned; credentials are encrypted. File rules run in order. Imported files move to an archive folder and unreadable files to an error folder. Inventory and catalogue exports are pushed on an interval. Adds `league/flysystem-sftp-v3`.

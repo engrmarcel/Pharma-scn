@@ -9,6 +9,7 @@ use App\Domain\Catalogue\Models\RegulatoryVerification;
 use App\Domain\Platform\Models\RegulatoryAuthority;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,7 @@ class RegulatoryIdentifierService
             new: $identifier->only(['authority_id', 'identifier_type', 'value', 'declared_status', 'registration_date', 'expiry_date']),
             metadata: ['subject_type' => $subject->getMorphClass(), 'subject_id' => $subject->getKey()],
             organizationId: false);
-        event(new RegulatoryIdentifierUpdated($identifier->id, $identifier->subject_type, $identifier->subject_id, $isNew ? 'added' : 'updated', $identifier->verification_status->value));
+        DomainEvents::raise(new RegulatoryIdentifierUpdated($identifier->id, $identifier->subject_type, $identifier->subject_id, $isNew ? 'added' : 'updated', $identifier->verification_status->value));
 
         return $identifier;
     }
@@ -101,7 +102,7 @@ class RegulatoryIdentifierService
                 ['verification_status' => $previous->value],
                 ['verification_status' => $locked->verification_status->value, 'method' => $data['method'], 'result' => $data['result']],
                 organizationId: false);
-            event(new RegulatoryIdentifierUpdated($locked->id, $locked->subject_type, $locked->subject_id, 'verification_recorded', $locked->verification_status->value));
+            DomainEvents::raise(new RegulatoryIdentifierUpdated($locked->id, $locked->subject_type, $locked->subject_id, 'verification_recorded', $locked->verification_status->value));
 
             return $verification;
         });

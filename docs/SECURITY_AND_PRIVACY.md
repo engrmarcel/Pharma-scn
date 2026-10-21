@@ -72,6 +72,10 @@ Behaviour:
 - Files and IDocs: XML with a DOCTYPE is refused and XML loads with no network access (protection against XXE and entity expansion). Files have size and record limits (20 MB, 10,000 records).
 - SFTP: the server's host-key fingerprint must be pinned (`settings.sftp.host_fingerprint`), and connections to unverified hosts are refused. Credentials are stored encrypted.
 - CSV exports neutralize cells that a spreadsheet would execute as a formula (`=`, `+`, `@`, and `-` not followed by a number).
+- Webhooks:
+  - **SSRF protection.** URLs must be HTTPS, carry no credentials, and point at public addresses: no loopback, RFC 1918, link-local/cloud metadata or reserved ranges, and no `localhost` or `.internal` names. This is checked at creation and at every delivery against the resolved addresses, and the checked address is pinned for the connection. Redirects are not followed. `WEBHOOKS_ALLOW_HTTP` and `WEBHOOKS_ALLOW_PRIVATE_NETWORKS` exist for local development only.
+  - **Signing.** Payloads are signed (HMAC-SHA256 over timestamp and body) with a per-subscription secret, which is encrypted at rest and shown once.
+  - **Data in the delivery log.** Only the first 300 characters of a failing response are kept.
 
 ## Gaps and planned controls
 

@@ -11,6 +11,7 @@ use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\OrganizationModule;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use Illuminate\Support\Facades\DB;
 
 class OrganizationOnboardingService
@@ -47,7 +48,7 @@ class OrganizationOnboardingService
             $this->entitlements->subscribe($organization, SubscriptionPlan::query()->where('code', config('entitlements.default_plan'))->firstOrFail(), $owner);
 
             $this->audit->record('organization.registered', $organization, new: $organization->toArray() + ['modules' => $modules], organizationId: $organization->id);
-            event(new OrganizationRegistered($organization->id));
+            DomainEvents::raise(new OrganizationRegistered($organization->id));
 
             return $organization;
         });

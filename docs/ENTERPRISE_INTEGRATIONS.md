@@ -1,6 +1,6 @@
 # Enterprise integration gateway (Phase 5)
 
-**Status:** 5a built (registry, canonical model, mappings, durable inbox, product, batch and stock ingestion, quarantine and retry, health, inventory reconciliation; ADR-0013). 5b built (file import, SFTP exchange, SAP IDoc adapter, mapping templates, CSV exports). 5c planned: outbox and webhooks, reference reconciliation, demo data.
+**Status:** 5a built (registry, canonical model, mappings, durable inbox, product, batch and stock ingestion, quarantine and retry, health, inventory reconciliation; ADR-0013). 5b built (file import, SFTP exchange, SAP IDoc adapter, mapping templates, CSV exports). 5c built (transactional outbox, signed webhooks, reference reconciliation, demo connector). Phase 5 complete.
 
 Positioning: *keep your existing ERP and connect your pharmaceutical supply chain to the network.*
 
@@ -36,7 +36,7 @@ REST/JSON, SOAP, webhooks, SFTP + CSV/XML, scheduled import/export, EDI (X12/EDI
 | `integration_runs` | One row per intake call or file | built (5a) |
 | `integration_inbox` | Every inbound record. Quarantined and failed rows are the failed-message store. | built (5a) |
 | `integration_inventory_snapshots` | Stock positions reported by external systems | built (5a) |
-| `integration_outbox`, `webhook_subscriptions`, `delivery_attempts` | Outbound events and their delivery | planned (5b) |
+| `integration_outbox`, `webhook_subscriptions`, `webhook_deliveries` | Outbound events and their delivery | built (5c) |
 
 ## Connecting a system (5a)
 
@@ -80,6 +80,20 @@ Confirm the customer's SAP product, release, deployment and middleware first. Th
 
 ### Exports
 `GET /integration/connectors/{id}/exports/inventory|catalogue` returns a CSV, and SFTP exports push the same file. Product rows carry the target system's own key (from external references) next to our SKU and GTIN. Every export is an outbound run in the audit trail.
+
+### Outbound events (5c)
+- **Subscribe.** `POST /integration/webhooks {name, url, event_types[], connector_id?}` returns the signing secret once. `GET /integration/webhooks/event-types` lists the catalogue.
+- **Transactional outbox.** An event is written in the same database transaction as the change it describes. It is never lost after a commit and never sent for a change that rolled back. Organizations without subscribers write nothing.
+- **Receiving.**
+  - Verify `X-Webhook-Signature` over `X-Webhook-Timestamp + "." + body`.
+  - Deduplicate on `X-Webhook-Id`: delivery is at least once.
+  - Answer 2xx quickly and process asynchronously.
+  - Payloads carry SKU, GTIN and, when the subscription is linked to a connector, that system's own product key (`product_external_id`).
+- **Failures.** Retries back off over about 18 hours, then the delivery is dead and can be redelivered from `…/deliveries`. A receiver that keeps failing is paused; its events wait and go out when it is resumed.
+
+### Reconciliation reports
+- `…/reconciliation/inventory`: source-system stock against platform stock per warehouse, product and batch.
+- `…/reconciliation/references`: catalogue items the source has never sent, references to products no longer in the catalogue, warehouse mappings, and open quarantine by error code.
 
 ### Order of records
 Send product records before the batch and stock records that refer to them. A batch or stock record for an unknown product key is quarantined as `product_reference_unknown`; retry it once the product record has been processed or mapped. A GTIN on the record resolves the product directly.

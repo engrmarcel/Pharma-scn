@@ -40,6 +40,19 @@ return [
         'max_records' => 10000,
     ],
 
+    // Outbound webhooks (integration outbox).
+    'webhooks' => [
+        'max_subscriptions' => 20,
+        'timeout_seconds' => 10,
+        'max_attempts' => 8,
+        'retry_backoff_minutes' => [1, 5, 15, 60, 240, 720],
+        'pause_after_consecutive_failures' => 25,
+        'user_agent' => 'PharmaNetwork-Webhooks/1.0',
+        // Local development only: never enable in production (server-side request forgery).
+        'allow_http' => (bool) env('WEBHOOKS_ALLOW_HTTP', false),
+        'allow_private_networks' => (bool) env('WEBHOOKS_ALLOW_PRIVATE_NETWORKS', false),
+    ],
+
     // Signed requests: X-Timestamp must be within this many seconds of server time.
     'signature_tolerance_seconds' => 300,
 

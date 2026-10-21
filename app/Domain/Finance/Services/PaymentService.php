@@ -11,6 +11,7 @@ use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Domain\Procurement\Models\SupplierInvoice;
 use App\Domain\Sales\Models\SalesInvoice;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -71,7 +72,7 @@ class PaymentService
 
             $payment->forceFill(['allocated_amount' => $allocated, 'journal_entry_id' => $journal->id])->save();
             $this->audit->record('payment.recorded', $payment, new: ['number' => $payment->number, 'amount' => $amount, 'method' => $method, 'allocated' => $allocated]);
-            event(new PaymentConfirmed($payment->id, $payment->organization_id));
+            DomainEvents::raise(new PaymentConfirmed($payment->id, $payment->organization_id));
 
             return $payment->load('allocations');
         });
@@ -105,7 +106,7 @@ class PaymentService
 
             $payment->forceFill(['allocated_amount' => $allocated, 'journal_entry_id' => $journal->id])->save();
             $this->audit->record('payment.received', $payment, new: ['number' => $payment->number, 'amount' => $amount, 'method' => $method, 'allocated' => $allocated]);
-            event(new PaymentConfirmed($payment->id, $payment->organization_id));
+            DomainEvents::raise(new PaymentConfirmed($payment->id, $payment->organization_id));
 
             return $payment->load('allocations');
         });

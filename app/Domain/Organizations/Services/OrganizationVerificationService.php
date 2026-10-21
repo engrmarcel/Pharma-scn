@@ -9,6 +9,7 @@ use App\Domain\Organizations\Models\OrganizationMembership;
 use App\Domain\Organizations\Models\OrganizationVerification;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Support\Facades\DB;
 
@@ -124,7 +125,7 @@ class OrganizationVerificationService
 
         $this->audit->record("organization.verification_{$action}", $org,
             ['verification_status' => $from->value], ['verification_status' => $to->value], ['notes' => $notes], $org->id);
-        event(new OrganizationVerificationChanged($org->id, $from->value, $to->value));
+        DomainEvents::raise(new OrganizationVerificationChanged($org->id, $from->value, $to->value));
 
         return $org;
     }

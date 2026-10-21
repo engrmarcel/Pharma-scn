@@ -389,6 +389,13 @@ class IntegrationController extends Controller
         return response()->json(['data' => $monitor->inventoryReconciliation(IntegrationConnector::query()->findOrFail($id))]);
     }
 
+    public function referenceReconciliation(string $id, IntegrationMonitor $monitor): JsonResponse
+    {
+        Gate::authorize('integrations.view');
+
+        return response()->json(['data' => $monitor->referenceReconciliation(IntegrationConnector::query()->findOrFail($id))]);
+    }
+
     // ---- Presentation -----------------------------------------------------------------------
 
     private function connectorRules(): array

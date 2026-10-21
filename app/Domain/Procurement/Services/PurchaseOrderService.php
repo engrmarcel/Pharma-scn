@@ -13,6 +13,7 @@ use App\Domain\Procurement\Models\PurchaseOrder;
 use App\Domain\Procurement\Models\PurchaseRequisition;
 use App\Domain\Procurement\Models\SupplierPriceListItem;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Money;
 use Illuminate\Support\Collection;
@@ -142,7 +143,7 @@ class PurchaseOrderService
             ]);
             $this->replaceLines($order, $lines);
             $this->audit->record('purchase_order.created', $order, new: ['number' => $order->number, 'supplier_id' => $supplier->id, 'total' => (string) $order->total]);
-            event(new PurchaseOrderCreated($order->id, $order->organization_id));
+            DomainEvents::raise(new PurchaseOrderCreated($order->id, $order->organization_id));
 
             return $order->load('lines');
         });
@@ -237,7 +238,7 @@ class PurchaseOrderService
     {
         $order->forceFill(['status' => 'approved', 'approved_by' => $approver->id, 'approved_at' => now(), 'order_date' => $order->order_date ?? today()])->save();
         $this->audit->record('purchase_order.approved', $order, new: ['auto_approved_below_threshold' => $auto, 'total' => (string) $order->total]);
-        event(new PurchaseOrderApproved($order->id, $order->organization_id));
+        DomainEvents::raise(new PurchaseOrderApproved($order->id, $order->organization_id));
     }
 
     private function replaceLines(PurchaseOrder $order, array $lines): void

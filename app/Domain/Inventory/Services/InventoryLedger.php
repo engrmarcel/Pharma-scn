@@ -11,6 +11,7 @@ use App\Domain\Inventory\Models\InventoryMovement;
 use App\Domain\Inventory\Support\StockLine;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Auth;
@@ -197,13 +198,13 @@ class InventoryLedger
     private function dispatchEvents(array $types, string $postingId, string $organizationId, ?string $referenceType, ?string $referenceId): void
     {
         if (in_array('receipt', $types, true)) {
-            event(new StockReceived($postingId, $organizationId, $referenceType, $referenceId));
+            DomainEvents::raise(new StockReceived($postingId, $organizationId, $referenceType, $referenceId));
         }
         if (array_intersect($types, ['transfer_out', 'transfer_in']) !== []) {
-            event(new StockTransferred($postingId, $organizationId, $referenceType, $referenceId));
+            DomainEvents::raise(new StockTransferred($postingId, $organizationId, $referenceType, $referenceId));
         }
         if (array_intersect($types, ['adjustment', 'count', 'write_off', 'state_change']) !== []) {
-            event(new InventoryAdjusted($postingId, $organizationId, $referenceType, $referenceId));
+            DomainEvents::raise(new InventoryAdjusted($postingId, $organizationId, $referenceType, $referenceId));
         }
     }
 }

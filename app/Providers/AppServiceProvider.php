@@ -25,6 +25,9 @@ use App\Domain\Integration\Models\ExternalReference;
 use App\Domain\Integration\Models\IntegrationConnector;
 use App\Domain\Integration\Models\IntegrationMessage;
 use App\Domain\Integration\Models\IntegrationRun;
+use App\Domain\Integration\Models\WebhookDelivery;
+use App\Domain\Integration\Models\WebhookSubscription;
+use App\Domain\Integration\Webhooks\OutboxRecorder;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -69,6 +72,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\View\Composers\NavigationComposer;
 use App\Models\User;
+use App\Support\Events\EventRecorder;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -89,6 +93,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Reset per request and per queued job.
         $this->app->scoped(TenantContext::class);
+        $this->app->bind(EventRecorder::class, OutboxRecorder::class);
         $this->app->scoped(AccessControl::class);
         $this->app->scoped(LocationAccess::class);
         $this->app->scoped(UnitConverter::class);
@@ -162,6 +167,8 @@ class AppServiceProvider extends ServiceProvider
             'integration_message' => IntegrationMessage::class,
             'integration_reference' => ExternalReference::class,
             'integration_run' => IntegrationRun::class,
+            'webhook_subscription' => WebhookSubscription::class,
+            'webhook_delivery' => WebhookDelivery::class,
             'attachment' => Attachment::class,
         ]);
 

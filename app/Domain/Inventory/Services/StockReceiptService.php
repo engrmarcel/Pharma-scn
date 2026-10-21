@@ -7,6 +7,7 @@ use App\Domain\Inventory\Events\BatchCreated;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Support\StockLine;
 use App\Domain\Organizations\Models\Warehouse;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -107,7 +108,7 @@ class StockReceiptService
             'supplier_id' => $supplierId,
             'quality_status' => $quality,
         ]);
-        event(new BatchCreated($batch->id, $batch->organization_id, $productId));
+        DomainEvents::raise(new BatchCreated($batch->id, $batch->organization_id, $productId));
 
         return $batch;
     }

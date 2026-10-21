@@ -16,6 +16,7 @@ use App\Domain\Sales\Models\DeliveryLine;
 use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesInvoiceLine;
 use App\Domain\Sales\Models\SalesOrder;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
@@ -124,7 +125,7 @@ class FulfilmentService
             $invoice->forceFill(['journal_entry_id' => $journal->id])->save();
 
             $this->audit->record('sales_invoice.issued', $invoice, new: ['number' => $invoice->number, 'total' => (string) $invoice->total, 'sales_order' => $so->number]);
-            event(new SaleCompleted($invoice->id, $invoice->organization_id, 'sales_order'));
+            DomainEvents::raise(new SaleCompleted($invoice->id, $invoice->organization_id, 'sales_order'));
 
             return $invoice->load('lines');
         });
@@ -157,7 +158,7 @@ class FulfilmentService
             $invoice->forceFill(['journal_entry_id' => $journal->id])->save();
 
             $this->audit->record('sales_invoice.issued', $invoice, new: ['number' => $invoice->number, 'total' => (string) $invoice->total, 'source' => $source]);
-            event(new SaleCompleted($invoice->id, $invoice->organization_id, $source));
+            DomainEvents::raise(new SaleCompleted($invoice->id, $invoice->organization_id, $source));
 
             // Lines in the same order as given, so callers can link their own lines to them.
             return $invoice->setRelation('lines', collect($created));

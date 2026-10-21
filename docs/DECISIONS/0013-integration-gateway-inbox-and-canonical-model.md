@@ -47,4 +47,8 @@ External systems retry unpredictably, send data we cannot match yet, and cannot 
 - The guarantee is at-least-once delivery with idempotent outcomes, plus reconciliation. There is no claim of exactly-once delivery across systems (§15.5).
 - Organizations keep their ERP as the system of record for what it owns. Nothing in the platform requires replacing it, and there is no direct database access to it.
 - Adding an entity means a handler and its tests. The canonical definition, mapping, validation, inbox, retry and monitoring already apply to it.
-- Phase 5b adds file and SFTP intake, the outbound outbox with webhooks, the SAP IDoc adapter and further reconciliation, all on this same inbox and canonical model.
+- Files, SFTP and SAP IDocs (5b) arrive through this same inbox, so the same idempotency, quarantine and retry rules apply to them.
+- **Outbound (5c): a transactional outbox, not after-commit listeners.**
+  - Domain events are raised through `DomainEvents::raise()`. It writes the outbound event and one delivery per matching subscription in the caller's transaction, then dispatches as before.
+  - An after-commit listener could lose events if the process died between commit and listener. The outbox cannot lose them, and it writes nothing for a change that rolled back.
+  - Delivery is at least once, and receivers deduplicate on the event id.

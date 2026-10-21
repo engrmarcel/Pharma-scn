@@ -13,6 +13,7 @@ use App\Domain\Catalogue\Support\PackageHierarchy;
 use App\Domain\Platform\Models\DosageForm;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Models\User;
+use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Arr;
@@ -56,7 +57,7 @@ class ProductCatalogueService
             $this->syncChildren($product, $data, $actor, $submittedByOrganizationId);
 
             $this->audit->record('product.created', $product, new: $product->fresh()->toArray() + ['payload' => $data], organizationId: false);
-            event(new ProductCreated($product->id, $product->version ?? 1));
+            DomainEvents::raise(new ProductCreated($product->id, $product->version ?? 1));
 
             return $product->fresh();
         });
@@ -92,7 +93,7 @@ class ProductCatalogueService
             [$old, $new] = $this->audit->diff($locked, $original);
             $children = array_intersect_key($data, array_flip(['ingredients', 'package_levels', 'identifiers', 'classifications', 'regulatory_identifiers']));
             $this->audit->record('product.updated', $locked, $old, $new + $children, organizationId: false);
-            event(new ProductUpdated($locked->id, $locked->version, array_keys($new + $children)));
+            DomainEvents::raise(new ProductUpdated($locked->id, $locked->version, array_keys($new + $children)));
 
             return $locked->fresh();
         });

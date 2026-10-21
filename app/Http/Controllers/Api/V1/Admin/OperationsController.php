@@ -61,6 +61,14 @@ class OperationsController extends Controller
             'idempotency_keys' => DB::table('idempotency_keys')->count(),
             'organizations_pending_verification' => DB::table('organizations')->where('verification_status', 'pending_review')->count(),
             'product_change_requests_pending' => DB::table('product_change_requests')->where('status', 'pending')->count(),
+            'integrations' => [
+                'active_connectors' => DB::table('integration_connectors')->where('status', 'active')->count(),
+                'inbox_backlog' => DB::table('integration_inbox')->whereIn('status', ['received', 'processing'])->count(),
+                'inbox_quarantined' => DB::table('integration_inbox')->where('status', 'quarantined')->count(),
+                'inbox_dead_lettered' => DB::table('integration_inbox')->where('status', 'failed')->count(),
+                'webhook_backlog' => DB::table('webhook_deliveries')->whereIn('status', ['pending', 'delivering', 'failed'])->count(),
+                'webhook_dead' => DB::table('webhook_deliveries')->where('status', 'dead')->count(),
+            ],
         ]]);
     }
 

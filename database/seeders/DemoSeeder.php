@@ -11,6 +11,14 @@ use App\Domain\FieldForce\Models\FieldVisit;
 use App\Domain\FieldForce\Services\FieldOrderService;
 use App\Domain\FieldForce\Services\TerritoryService;
 use App\Domain\FieldForce\Services\VisitService;
+use App\Domain\Integration\Canonical\MappingTemplates;
+use App\Domain\Integration\Models\IntegrationConnector;
+use App\Domain\Integration\Models\IntegrationMessage;
+use App\Domain\Integration\Models\WebhookSubscription;
+use App\Domain\Integration\Services\ConnectorService;
+use App\Domain\Integration\Services\IntegrationInbox;
+use App\Domain\Integration\Services\IntegrationProcessor;
+use App\Domain\Integration\Webhooks\WebhookService;
 use App\Domain\Inventory\Services\DirectReceiptService;
 use App\Domain\Marketplace\Models\MarketplaceOrder;
 use App\Domain\Marketplace\Models\MarketplaceShipment;
@@ -90,6 +98,7 @@ class DemoSeeder extends Seeder
         $this->pointOfSale();
         $this->fieldForce();
         $this->marketplace();
+        $this->integrations();
 
         $this->command?->info('SYNTHETIC demo data loaded. All demo users use password '.self::PASSWORD.' (e.g. admin@demo.test, compliance@demo.test, owner.pharmacy1@demo.test, ph1.cashier@demo.test).');
     }
@@ -386,6 +395,49 @@ class DemoSeeder extends Seeder
         $context->runAs($pharmacy, fn () => app(MarketplaceFulfilmentService::class)->receive(MarketplaceShipment::query()->findOrFail($shipment->id)), $phOwner);
         Auth::setUser($distOwner->user);
         $context->runAs($dist, fn () => app(MarketplaceFulfilmentService::class)->invoice(MarketplaceOrder::query()->findOrFail($order->id)), $distOwner);
+    }
+
+    /**
+     * A synthetic SAP S/4HANA connector for the manufacturer: SAP-style material and batch records
+     * processed through the gateway (two matched by NAFDAC number, one quarantined for review),
+     * and a paused webhook subscription to a non-resolving .invalid address.
+     */
+    private function integrations(): void
+    {
+        $org = Organization::query()->where('name', 'Demo Pharma Manufacturing Ltd')->first();
+        $membership = $org?->memberships()->whereHas('user', fn ($q) => $q->where('email', 'mfr.integration@demo.test'))->with('user')->first();
+        if ($membership === null || IntegrationConnector::acrossTenants()->where('organization_id', $org->id)->exists()) {
+            return;
+        }
+        Auth::setUser($membership->user);
+
+        app(TenantContext::class)->runAs($org, function () use ($membership) {
+            $connectors = app(ConnectorService::class);
+            $connector = $connectors->create(['code' => 'S4-DEMO', 'name' => 'SYNTHETIC DEMO SAP S/4HANA', 'system_type' => 'sap_s4hana',
+                'system_version' => '2023 (fictional)', 'deployment_model' => 'on_premise', 'inbound_transport' => 'rest_push',
+                'interface_notes' => 'SYNTHETIC DEMO: SAP-style extracts pushed as JSON by middleware. In a real project, record the SAP release, middleware and interface confirmed with the customer.'], $membership->user);
+            $connectors->rotateKey($connector); // not shown; rotate it again from the API to obtain a usable key
+            $connectors->setStatus($connector, 'active');
+            foreach (['product' => 'sap_table_material', 'batch' => 'sap_table_batch'] as $entity => $template) {
+                $connectors->replaceMappings($connector, $entity, MappingTemplates::get($template)['mappings']);
+            }
+
+            $records = [
+                ['DEMO-MAT-1', 'product', ['MATNR' => '000000000000500001', 'MAKTX' => 'SYNTHETIC PARACETAMOL 500MG TABS', 'ZZREGNO' => 'DEMO-A4-0001', 'VERPR' => '2,40', 'WAERS' => 'NGN']],
+                ['DEMO-MAT-2', 'product', ['MATNR' => '000000000000500003', 'MAKTX' => 'SYNTHETIC AMOXICILLIN 500MG CAPS', 'ZZREGNO' => 'DEMO-A4-0003', 'VERPR' => '7,10', 'WAERS' => 'NGN']],
+                ['DEMO-MAT-3', 'product', ['MATNR' => '000000000000509999', 'MAKTX' => 'SYNTHETIC UNLISTED MATERIAL', 'VERPR' => '1,00', 'WAERS' => 'NGN']],
+                ['DEMO-BAT-1', 'batch', ['MATNR' => '000000000000500001', 'CHARG' => 'S4-DEMO-PCM-01', 'VFDAT' => now()->addMonths(20)->format('Ymd'), 'HSDAT' => now()->subMonths(4)->format('Ymd'), 'ZUSTD' => 'F']],
+            ];
+            app(IntegrationInbox::class)->receive($connector, array_map(fn ($r) => ['message_id' => $r[0], 'entity_type' => $r[1], 'record' => $r[2]], $records), 'api');
+            // Process now, so the demo does not depend on a running queue worker.
+            foreach (IntegrationMessage::query()->where('connector_id', $connector->id)->orderBy('id')->pluck('id') as $id) {
+                app(IntegrationProcessor::class)->process($id);
+            }
+
+            [$subscription] = app(WebhookService::class)->create(['name' => 'SYNTHETIC DEMO ERP receiver', 'url' => 'https://erp.demo.invalid/webhooks/pharma',
+                'event_types' => ['inventory.stock_received', 'inventory.adjusted', 'sales.order_confirmed'], 'connector_id' => $connector->id], $membership->user);
+            app(WebhookService::class)->setStatus(WebhookSubscription::query()->findOrFail($subscription->id), 'paused');
+        }, $membership);
     }
 
     private function products(User $admin): void
