@@ -48,7 +48,8 @@ class MarketplaceFulfilmentTest extends FeatureTestCase
         $t = $this->acceptedOrder();
 
         $first = $this->ship($t, '6')->assertCreated()->json('data');
-        $this->assertSame([['batch_number' => 'MP-AMX-1', 'expiry_date' => now()->addYears(2)->toDateString(), 'base_quantity' => '120.0000']], $first['lines'][0]['batches'],
+        // assertEquals: MySQL 8 normalizes the key order of JSON objects.
+        $this->assertEquals([['batch_number' => 'MP-AMX-1', 'expiry_date' => now()->addYears(2)->toDateString(), 'base_quantity' => '120.0000']], $first['lines'][0]['batches'],
             'the batch that physically left travels with the shipment');
         $this->ship($t, '5')->assertUnprocessable()->assertJsonPath('error.code', 'ship_quantity_invalid');
 
