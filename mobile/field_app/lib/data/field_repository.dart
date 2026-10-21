@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:uuid/uuid.dart';
 
 import '../core/api.dart';
@@ -413,6 +413,7 @@ class FieldRepository {
     'order_capture': ('orders', 'client_reference'),
     'order_resubmit': ('orders', 'client_reference'),
     'follow_up_complete': ('follow_ups', 'id'),
+    'pos_sale': ('pos_sales', 'client_reference'),
   };
 
   /// After an item is sent: the record is "synced" once nothing else is waiting for it.

@@ -95,6 +95,8 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET | `/pos/sales/{id}/receipt` | own sale |
 | POST · GET · POST | `/pos/sales/{id}/refunds` **(Idempotency-Key)** `{reason, refund_method: cash\|bank_transfer, lines[{pos_sale_line_id, quantity, restock_state?}]}` · `/pos/refunds` · `/pos/refunds/{id}/approve\|reject` | `pos.refund.request` / `pos.refund.approve` (not the requester) |
 | GET | `/pos/reports/{summary\|by-product\|by-cashier\|by-payment-method\|by-terminal\|refunds\|shifts\|batches}?from&to` | `pos.reports.view` |
+| GET | `/pos/me` | `pos.sell`; the till app's bootstrap: POS permissions, the cashier's open shift (with drawer), active terminals, server time |
+| GET | `/pos/terminals/{id}/offline-catalogue` | `pos.sell`; offline snapshot for the terminal: per product barcodes, prescription classification, today's tax rate, list price per sellable pack, sellable batches with free quantity (FEFO order), settings, `as_of`; at most 5,000 products |
 | POST (public) | `/payments/webhooks/{provider}` | provider signature only; idempotent per event id |
 | GET / POST · PUT `{id}/items` | `/price-lists` `{code, name, branch_id?, is_default?, items[{product_id, package_level_code, unit_price, minimum_quantity?, valid_from?, valid_to?}]}` (module sales) | `sales.view` / `sales.price_lists.manage` |
 | GET / POST · POST `{id}/convert` **(Idempotency-Key)** | `/quotations` `{customer_id, warehouse_id, valid_until?, lines[]}` | `sales.quote` / `sales.order`; quoted prices honoured; expired → 409 |

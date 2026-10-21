@@ -2,7 +2,7 @@
 
 Last updated: 2026-10-18 · Spec: `docs/source/MASTER_SPEC_v1.0.md` (phases per §31)
 
-**Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 in progress: 3a sync engine ✅, 3b offline POS replay ✅; the app (3c: encrypted storage, POS mode, batch sync, outage test) next.**
+**Phase 0 ✅ · Phase 1 ✅ · Phase 2 ✅ · Phase 3 ✅ (sync engine, offline POS replay, encrypted offline app with till mode, six-hour outage tests); Phase 4 (B2B marketplace) next.**
 
 Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated) · 📐 designed only · ⬜ not started
 
@@ -19,8 +19,8 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 
 ## Last verification run (2026-10-18)
 
-- `php artisan test`: **193 tests, 1649 assertions, all passing**
-- `flutter test` (mobile/field_app): **10 passing**, plus 1 live-API end-to-end test (run locally against `php artisan serve` with demo data; skipped in CI) (MariaDB `pharma_network_test`).
+- `php artisan test`: **195 tests, 1690 assertions, all passing** (includes the six-hour outage scenario)
+- `flutter test` (mobile/field_app): **14 passing** (sync protocol, till, money, six-hour outage with restarts, widgets), plus 2 live-API end-to-end tests (representative and cashier; run locally against `php artisan serve` with demo data; skipped in CI) (MariaDB `pharma_network_test`).
 - `vendor/bin/pint --test`: passing. `npm run build`: succeeds.
 - `php artisan migrate:fresh --seed`: succeeds, loading 7 synthetic organizations, 24 users, 5 `DEMO-` identifiers and 7 trial subscriptions.
 - `database/sql/pharmaceutical_supply_chain_schema.sql` regenerated. It imports cleanly into an empty database (49 tables, 63 foreign keys), and `SchemaSnapshotTest` confirms it matches the migrations.
@@ -70,6 +70,22 @@ Legend: ✅ implemented and covered by passing tests · 🟡 partial (gap stated
 | Finance foundations (2.4a) | ✅ | Chart of accounts (per org, by system key), monthly periods with close/reopen, balanced immutable journal with reversals, automatic postings from receipts, supplier invoices (GRNI/PPV/tax/AP), write-offs, counts, opening balances, supplier returns and payments; supplier payment allocation; trial balance, ledger, P&L, balance sheet, payables aging. Management books, not certified statutory accounts |
 | Procurement (2.3) | ✅ | Requisitions with approval → POs (supplier price lists, threshold-based approval, segregation of duties) → goods receipts with batch capture and over-receipt tolerance → supplier invoices with three-way match and audited override → supplier returns; supplier performance; purchase suggestions. |
 | Inventory core (2.2) | ✅ | Append-only ledger + locked balances, batches with expiry/quality/recall status, FEFO (min shelf life), reservations, receipts with package-level conversion, adjustments, transfers (in-transit, partial receipt), counts, bins, quarantine/release, expiry & low-stock reports, batch-cost valuation; two-connection locking test |
+| Offline app (3c) | ✅ | The Flutter app gains:
+- an SQLCipher database with Keystore/Keychain keys (crypto-shred on wipe) and a v2 schema migration;
+- device registration with token swap, a role chooser (field or till) and a terminal chooser;
+- batch sync over `/sync/batches` with stable `client_txn_id`s and per-envelope acknowledgements;
+- automatic sync with backoff (2 s doubling to 15 min, with jitter) and sync on resume;
+- a Sync status screen (waiting, retrying, conflict, rejected, last sync, next try);
+- revocation handling: a lock, and a wipe when requested;
+- a till mode: shift open and close online, an offline catalogue (scan by SKU, barcode or batch), a cart priced exactly like the ERP (`D4` half-up arithmetic), prescription capture for pharmacists, cash with change, standalone-card pending, cached stock lowered per sale, offline receipts, and sales with server status.
+
+Verified by:
+- `flutter analyze` (clean);
+- 14 unit, widget and outage tests;
+- live end-to-end tests for a representative and a cashier;
+- a debug APK build (see Known limitations).
+
+Not done: background sync with the app closed, an iOS build, Bluetooth receipt printing, and a physical-device outage run |
 | Offline POS replay (3b) | ✅ | `pos.sale` envelopes recorded through `PosSaleService::recordOffline`: prices as charged (variance issues), FEFO allocation under row locks, scanned batches honoured even if blocked since (recall issue), shortfalls left unallocated and raised (never negative stock), offline cash confirmed in the drawer but shown as `offline_cash_recorded` until the shift is reviewed, standalone-terminal card/transfer payments pending until a supervisor confirms, late sales on closed shifts flagged, reviewed shifts refused as conflicts; shortfall reconciliation by found-stock receipt plus issue with COGS; tests cover two tills selling the last units with balanced books |
 | Sync engine (3a) | ✅ | Device registration with device-bound sliding tokens; revocation enforced on every API request (one-time `device_revoked` with wipe flag, then locked out; device tokens cannot act for another organization); `POST /sync/batches` storing every envelope durably before processing, in order, with per-envelope acknowledgement (synced/conflict/rejected/retry_required) and idempotent replays (`duplicate`); field-force operations replayed through the same services and validation as online, referenced by client reference; refused transactions kept, reviewable and annotatable; reconciliation report; `devices.manage` and `sync.reconcile` permissions; ADR-0011 |
 | Flutter field app (2.6b) | ✅ | `mobile/field_app` (Flutter 3.47, Android first). Covers sign-in (token in Keystore/Keychain), organization choice, assigned-customer directory, one-shot location at check-in/out (status recorded, never guessed), visit log with activities and follow-up date, customer-priced catalogue with stock age, draft → queued → ERP-decided orders with unambiguous status wording, follow-ups, activity report, and a needs-attention list. Data lives in a local SQLite database with an ordered outbox and `client_reference` idempotency. Verified by `flutter analyze` (clean), 10 unit/widget tests, an end-to-end test against the live demo-seeded API (sign-in → verified visit → order accepted as a confirmed sales order), and a debug APK build. Not done: iOS build (needs macOS), local database encryption, and background sync (Phase 3) |

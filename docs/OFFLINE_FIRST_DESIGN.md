@@ -3,7 +3,7 @@
 Status:
 - **Server sync engine: built (3a; ADR-0011).** Covers devices, device-bound tokens, revocation, `sync_inbox`, per-envelope acknowledgements, conflict and rejected states, the review endpoints and the reconciliation report.
 - **Offline POS replay: built (3b).** Covers the `pos.sale` envelope, offline cash, pending card payments, stock shortfalls and their reconciliation.
-- **The app (3c): in progress.**
+- **The app: built (3c).** Covers the SQLCipher database, device registration, batch sync with backoff, sync status, revocation and wipe, the till mode and the outage tests. Operating limits and the six-hour scenario are in [OFFLINE_OUTAGE_PLAYBOOK.md](OFFLINE_OUTAGE_PLAYBOOK.md).
 
 Phase 1 already provides the foundations this design depends on: ULID keys (clients can generate them), idempotency keys scoped by user and tenant, and correlation ids.
 
@@ -17,8 +17,11 @@ Phase 1 already provides the foundations this design depends on: ULID keys (clie
 ## Client storage (Flutter, Android first)
 
 - SQLite database. Target: the database key is held in Android Keystore / iOS Keychain (`flutter_secure_storage`), with SQLCipher encryption for the database file.
-  - **Built in Phase 2.6b** (`mobile/field_app`): plain `sqflite` with the tables `customers`, `catalogue_items`, `visits`, `orders`, `follow_ups` and an ordered `outbox`. Records are keyed by device `client_reference` (UUID v7); the API token is stored in Keystore/Keychain; there is one database file per user and organization.
-  - **Not yet encrypted.** SQLCipher, device registration and background sync are Phase 3 work.
+  - **Built in 3c** (`mobile/field_app`):
+    - SQLCipher via `sqflite_sqlcipher`, with a random 256-bit key per database file in Keystore/Keychain (`DbKeyStore`); deleting the key crypto-shreds the data on a wipe request.
+    - Tables: `customers`, `catalogue_items`, `visits`, `orders`, `follow_ups`, `pos_catalogue`, `pos_sales` and the ordered `outbox`, each outbox item carrying a stable `client_txn_id`. The schema is versioned (v2) with migrations.
+    - One database per user, organization and role. The device-bound token is in Keystore/Keychain; the sign-in token is deleted after registration.
+  - **Not done:** background sync while the app is closed.
 - Cached data per device role:
   - **POS:** the branch's sellable catalogue and prices, batch availability snapshots with an `as_of` time, recent customers, and open shift state.
   - **Field force:** assigned customers only, the authorized catalogue, applicable price lists, visit forms, and pending drafts.

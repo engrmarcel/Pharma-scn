@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### 2026-10-21: Phase 3c, encrypted offline app with till mode (Phase 3 complete)
+- App storage is now SQLCipher (`sqflite_sqlcipher`), with a random 256-bit key per database file in Keystore/Keychain. A wipe destroys the key and the file. The schema moves to v2 with a migration.
+- After sign-in the app registers the device (field or till), swaps the sign-in token for the device-bound token, and uses one database per user, organization and role.
+- Sync moves to `POST /sync/batches`. Every outbox item has a stable `client_txn_id`, and per-envelope acknowledgements mark items synced, conflict, rejected or retry. Sync runs automatically every 15 s while queued work exists (backoff 2 s to 15 min with jitter) and on resume. A Sync status screen shows waiting, retrying and refused items, the last sync and the next try.
+- Deauthorized devices are locked out, and erased (crypto-shred) when the administrator asked for a wipe.
+- Till mode:
+  - shifts open and close online (closing is refused while sales are unsent or refused);
+  - selling works from the offline catalogue (`GET pos/terminals/{id}/offline-catalogue`; `GET pos/me`) by search or scan of SKU, barcode or batch;
+  - cart totals are computed exactly as the ERP computes them;
+  - prescription products need a pharmacist and prescription details;
+  - payments: cash with change, and standalone card or transfer recorded as pending;
+  - cached stock is lowered per sale, receipts are marked offline until synced, and server status and payment states are shown after sync.
+- Fix: `pos_sales.client_transaction_id` widened to 64 characters for device UUIDs, found by the live end-to-end test.
+- Six-hour outage scenario, server and device sides, with its workload profile, equipment, procedures and limits documented in `docs/OFFLINE_OUTAGE_PLAYBOOK.md`.
+
 ### 2026-10-21: Phase 3b, offline POS replay and stock reconciliation
 - `pos.sale` sync envelopes from registered POS devices are recorded as they happened: the device's prices (variances raised for review), FEFO stock under the same locks as online, and the payments taken.
 - Offline cash goes into the drawer and completes the sale, and is shown as `offline_cash_recorded` until the shift is reviewed. Standalone card and transfer payments stay pending until a supervisor confirms them. Electronic payments are never confirmed offline.

@@ -101,27 +101,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-class OrganizationPicker extends StatelessWidget {
-  const OrganizationPicker({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Choose organization'), actions: [IconButton(onPressed: app.signOut, icon: const Icon(Icons.logout))]),
-      body: ListView(children: [
-        if (app.error != null) Padding(padding: const EdgeInsets.all(16), child: Text(app.error!, style: const TextStyle(color: AppColors.danger))),
-        for (final org in app.organizationChoices)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.business_outlined),
-              title: Text(org.name),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: app.busy ? null : () => app.selectOrganization(org),
-            ),
-          ),
-      ]),
-    );
-  }
-}

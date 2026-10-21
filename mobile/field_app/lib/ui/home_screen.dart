@@ -8,6 +8,7 @@ import '../state/app_state.dart';
 import 'customer_screen.dart';
 import 'order_screen.dart';
 import 'report_screen.dart';
+import 'sync_status_screen.dart';
 import 'theme.dart';
 import 'visit_screen.dart';
 import 'widgets.dart';
@@ -42,14 +43,14 @@ class _HomeScreenState extends State<HomeScreen> {
               } else if (v == 'report') {
                 await Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportScreen()));
               } else if (v == 'attention') {
-                await Navigator.push(context, MaterialPageRoute(builder: (_) => const NeedsAttentionScreen()));
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SyncStatusScreen()));
               } else if (v == 'signout') {
                 await _confirmSignOut(context, app);
               }
             },
             itemBuilder: (_) => [
               if (session.can('field_force.reports.view')) const PopupMenuItem(value: 'report', child: Text('Activity report')),
-              const PopupMenuItem(value: 'attention', child: Text('Needs attention')),
+              const PopupMenuItem(value: 'attention', child: Text('Sync status')),
               const PopupMenuItem(value: 'location', child: Text('How location is used')),
               const PopupMenuItem(value: 'signout', child: Text('Sign out')),
             ],
@@ -281,42 +282,5 @@ class _FollowUpsTab extends StatelessWidget {
     await app.repository!.completeFollowUp(f.id, outcome);
     await app.changed();
     await app.syncNow();
-  }
-}
-
-/// Items the server refused: shown with the reason so nothing disappears silently.
-class NeedsAttentionScreen extends StatelessWidget {
-  const NeedsAttentionScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final app = context.watch<AppState>();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Needs attention')),
-      body: FutureBuilder(
-        future: app.repository!.outbox.failed(),
-        builder: (context, snap) {
-          final items = snap.data ?? const [];
-          if (items.isEmpty) return const EmptyState(icon: Icons.check_circle_outline, message: 'Nothing needs attention.');
-          return ListView(children: [
-            for (final item in items)
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.error_outline, color: AppColors.danger),
-                  title: Text(item.operation.replaceAll('_', ' ')),
-                  subtitle: Text(item.lastError ?? ''),
-                  trailing: TextButton(
-                    onPressed: () async {
-                      await app.repository!.outbox.dismiss(item.id);
-                      await app.changed();
-                    },
-                    child: const Text('Dismiss'),
-                  ),
-                ),
-              ),
-          ]);
-        },
-      ),
-    );
   }
 }

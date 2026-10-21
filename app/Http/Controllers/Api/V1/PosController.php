@@ -12,6 +12,7 @@ use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosShift;
 use App\Domain\Pos\Models\PosTerminal;
 use App\Domain\Pos\Services\PosCatalogue;
+use App\Domain\Pos\Services\PosOfflineCatalogue;
 use App\Domain\Pos\Services\PosRefundService;
 use App\Domain\Pos\Services\PosReports;
 use App\Domain\Pos\Services\PosSaleService;
@@ -121,6 +122,32 @@ class PosController extends Controller
     // ---- Product lookup ---------------------------------------------------------
 
     /** Name, SKU, GTIN or batch number search with sellable stock at the terminal's warehouse. */
+    /** Bootstrap for the till app: POS permissions, the cashier's open shift and the active terminals. */
+    public function me(Request $request): JsonResponse
+    {
+        Gate::authorize('pos.sell');
+        $abilities = ['pos.sell', 'pos.dispense.prescription', 'pos.cash.manage', 'pos.sale.cancel', 'pos.refund.request', 'sales.price.override', 'sales.approve'];
+        $shift = PosShift::query()->where('cashier_id', $request->user()->id)->where('status', 'open')->first();
+
+        return response()->json(['data' => [
+            'user' => $request->user()->only(['id', 'name', 'email']),
+            'organization' => $this->tenant->organization()->only(['id', 'name', 'country_code']),
+            'permissions' => array_values(array_filter($abilities, fn ($a) => Gate::allows($a))),
+            'shift' => $shift ? $shift->only(['id', 'number', 'pos_terminal_id', 'opened_at', 'opening_float']) + ['drawer' => $this->sessions->drawer($shift)] : null,
+            'terminals' => $this->locations->scope(PosTerminal::query())->where('status', 'active')->orderBy('code')->get(['id', 'code', 'name', 'warehouse_id']),
+            'server_time' => now()->toIso8601String(),
+        ]]);
+    }
+
+    /** Snapshot for selling offline at this terminal (spec §13.1). */
+    public function offlineCatalogue(string $id, PosOfflineCatalogue $catalogue): JsonResponse
+    {
+        Gate::authorize('pos.sell');
+        $terminal = $this->locations->scope(PosTerminal::query())->where('status', 'active')->findOrFail($id);
+
+        return response()->json(['data' => $catalogue->snapshot($terminal)]);
+    }
+
     public function lookup(Request $request, PosCatalogue $catalogue): JsonResponse
     {
         Gate::authorize('pos.sell');

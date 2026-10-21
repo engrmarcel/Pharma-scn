@@ -56,7 +56,8 @@ class OfflinePosTest extends FeatureTestCase
     private function sale(array $t, array $till, string $packs, array $payments, array $line = [], array $extra = []): array
     {
         return ['client_txn_id' => (string) Str::ulid(), 'type' => 'pos.sale', 'schema_version' => 1, 'client_created_at' => now()->subHour()->toIso8601String(),
-            'payload' => $extra + ['client_reference' => (string) Str::ulid(), 'shift_id' => $till['shift'], 'completed_at' => now()->subHour()->toIso8601String(),
+            // The app uses UUIDs (36 characters) as client references.
+            'payload' => $extra + ['client_reference' => (string) Str::uuid(), 'shift_id' => $till['shift'], 'completed_at' => now()->subHour()->toIso8601String(),
                 'lines' => [$line + ['product_id' => $t['product']->id, 'package_level_code' => 'pack', 'quantity' => $packs, 'unit_price' => '3000']],
                 'payments' => $payments]];
     }
@@ -140,6 +141,29 @@ class OfflinePosTest extends FeatureTestCase
         $this->api('POST', "sync/issues/{$issue->id}/resolve", ['action' => 'acknowledge', 'notes' => 'again'])->assertStatus(409);
         $report = $this->api('GET', 'sync/reconciliation')->assertOk()->json('data.devices');
         $this->assertCount(2, $report);
+    }
+
+    public function test_the_offline_catalogue_snapshot_has_prices_tax_batches_and_its_timestamp(): void
+    {
+        $t = $this->tills();
+        $snap = $this->actingAsApi($t['tills']['T1']['cashier'], $t['org'])->api('GET', "pos/terminals/{$t['tills']['T1']['terminal']}/offline-catalogue")->assertOk()->json('data');
+
+        $item = collect($snap['items'])->firstWhere('product_id', $t['product']->id);
+        $this->assertSame('3000.0000', collect($item['package_levels'])->firstWhere('code', 'pack')['unit_price']);
+        $this->assertNotNull($item['tax_rate']);
+        $this->assertSame(['P-EARLY', 'P-LATE'], collect($item['batches'])->pluck('batch_number')->all(), 'earliest expiry first');
+        $this->assertSame('30.0000', $item['batches'][0]['free_base_units']);
+        $this->assertNotNull($snap['as_of']);
+        $this->assertSame('NGN', $snap['currency_code']);
+
+        $me = $this->api('GET', 'pos/me')->assertOk()->json('data');
+        $this->assertSame($t['tills']['T1']['shift'], $me['shift']['id']);
+        $this->assertContains('pos.sell', $me['permissions']);
+        $this->assertNotContains('pos.dispense.prescription', $me['permissions'], 'a cashier is not a pharmacist');
+        $this->assertCount(2, $me['terminals']);
+
+        [$auditor] = $this->organizationMember(['auditor'], organization: $t['org']);
+        $this->actingAsApi($auditor, $t['org'])->api('GET', "pos/terminals/{$t['tills']['T1']['terminal']}/offline-catalogue")->assertForbidden();
     }
 
     public function test_offline_card_payments_stay_pending_until_a_supervisor_confirms_settlement(): void

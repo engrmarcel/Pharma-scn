@@ -253,9 +253,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             });
 
             Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {
+                Route::get('me', [PosController::class, 'me'])->name('me');
                 Route::get('terminals', [PosController::class, 'terminals'])->name('terminals.index');
                 Route::post('terminals', [PosController::class, 'storeTerminal'])->name('terminals.store');
                 Route::patch('terminals/{id}', [PosController::class, 'updateTerminal'])->whereUlid('id')->name('terminals.update');
+                Route::get('terminals/{id}/offline-catalogue', [PosController::class, 'offlineCatalogue'])->whereUlid('id')->name('terminals.offline-catalogue');
 
                 Route::post('shifts', [PosController::class, 'openShift'])->name('shifts.open');
                 Route::get('shifts/current', [PosController::class, 'currentShift'])->name('shifts.current');
