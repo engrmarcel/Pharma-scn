@@ -57,7 +57,19 @@ jobs:
       # phpunit.xml defaults DB_CONNECTION to mariadb for local XAMPP but does not force it,
       # so the job-level DB_* variables (MySQL 8, the production target) take precedence.
       - name: Tests (MySQL 8)
-        run: php artisan test
+        run: php artisan test --log-junit junit.xml
+
+      # Failing tests become check-run annotations, readable without access to the raw logs.
+      - name: Report failing tests
+        if: failure()
+        run: |
+          php -r '
+            if (! is_file("junit.xml")) { exit(0); }
+            $x = simplexml_load_file("junit.xml");
+            foreach ($x->xpath("//testcase[failure or error]") as $t) {
+                $m = (string) ($t->failure ?: $t->error);
+                echo "::error title=", $t["class"], "::", $t["name"], " ", str_replace(["%", "\r", "\n"], ["%25", "%0D", "%0A"], substr($m, 0, 3000)), "\n";
+            }'
 
       - name: Dependency audit
         run: composer audit && npm audit --omit=dev
