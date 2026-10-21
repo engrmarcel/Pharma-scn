@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
+use App\Http\Controllers\Api\V1\MarketplaceTradingController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\OrganizationProductController;
@@ -218,6 +219,21 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('relationships', [MarketplaceController::class, 'requestRelationship'])->name('relationships.store');
                 Route::post('relationships/{id}/suspend', [MarketplaceController::class, 'suspendRelationship'])->whereUlid('id')->name('relationships.suspend');
                 Route::post('relationships/{id}/{decision}', [MarketplaceController::class, 'decideRelationship'])->whereUlid('id')->whereIn('decision', ['approve', 'reject'])->name('relationships.decide');
+
+                Route::get('rfqs', [MarketplaceTradingController::class, 'rfqs'])->name('rfqs.index');
+                Route::post('rfqs', [MarketplaceTradingController::class, 'storeRfq'])->name('rfqs.store');
+                Route::get('rfqs/{id}', [MarketplaceTradingController::class, 'rfq'])->whereUlid('id')->name('rfqs.show');
+                Route::get('rfqs/{id}/comparison', [MarketplaceTradingController::class, 'comparison'])->whereUlid('id')->name('rfqs.comparison');
+                Route::post('rfqs/{id}/quotes', [MarketplaceTradingController::class, 'quoteRfq'])->whereUlid('id')->name('rfqs.quote');
+                Route::post('rfqs/{id}/decline', [MarketplaceTradingController::class, 'declineRfq'])->whereUlid('id')->name('rfqs.decline');
+                Route::post('rfqs/{id}/{action}', [MarketplaceTradingController::class, 'rfqAction'])->whereUlid('id')->whereIn('action', ['open', 'close', 'cancel'])->name('rfqs.action');
+                Route::get('quotes', [MarketplaceTradingController::class, 'quotes'])->name('quotes.index');
+                Route::post('quotes', [MarketplaceTradingController::class, 'storeQuote'])->name('quotes.store');
+                Route::post('quotes/{id}/{action}', [MarketplaceTradingController::class, 'quoteAction'])->whereUlid('id')->whereIn('action', ['accept', 'reject', 'withdraw'])->name('quotes.action');
+                Route::get('orders', [MarketplaceTradingController::class, 'orders'])->name('orders.index');
+                Route::post('orders', [MarketplaceTradingController::class, 'storeOrder'])->name('orders.store');
+                Route::get('orders/{id}', [MarketplaceTradingController::class, 'order'])->whereUlid('id')->name('orders.show');
+                Route::post('orders/{id}/{action}', [MarketplaceTradingController::class, 'orderAction'])->whereUlid('id')->whereIn('action', ['submit', 'approve', 'disapprove', 'accept', 'reject', 'cancel'])->name('orders.action');
             });
 
             // Devices and offline synchronization (spec §13).

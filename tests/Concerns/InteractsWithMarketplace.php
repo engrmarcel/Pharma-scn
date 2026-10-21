@@ -53,6 +53,35 @@ trait InteractsWithMarketplace
             : OrganizationModule::query()->create(['organization_id' => $org->id, 'module' => 'marketplace', 'enabled' => $enabled]);
     }
 
+    protected function listedSupplier(bool $verified = true): array
+    {
+        $s = $this->stockedSupplier($verified);
+        $this->actingAsApi($s['owner'], $s['org'])->api('PUT', 'marketplace/profile', ['listed' => true, 'headline' => 'Nationwide distribution',
+            'regions_served' => ['Lagos', 'Ogun'], 'delivery_options' => ['delivery', 'pickup']])->assertOk();
+
+        return $s;
+    }
+
+    /**
+     * A pharmacy with a warehouse, a procurement officer, a finance manager and an approved
+     * relationship with the supplier. Orders under the threshold need no internal approval.
+     */
+    protected function tradingBuyer(array $s, string $threshold = '100000', bool $verified = true): array
+    {
+        [$owner, $org] = $this->marketplaceOrg('pharmacy', $verified);
+        $settings = $org->settings ?? [];
+        data_set($settings, 'procurement.approval_threshold', $threshold);
+        $org->forceFill(['settings' => $settings])->save();
+        $warehouse = $this->inTenant($org, fn () => Warehouse::query()->create(['code' => 'STORE', 'name' => 'Dispensary store']));
+        [$buyer] = $this->organizationMember(['procurement_officer'], organization: $org);
+        [$approver] = $this->organizationMember(['finance_manager'], organization: $org);
+
+        $rel = $this->actingAsApi($buyer, $org)->api('POST', 'marketplace/relationships', ['supplier_organization_id' => $s['org']->id])->assertCreated()->json('data.id');
+        $this->actingAsApi($s['owner'], $s['org'])->api('POST', "marketplace/relationships/{$rel}/approve", ['payment_terms_days' => 30])->assertOk();
+
+        return ['owner' => $owner, 'org' => $org->fresh(), 'warehouse' => $warehouse, 'buyer' => $buyer, 'approver' => $approver, 'relationship' => $rel];
+    }
+
     protected function listing(array $s, Product $product, array $extra = []): string
     {
         return $this->actingAsApi($s['owner'], $s['org'])->api('POST', 'marketplace/listings', $extra + [

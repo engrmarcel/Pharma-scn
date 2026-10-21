@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 4b, RFQs, quotations and B2B orders
+- RFQs: draft, then open to invited suppliers (who do not see each other), then closed, awarded or cancelled. Restrictions are checked per supplier and product when inviting.
+- Quotations: answers to RFQ lines, or direct quotes to buyers with an approved relationship. A newer quote replaces the earlier one; quotes can be withdrawn, rejected or accepted. Comparison shows every offer per line, cheapest first. Accepting creates a draft order at the quoted prices and awards the RFQ.
+- Orders from listings (minimum quantities, restrictions, approved relationship), then through submit, internal approval, supplier acceptance or rejection, and cancellation:
+  - submitting raises the buyer's purchase order under the buyer's own procurement approval rules;
+  - accepting creates the supplier's sales order at the agreed prices and confirms it, reserving stock FEFO;
+  - a supplier rejection or cancellation cancels the buyer's purchase order, marked `[via marketplace]`;
+  - each side sees only its own ERP document.
+- ADR-0012 (shared records and the ERP link). 203 tests passing.
+
 ### 2026-10-23: Phase 4a, marketplace foundations
 - Supplier marketplace profiles (listing switch, regions served, delivery options, minimum order) and product listings on the supplier's own catalogue item and pack. Availability is either live (read from the supplier's stock at search time, shown as a status band, never reserved) or declared (stated with its date, flagged stale after 7 days).
 - Discovery by product, brand, ingredient, strength, dosage form, pack, supplier, supplier type, country, region served, delivery option, verification and availability. Every result carries the supplier's platform-verification label (not a regulator's approval), the product's restriction and whether this buyer may buy it.

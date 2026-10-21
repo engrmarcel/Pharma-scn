@@ -12,15 +12,6 @@ class MarketplaceTest extends FeatureTestCase
 {
     use InteractsWithMarketplace;
 
-    private function listedSupplier(): array
-    {
-        $s = $this->stockedSupplier();
-        $this->actingAsApi($s['owner'], $s['org'])->api('PUT', 'marketplace/profile', ['listed' => true, 'headline' => 'Nationwide distribution',
-            'regions_served' => ['Lagos', 'Ogun'], 'delivery_options' => ['delivery', 'pickup']])->assertOk();
-
-        return $s;
-    }
-
     public function test_discovery_labels_availability_source_freshness_and_supplier_verification(): void
     {
         $s = $this->listedSupplier();
