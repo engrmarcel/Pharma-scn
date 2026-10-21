@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Phase 5a, enterprise integration gateway core
+- External-system registry (`integration_connectors`): system type and version, deployment model, confirmed interface notes, inbound transport, status (draft, active, paused, disabled). Inbound keys are stored hashed, shown once and rotatable. HMAC request signing is optional, rate limits apply per connector, and credentials are encrypted and write-only. Connectors count against the plan's `integration_connectors` limit.
+- Canonical Pharmaceutical Data Model covering all 17 §15.2 entities (`GET /integration/canonical-model`). Field mappings per connector and entity support trim, upper/lower, strip_leading_zeros, date formats, decimal separators and value maps, with a preview that has no side effects.
+- Durable inbox (`POST /integration/inbound/messages`): records are stored before they are acknowledged. Idempotency is per `message_id`, with duplicate detection independent of key order. Processing is asynchronous, and the outcome is read back per message.
+- Ingestion of products (matched to the Product Master by reference, GTIN or NAFDAC number; only the organization's catalogue item is written), batches (expiry conflicts quarantined; quarantine and rejection applied, release left to a person) and inventory snapshots (reconciliation report; stock is never moved).
+- Failed-message handling: data problems are quarantined with actionable, redacted errors; unexpected errors retry with backoff and are dead-lettered after 5 attempts; manual retry, map-to-product or warehouse, and ignore with a reason. `integration:process-due` runs every minute. Per-connector health with counts.
+- Permissions `integrations.view` and `integrations.manage`; the integration administrator role now has them. ADR-0013. Synthetic SAP-style sample dataset in `tests/fixtures/integration`.
+- 214 tests passing.
+
 ### 2026-10-23: Phase 4c, marketplace fulfilment, invoicing, fees and disputes (Phase 4 complete)
 - Shipments are posted through the supplier's sales-order delivery (FEFO, cost of goods) and carry batch numbers and expiries, plus carrier and tracking. The buyer receives into its purchase order with those batches, and short receipts are flagged.
 - The supplier invoices delivered quantities; the buyer records the supplier invoice in its own books, three-way matched. Payment status is read from the supplier's receivables and labelled.

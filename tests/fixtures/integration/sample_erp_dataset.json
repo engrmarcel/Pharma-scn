@@ -1,0 +1,17 @@
+{
+    "_notice": "SYNTHETIC SAMPLE DATA. A fictional SAP-style export (field names modelled on common SAP material, batch and stock fields) for tests and demos. Not taken from any real system; registration numbers and GTINs are invented.",
+    "materials": [
+        {"MATNR": "000000000000100234", "MAKTX": "AMOXICILLIN 500MG CAPS 2X10", "EAN11": "6901234000016", "ZZREGNO": "", "VERPR": "1.250,50", "WAERS": "NGN"},
+        {"MATNR": "000000000000100235", "MAKTX": "PARACETAMOL 500MG TABS 10X10", "EAN11": "", "ZZREGNO": "A4-0457", "VERPR": "850,00", "WAERS": "NGN"},
+        {"MATNR": "000000000000100999", "MAKTX": "ZINC SULPHATE 20MG DISP TABS", "EAN11": "", "ZZREGNO": "", "VERPR": "300,00", "WAERS": "NGN"}
+    ],
+    "batches": [
+        {"MATNR": "000000000000100234", "CHARG": "amx2026a", "VFDAT": "20281231", "HSDAT": "20260115", "ZUSTD": "F"},
+        {"MATNR": "000000000000100235", "CHARG": "pcm-77", "VFDAT": "20271130", "HSDAT": "00000000", "ZUSTD": "Q"},
+        {"MATNR": "000000000000100234", "CHARG": "amx2026b", "VFDAT": "20281340", "HSDAT": "20260201", "ZUSTD": "F"}
+    ],
+    "stock": [
+        {"LOCATION": "1000-0001", "MATNR": "000000000000100234", "CHARG": "amx2026a", "CLABS": "1.200,000", "MEINS": "ST", "STAND": "20261021"},
+        {"LOCATION": "1000-0001", "MATNR": "000000000000100235", "CHARG": "pcm-77", "CLABS": "30", "MEINS": "PAK", "STAND": "20261021"}
+    ]
+}

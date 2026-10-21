@@ -21,6 +21,9 @@ use App\Domain\Finance\Models\FinancialPeriod;
 use App\Domain\Finance\Models\JournalEntry;
 use App\Domain\Finance\Models\Payment;
 use App\Domain\Finance\Services\ChartOfAccounts;
+use App\Domain\Integration\Models\ExternalReference;
+use App\Domain\Integration\Models\IntegrationConnector;
+use App\Domain\Integration\Models\IntegrationMessage;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Inventory\Models\BinLocation;
 use App\Domain\Inventory\Models\StockAdjustment;
@@ -154,6 +157,9 @@ class AppServiceProvider extends ServiceProvider
             'marketplace_order' => MarketplaceOrder::class,
             'marketplace_dispute' => MarketplaceDispute::class,
             'sync_issue' => SyncIssue::class,
+            'integration_connector' => IntegrationConnector::class,
+            'integration_message' => IntegrationMessage::class,
+            'integration_reference' => ExternalReference::class,
             'attachment' => Attachment::class,
         ]);
 

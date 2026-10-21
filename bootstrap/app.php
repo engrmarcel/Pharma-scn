@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AssignCorrelationId;
+use App\Http\Middleware\AuthenticateConnector;
 use App\Http\Middleware\EnforceIdempotency;
 use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureDeviceActive;
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'secure' => EnsureAccountSecurity::class,
             'device' => EnsureDeviceActive::class,
+            'connector' => AuthenticateConnector::class,
         ]);
 
         // Tenant resolution must follow authentication and precede route-model

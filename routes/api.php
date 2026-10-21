@@ -13,6 +13,8 @@ use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\FieldForceController;
 use App\Http\Controllers\Api\V1\FinanceController;
+use App\Http\Controllers\Api\V1\IntegrationController;
+use App\Http\Controllers\Api\V1\IntegrationInboundController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
@@ -48,6 +50,14 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::get('branding', [ReferenceDataController::class, 'branding'])->name('branding');
     Route::get('health', [OperationsController::class, 'health'])->middleware('throttle:30,1')->name('health');
     // Provider callbacks: authenticated by the provider's signature, not by a user.
+    // External systems (spec §15): authenticated by connector key, rate-limited per connector; never a user session.
+    Route::middleware('connector')->prefix('integration/inbound')->name('integration.inbound.')->group(function () {
+        Route::get('ping', [IntegrationInboundController::class, 'ping'])->name('ping');
+        Route::post('messages', [IntegrationInboundController::class, 'store'])->name('messages.store');
+        Route::get('messages/{messageId}', [IntegrationInboundController::class, 'message'])->where('messageId', '[A-Za-z0-9._:\/-]{1,128}')->name('messages.show');
+        Route::get('runs/{runId}', [IntegrationInboundController::class, 'run'])->whereUlid('runId')->name('runs.show');
+    });
+
     Route::post('payments/webhooks/{provider}', PaymentWebhookController::class)->where('provider', '[a-z0-9_]+')->middleware('throttle:300,1')->name('payments.webhook');
 
     Route::middleware('throttle:auth')->prefix('auth')->group(function () {
@@ -249,6 +259,34 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('orders/{id}/disputes', [MarketplaceFulfilmentController::class, 'raiseDispute'])->whereUlid('id')->name('disputes.store');
                 Route::get('disputes/{id}', [MarketplaceFulfilmentController::class, 'dispute'])->whereUlid('id')->name('disputes.show');
                 Route::post('disputes/{id}/{action}', [MarketplaceFulfilmentController::class, 'disputeAction'])->whereUlid('id')->whereIn('action', ['messages', 'escalate', 'resolve', 'return'])->name('disputes.action');
+            });
+
+            // Enterprise integration gateway (spec §15).
+            Route::middleware('module:integrations')->prefix('integration')->name('integration.')->group(function () {
+                Route::get('canonical-model', [IntegrationController::class, 'canonicalModel'])->name('canonical-model');
+                Route::get('health', [IntegrationController::class, 'health'])->name('health');
+                Route::get('connectors', [IntegrationController::class, 'connectors'])->name('connectors.index');
+                Route::post('connectors', [IntegrationController::class, 'storeConnector'])->name('connectors.store');
+                Route::get('connectors/{id}', [IntegrationController::class, 'connector'])->whereUlid('id')->name('connectors.show');
+                Route::patch('connectors/{id}', [IntegrationController::class, 'updateConnector'])->whereUlid('id')->name('connectors.update');
+                Route::post('connectors/{id}/key', [IntegrationController::class, 'rotateKey'])->whereUlid('id')->name('connectors.key');
+                Route::put('connectors/{id}/credentials', [IntegrationController::class, 'setCredentials'])->whereUlid('id')->name('connectors.credentials');
+                Route::post('connectors/{id}/signing', [IntegrationController::class, 'setSigning'])->whereUlid('id')->name('connectors.signing');
+                Route::post('connectors/{id}/{action}', [IntegrationController::class, 'connectorStatus'])->whereUlid('id')->whereIn('action', ['activate', 'pause', 'disable'])->name('connectors.status');
+                Route::get('connectors/{id}/mappings', [IntegrationController::class, 'mappings'])->whereUlid('id')->name('connectors.mappings');
+                Route::put('connectors/{id}/mappings/{entity}', [IntegrationController::class, 'replaceMappings'])->whereUlid('id')->where('entity', '[a-z_]+')->name('connectors.mappings.replace');
+                Route::post('connectors/{id}/mappings/{entity}/preview', [IntegrationController::class, 'previewMappings'])->whereUlid('id')->where('entity', '[a-z_]+')->name('connectors.mappings.preview');
+                Route::get('connectors/{id}/reconciliation/inventory', [IntegrationController::class, 'inventoryReconciliation'])->whereUlid('id')->name('connectors.reconciliation.inventory');
+                Route::get('messages', [IntegrationController::class, 'messages'])->name('messages.index');
+                Route::get('messages/{id}', [IntegrationController::class, 'message'])->whereNumber('id')->name('messages.show');
+                Route::post('messages/{id}/retry', [IntegrationController::class, 'retryMessage'])->whereNumber('id')->name('messages.retry');
+                Route::post('messages/{id}/ignore', [IntegrationController::class, 'ignoreMessage'])->whereNumber('id')->name('messages.ignore');
+                Route::post('messages/{id}/map', [IntegrationController::class, 'mapMessage'])->whereNumber('id')->name('messages.map');
+                Route::get('runs', [IntegrationController::class, 'runs'])->name('runs.index');
+                Route::get('runs/{id}', [IntegrationController::class, 'run'])->whereUlid('id')->name('runs.show');
+                Route::get('external-references', [IntegrationController::class, 'references'])->name('references.index');
+                Route::post('external-references', [IntegrationController::class, 'storeReference'])->name('references.store');
+                Route::delete('external-references/{id}', [IntegrationController::class, 'destroyReference'])->whereNumber('id')->name('references.destroy');
             });
 
             // Devices and offline synchronization (spec §13).

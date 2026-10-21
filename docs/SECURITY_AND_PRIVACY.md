@@ -61,6 +61,15 @@ Behaviour:
   - Sign-up (`POST /auth/register`) sends a signed verification link only when verification is required.
   - Unverified users can then only view their profile, resend the link and sign out (`403 email_unverified`).
 
+## Integration gateway (Phase 5a)
+
+- External systems authenticate with a connector key, not a user token. The key is shown once, stored as a SHA-256 hash, compared in constant time and rotatable (the old key stops working at once). It reaches only `/integration/inbound/*`.
+- Optional request signing: HMAC-SHA256 over `timestamp.body`, with a 5-minute window against replay.
+- Rate limits apply per connector, and the organization's integrations module and subscription are checked on every request.
+- Connector credentials and signing secrets are encrypted at rest (`APP_KEY`) and write-only. The API shows only credential names, and the audit trail records only names.
+- Payload previews and error details are redacted by key name (`config/integrations.php` `redact_keys`: passwords, tokens, keys, card and bank numbers, patient identifiers, contact details).
+- Unexpected exception text is logged and never stored on the message or returned to the source system.
+
 ## Gaps and planned controls
 
 | Gap | Plan |

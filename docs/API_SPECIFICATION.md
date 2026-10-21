@@ -149,6 +149,25 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · POST · POST `{id}/complete {outcome}` · `{id}/cancel` | `/field-force/follow-ups` `{client_reference?, customer_id, field_visit_id?, assigned_to?, title, notes?, due_on}` | `field_force.visits.capture`; assign to self, or within the visible team |
 | GET | `/field-force/reports/activity?from&to` | `field_force.reports.view`; per visible representative: visits, completed, verified and unverified check-ins, without location, customers visited, average minutes, orders captured/submitted/accepted/rejected, accepted value, follow-up compliance |
 
+### Integration gateway, tenant side (`/integration`, module integrations)
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/integration/canonical-model` · `/integration/health` | `integrations.view`; the model lists every entity, its fields, types and requirements, and whether it is ingestible; health per connector: `inactive\|failing\|needs_attention\|healthy`, backlog, oldest pending, totals and last 24 hours |
+| GET · POST · GET `{id}` · PATCH `{id}` | `/integration/connectors` `{code, name, system_type, system_version?, deployment_model?, inbound_transport: rest_push\|file_upload\|sftp\|sap_idoc, interface_notes?, settings?, rate_limit_per_minute?}` | view / `integrations.manage`; creation counts against `integration_connectors` |
+| POST `{id}/key` · PUT `{id}/credentials {credentials{}}` · POST `{id}/signing {enabled}` · POST `{id}/activate\|pause\|disable` | `/integration/connectors/{id}` | `integrations.manage`; key and signing secret returned once; credentials write-only (`credentials_set` lists names) |
+| GET · PUT `{entity}` `{mappings[{target_field, source_path?, transform?, options?, default_value?}]}` · POST `{entity}/preview {records[]}` | `/integration/connectors/{id}/mappings` | view / manage / view |
+| GET | `/integration/connectors/{id}/reconciliation/inventory` | `integrations.view`; source vs platform quantity per warehouse, product and batch: `match\|mismatch\|not_on_platform\|not_reported_by_source` |
+| GET · GET `{id}` · POST `{id}/retry` · POST `{id}/ignore {reason}` · POST `{id}/map {product_id\|warehouse_id}` | `/integration/messages` (`status`, `connector_id`, `entity_type`, `run_id`, `message_id`) | view / manage; payloads and error details redacted |
+| GET · GET `{id}` | `/integration/runs` | `integrations.view` |
+| GET · POST `{connector_id, entity_type: product\|warehouse, external_id, internal_id}` · DELETE `{id}` | `/integration/external-references` | view / manage |
+
+### Integration gateway, external systems (`/integration/inbound`, `Authorization: Bearer ck_…`; no user or tenant header)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/integration/inbound/ping` | connector, organization, ingestible entities, limits, server time |
+| POST | `/integration/inbound/messages` `{messages[{message_id, entity_type, schema_version?, record{}}]}` (max 500) | 202; per record `accepted\|duplicate\|rejected`; never `processed` at intake. Signed connectors also send `X-Timestamp` and `X-Signature: sha256=HMAC(timestamp.body)` |
+| GET | `/integration/inbound/messages/{message_id}` · `/integration/inbound/runs/{id}` | business outcome: `received\|processing\|processed\|quarantined\|failed\|ignored`, result ids, actionable error |
+
 ### Platform administration (`/admin`, platform roles; no tenant context)
 | Method | Path | Permission |
 |---|---|---|
@@ -182,6 +201,8 @@ Tenant addition: `GET /organization/subscription` (plan, status, effective entit
 Public addition: `GET /health`, which returns `200 {"status":"ok","checks":{"database":"ok","cache":"ok","storage":"ok"}}` or `503` with `degraded`. Check details are logged, not returned.
 
 ## Stable error codes (selection)
+
+Integration: `connector_unauthenticated` (401), `signature_invalid` (401), `connector_inactive` (403), `rate_limited` (429), `message_id_invalid`, `entity_unknown`, `entity_not_ingestible`, `record_invalid`, `message_id_reused` (intake rejections), `validation_failed`, `mapping_failed`, `product_unmatched`, `product_reference_unknown`, `product_match_conflict`, `product_match_ambiguous`, `product_not_approved`, `product_not_in_catalogue`, `gtin_invalid`, `sku_conflict`, `batch_expiry_mismatch`, `warehouse_unmatched`, `package_level_unknown` (quarantine codes), `processing_error` (dead letter).
 
 `journal_unbalanced` (422), `period_closed` (409), `allocation_exceeds_balance` (422), `allocation_exceeds_payment` (422), `system_account_required` (409), `insufficient_stock` (409), `stock_reserved` (409), `batch_not_sellable` (409), `batch_expiry_mismatch` (409), `expired_on_receipt` (422), `product_not_in_catalogue` (422), `location_access_denied` (403), `stock_reference_invalid` (404), `transfer_state_invalid` (409), `batch_release_blocked` (409), `mfa_required` (401), `mfa_code_invalid` (401/422), `mfa_disabled` (403), `mfa_enrollment_required` (403/409), `mfa_required_by_policy` (403), `email_unverified` (403), `entitlement_limit_reached` (403), `subscription_inactive` (403), `module_not_entitled` (403), `synthetic_identifier_unverifiable` (422), `synthetic_identifier_rejected` (422), `organization_required` (400), `organization_access_denied` (403), `organization_suspended` (403), `account_suspended` (403), `module_not_enabled` (403), `organization_not_verified` (403), `review_conflict_of_interest` (403), `verification_conflict_of_interest` (403), `verification_documents_missing` (422), `verification_transition_invalid` (409), `product_version_conflict` (409), `package_hierarchy_invalid` (422), `gtin_invalid` (422), `product_identifier_duplicate` (409), `roles_invalid` (422), `last_owner` (409), `invitation_invalid` (404), `invitation_email_mismatch` (403), `idempotency_key_required|invalid` (400), `idempotency_key_reused` (422), `idempotency_request_in_progress` (409).
 

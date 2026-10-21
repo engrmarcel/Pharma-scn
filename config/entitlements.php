@@ -23,7 +23,7 @@ return [
         'warehouses' => ['limit', 'Warehouses'],
         'pos_terminals' => ['limit', 'POS terminals (enforced from Phase 2)'],
         'mobile_users' => ['limit', 'Field-force mobile users (enforced from Phase 2)'],
-        'integration_connectors' => ['limit', 'Enterprise connectors (enforced from Phase 5)'],
+        'integration_connectors' => ['limit', 'Enterprise integration connectors (not disabled)'],
         'monthly_transactions' => ['limit', 'Monthly transaction allowance (enforced from Phase 2)'],
         'storage_mb' => ['limit', 'Document storage in MB'],
         'api_requests_per_minute' => ['limit', 'API rate limit per user'],
