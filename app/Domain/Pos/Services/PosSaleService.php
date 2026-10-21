@@ -17,6 +17,7 @@ use App\Domain\Pos\Models\PaymentProviderEvent;
 use App\Domain\Pos\Models\PosPayment;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosSaleAllocation;
+use App\Domain\Pos\Models\PosSaleLine;
 use App\Domain\Pos\Models\PosShift;
 use App\Domain\Pos\Models\PosTerminal;
 use App\Domain\Pos\Payments\PaymentProviderRegistry;
@@ -29,6 +30,7 @@ use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Money;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
@@ -100,53 +102,206 @@ class PosSaleService
     {
         return DB::transaction(function () use ($sale, $lines) {
             $locked = $this->lock($sale, ['open', 'held']);
-            $warehouse = Warehouse::query()->findOrFail($locked->warehouse_id);
-            $customer = $locked->customer_id ? Customer::query()->find($locked->customer_id) : null;
-            $date = today()->toDateString();
-            $maxDiscount = $this->salesPolicy->settings()['max_discount_percent'];
-
-            $locked->lines()->delete();
-            $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
-            foreach ($lines as $i => $line) {
-                $level = $this->units->level($line['product_id'], $line['package_level_code'] ?? null);
-                $qty = (string) $line['quantity'];
-                $list = $this->listPriceOrNull($customer, $warehouse, $line['product_id'], $level->code, $qty, $date);
-                $price = isset($line['unit_price']) ? (string) $line['unit_price'] : ($list ?? throw new BusinessRuleViolation('price_required', 'No price is configured for this product.', 422, ['line' => $i]));
-                if (isset($line['unit_price']) && ($list === null || bccomp($price, $list, 4) !== 0) && ! Gate::allows('sales.price.override')) {
-                    throw new BusinessRuleViolation('price_override_not_allowed', 'Changing the price needs a supervisor.', 403, ['line' => $i]);
-                }
-                $discount = (string) ($line['discount_percent'] ?? '0');
-                if (bccomp($discount, $maxDiscount, 4) > 0 && ! Gate::allows('sales.approve')) {
-                    throw new BusinessRuleViolation('discount_not_allowed', "Discounts above {$maxDiscount}% need a supervisor.", 403, ['line' => $i]);
-                }
-
-                $batchId = $line['batch_id'] ?? null;
-                if ($batchId !== null) {
-                    $batch = Batch::query()->where('product_id', $line['product_id'])->find($batchId)
-                        ?? throw new BusinessRuleViolation('batch_mismatch', 'The scanned batch does not belong to this product.', 422, ['line' => $i]);
-                    $this->fefo->assertSellable($batch);
-                }
-
-                $prescription = $this->prescriptions->check($line['product_id'], $line['prescription'] ?? null, $i);
-                $tax = $this->pricing->tax($line['product_id'], $date);
-                $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate']);
-
-                $locked->lines()->create([
-                    'product_id' => $line['product_id'], 'package_level_code' => $level->code, 'quantity' => $qty,
-                    'base_quantity' => bcmul($qty, (string) $level->base_unit_quantity, 4), 'unit_price' => $price, 'list_price' => $list,
-                    'discount_percent' => $discount, 'tax_category_code' => $tax['category'], 'tax_rate' => $tax['rate'],
-                    'line_subtotal' => $amounts['subtotal'], 'line_discount' => $amounts['discount'], 'line_tax' => $amounts['tax'],
-                    'line_total' => $amounts['total'], 'requested_batch_id' => $batchId, 'prescription' => $prescription,
-                ]);
-                foreach (['subtotal', 'discount', 'tax', 'total'] as $k) {
-                    $totals[$k] = Money::add($totals[$k], $amounts[$k]);
-                }
-            }
-
-            $locked->forceFill(['status' => 'open', 'subtotal' => $totals['subtotal'], 'discount_total' => $totals['discount'], 'tax_total' => $totals['tax'], 'total' => $totals['total']])->save();
+            $this->writeLines($locked, $lines, today()->toDateString());
+            $locked->forceFill(['status' => 'open'])->save();
 
             return $locked->load('lines', 'payments');
         });
+    }
+
+    /**
+     * Price the lines and write them. Online, a price, discount or
+     * prescription breach is refused. Offline replay passes $issues: the
+     * goods and the money have already changed hands, so the same breaches
+     * are recorded for review instead (spec §13.3: never discard a sale).
+     */
+    private function writeLines(PosSale $locked, array $lines, string $date, ?array &$issues = null): void
+    {
+        $offline = $issues !== null;
+        $warehouse = Warehouse::query()->findOrFail($locked->warehouse_id);
+        $customer = $locked->customer_id ? Customer::query()->find($locked->customer_id) : null;
+        $maxDiscount = $this->salesPolicy->settings()['max_discount_percent'];
+
+        $locked->lines()->delete();
+        $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
+        foreach ($lines as $i => $line) {
+            $level = $this->units->level($line['product_id'], $line['package_level_code'] ?? null);
+            $qty = (string) $line['quantity'];
+            $list = $this->listPriceOrNull($customer, $warehouse, $line['product_id'], $level->code, $qty, $date);
+            $price = isset($line['unit_price']) ? (string) $line['unit_price'] : ($list ?? throw new BusinessRuleViolation('price_required', 'No price is configured for this product.', 422, ['line' => $i]));
+            if (isset($line['unit_price']) && ($list === null || bccomp($price, $list, 4) !== 0) && ! Gate::allows('sales.price.override')) {
+                $offline
+                    ? $issues[] = ['type' => 'price_variance', 'severity' => 'medium', 'line' => $i, 'product_id' => $line['product_id'], 'details' => ['charged' => bcadd($price, '0', 4), 'list_price' => $list]]
+                    : throw new BusinessRuleViolation('price_override_not_allowed', 'Changing the price needs a supervisor.', 403, ['line' => $i]);
+            }
+            $discount = (string) ($line['discount_percent'] ?? '0');
+            if (bccomp($discount, $maxDiscount, 4) > 0 && ! Gate::allows('sales.approve')) {
+                $offline
+                    ? $issues[] = ['type' => 'discount_over_limit', 'severity' => 'medium', 'line' => $i, 'product_id' => $line['product_id'], 'details' => ['discount_percent' => $discount, 'limit' => $maxDiscount]]
+                    : throw new BusinessRuleViolation('discount_not_allowed', "Discounts above {$maxDiscount}% need a supervisor.", 403, ['line' => $i]);
+            }
+
+            $batchId = $line['batch_id'] ?? null;
+            if ($batchId !== null) {
+                $batch = Batch::query()->where('product_id', $line['product_id'])->find($batchId)
+                    ?? throw new BusinessRuleViolation('batch_mismatch', 'The scanned batch does not belong to this product.', 422, ['line' => $i]);
+                if (! $offline) {
+                    $this->fefo->assertSellable($batch); // offline: judged when stock is allocated (allocateOffline)
+                }
+            }
+
+            try {
+                $prescription = $this->prescriptions->check($line['product_id'], $line['prescription'] ?? null, $i);
+            } catch (BusinessRuleViolation $e) {
+                if (! $offline) {
+                    throw $e;
+                }
+                $prescription = $line['prescription'] ?? null;
+                $issues[] = ['type' => 'prescription_control', 'severity' => 'high', 'line' => $i, 'product_id' => $line['product_id'], 'details' => ['code' => $e->errorCode, 'message' => $e->getMessage()]];
+            }
+            $tax = $this->pricing->tax($line['product_id'], $date);
+            $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate']);
+
+            $locked->lines()->create([
+                'product_id' => $line['product_id'], 'package_level_code' => $level->code, 'quantity' => $qty,
+                'base_quantity' => bcmul($qty, (string) $level->base_unit_quantity, 4), 'unit_price' => $price, 'list_price' => $list,
+                'discount_percent' => $discount, 'tax_category_code' => $tax['category'], 'tax_rate' => $tax['rate'],
+                'line_subtotal' => $amounts['subtotal'], 'line_discount' => $amounts['discount'], 'line_tax' => $amounts['tax'],
+                'line_total' => $amounts['total'], 'requested_batch_id' => $batchId, 'prescription' => $prescription,
+            ]);
+            foreach (['subtotal', 'discount', 'tax', 'total'] as $k) {
+                $totals[$k] = Money::add($totals[$k], $amounts[$k]);
+            }
+        }
+
+        $locked->forceFill(['subtotal' => $totals['subtotal'], 'discount_total' => $totals['discount'], 'tax_total' => $totals['tax'], 'total' => $totals['total']])->save();
+    }
+
+    /**
+     * Replay a sale made while the till was offline (spec §13.1, §13.4, §13.5).
+     *
+     * The sale is recorded as it happened: the device's prices (variances are
+     * raised for review), the cash it took (confirmed, marked recorded_offline:
+     * in the drawer but reconciled only when the shift is counted), and the
+     * stock it handed over. Stock is allocated under the same row locks as
+     * online sales; whatever the server cannot find becomes a stock_shortfall
+     * issue instead of a blind negative balance. Card and transfer payments
+     * taken on a standalone terminal stay pending until a supervisor confirms them.
+     *
+     * @param  array{lines: list<array>, payments: list<array>, completed_at: string, customer_id?: ?string}  $data
+     * @return array{sale: PosSale, issues: list<array>, replayed: bool}
+     */
+    public function recordOffline(PosShift $shift, User $cashier, string $clientTransactionId, array $data, ?string $deviceId = null): array
+    {
+        $existing = PosSale::query()->where('client_transaction_id', strtolower($clientTransactionId))->first();
+        if ($existing !== null) {
+            return ['sale' => $existing->load('lines', 'payments'), 'issues' => [], 'replayed' => true];
+        }
+        if ($shift->cashier_id !== $cashier->id) {
+            throw new BusinessRuleViolation('shift_not_yours', 'The sale belongs to another cashier\'s shift.', 403);
+        }
+        if ($shift->status === 'reviewed') {
+            throw new BusinessRuleViolation('shift_reviewed', 'The shift was already counted and reviewed; a supervisor must handle this sale.', 409);
+        }
+
+        return DB::transaction(function () use ($shift, $cashier, $clientTransactionId, $data, $deviceId) {
+            $issues = [];
+            $terminal = PosTerminal::query()->findOrFail($shift->pos_terminal_id);
+            $completedAt = Carbon::parse($data['completed_at']);
+
+            $sale = PosSale::query()->create([
+                'number' => $this->numbers->next('POS'), 'client_transaction_id' => strtolower($clientTransactionId),
+                'pos_shift_id' => $shift->id, 'pos_terminal_id' => $terminal->id, 'cashier_id' => $cashier->id,
+                'customer_id' => $data['customer_id'] ?? null, 'warehouse_id' => $terminal->warehouse_id, 'status' => 'open',
+                'currency_code' => $this->tenant->organization()->country->currency_code,
+                'captured_offline' => true, 'client_completed_at' => $completedAt, 'device_id' => $deviceId,
+            ]);
+            $this->writeLines($sale, $data['lines'], $completedAt->toDateString(), $issues);
+
+            foreach ($sale->lines()->orderBy('id')->get() as $i => $line) {
+                $this->allocateOffline($sale, $line, $i, $issues);
+            }
+            $sale->forceFill(['status' => 'awaiting_payment'])->save();
+
+            $cashTotal = '0';
+            foreach ($data['payments'] as $p) {
+                if ($p['method'] === 'cash') {
+                    $tendered = (string) ($p['tendered'] ?? $p['amount']);
+                    $sale->payments()->create(['method' => 'cash', 'channel' => 'cash', 'amount' => $p['amount'], 'tendered' => $tendered,
+                        'status' => 'confirmed', 'confirmed_at' => $completedAt, 'recorded_offline' => true]);
+                    $this->sessions->cash($shift, 'sale', (string) $p['amount'], "Offline sale {$sale->number}", $sale->id);
+                    $sale->forceFill(['change_due' => bcadd((string) $sale->change_due, bcsub($tendered, (string) $p['amount'], 4), 4)])->save();
+                    $cashTotal = bcadd($cashTotal, (string) $p['amount'], 4);
+                } else {
+                    // A standalone terminal cannot be verified from the device: pending until a supervisor checks settlement.
+                    $sale->payments()->create(['method' => $p['method'], 'channel' => 'manual_terminal', 'amount' => $p['amount'], 'status' => 'pending',
+                        'external_approval_code' => $p['approval_code'] ?? null, 'recorded_offline' => true]);
+                }
+            }
+
+            $committed = $this->committed($sale);
+            if (bccomp($committed, (string) $sale->total, 4) < 0) {
+                $issues[] = ['type' => 'payment_shortfall', 'severity' => 'high', 'details' => ['total' => (string) $sale->total, 'recorded_payments' => $committed]];
+            }
+            if ($shift->status === 'closed' && bccomp($cashTotal, '0', 4) > 0) {
+                $issues[] = ['type' => 'late_offline_sale', 'severity' => 'medium', 'details' => ['shift' => $shift->number, 'cash' => $cashTotal,
+                    'note' => 'The shift was closed before this sale synced; its expected cash no longer includes this amount.']];
+            }
+
+            $this->audit->record('pos_sale.recorded_offline', $sale, new: ['number' => $sale->number, 'total' => (string) $sale->total, 'issues' => array_column($issues, 'type')]);
+            $this->tryComplete($sale->fresh());
+
+            return ['sale' => $sale->fresh(['lines', 'payments']), 'issues' => $issues, 'replayed' => false];
+        });
+    }
+
+    /**
+     * Reserve what the server can find for an offline line. A scanned batch is
+     * honoured (it is what physically left), even if it has since been blocked;
+     * anything that cannot be found is left unallocated and raised as a shortfall.
+     */
+    private function allocateOffline(PosSale $sale, PosSaleLine $line, int $index, array &$issues): void
+    {
+        $base = (string) $line->base_quantity;
+        $allocated = '0';
+
+        if ($line->requested_batch_id) {
+            $batch = Batch::query()->findOrFail($line->requested_batch_id);
+            try {
+                $this->fefo->assertSellable($batch);
+            } catch (BusinessRuleViolation $e) {
+                $issues[] = ['type' => 'blocked_batch_sold', 'severity' => 'high', 'line' => $index, 'product_id' => $line->product_id,
+                    'details' => ['batch_id' => $batch->id, 'batch_number' => $batch->batch_number, 'reason' => $e->details['reason'] ?? $e->getMessage()]];
+            }
+            $free = (string) (DB::table('inventory_balances')->where('warehouse_id', $sale->warehouse_id)->where('batch_id', $batch->id)
+                ->where('stock_state', 'available')->lockForUpdate()->selectRaw('COALESCE(SUM(quantity - reserved_quantity), 0) as free')->value('free') ?? '0');
+            $allocated = bccomp($free, $base, 4) >= 0 ? $base : (bccomp($free, '0', 4) > 0 ? $free : '0');
+            if (bccomp($allocated, '0', 4) > 0) {
+                $this->reservations->reserveBatch($line->product_id, $sale->warehouse_id, $batch->id, $allocated, 'pos_sale_line', $line->id);
+            }
+        } else {
+            try {
+                $this->reservations->reserve($line->product_id, $sale->warehouse_id, $base, 'pos_sale_line', $line->id);
+                $allocated = $base;
+            } catch (BusinessRuleViolation $e) {
+                if ($e->errorCode !== 'insufficient_stock') {
+                    throw $e;
+                }
+                $sellable = (string) ($e->details['sellable'] ?? '0');
+                if (bccomp($sellable, '0', 4) > 0) {
+                    $this->reservations->reserve($line->product_id, $sale->warehouse_id, $sellable, 'pos_sale_line', $line->id);
+                    $allocated = $sellable;
+                }
+            }
+        }
+
+        $short = bcsub($base, $allocated, 4);
+        if (bccomp($short, '0', 4) > 0) {
+            $line->forceFill(['unallocated_base_quantity' => $short])->save();
+            $issues[] = ['type' => 'stock_shortfall', 'severity' => 'high', 'line' => $index, 'product_id' => $line->product_id,
+                'warehouse_id' => $sale->warehouse_id, 'quantity' => $short, 'subject_type' => 'pos_sale_line', 'subject_id' => $line->id,
+                'details' => ['sold' => $base, 'issued' => $allocated, 'sale' => $sale->number]];
+        }
     }
 
     public function hold(PosSale $sale): PosSale
@@ -340,7 +495,9 @@ class PosSaleService
         $deltas = [];
 
         foreach ($sale->lines()->orderBy('id')->get() as $line) {
-            $shipped = $this->reservations->consumeQuantity('pos_sale_line', $line->id, (string) $line->base_quantity);
+            // Offline shortfalls (unallocated) are issued later, when the issue is resolved.
+            $toShip = bcsub((string) $line->base_quantity, (string) $line->unallocated_base_quantity, 4);
+            $shipped = bccomp($toShip, '0', 4) > 0 ? $this->reservations->consumeQuantity('pos_sale_line', $line->id, $toShip) : ['batches' => []];
             $costs = Batch::query()->whereIn('id', array_keys($shipped['batches']))->pluck('unit_cost', 'id');
             foreach ($shipped['batches'] as $batchId => $qty) {
                 PosSaleAllocation::query()->create(['pos_sale_line_id' => $line->id, 'batch_id' => $batchId, 'base_quantity' => $qty, 'unit_cost' => $costs[$batchId]]);

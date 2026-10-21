@@ -15,7 +15,7 @@ class PosSale extends Model
 
     protected function casts(): array
     {
-        return ['completed_at' => 'datetime', 'subtotal' => 'decimal:4', 'discount_total' => 'decimal:4', 'tax_total' => 'decimal:4', 'total' => 'decimal:4', 'change_due' => 'decimal:4'];
+        return ['completed_at' => 'datetime', 'client_completed_at' => 'datetime', 'captured_offline' => 'boolean', 'subtotal' => 'decimal:4', 'discount_total' => 'decimal:4', 'tax_total' => 'decimal:4', 'total' => 'decimal:4', 'change_due' => 'decimal:4'];
     }
 
     public function lines(): HasMany

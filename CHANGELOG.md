@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-21: Phase 3b, offline POS replay and stock reconciliation
+- `pos.sale` sync envelopes from registered POS devices are recorded as they happened: the device's prices (variances raised for review), FEFO stock under the same locks as online, and the payments taken.
+- Offline cash goes into the drawer and completes the sale, and is shown as `offline_cash_recorded` until the shift is reviewed. Standalone card and transfer payments stay pending until a supervisor confirms them. Electronic payments are never confirmed offline.
+- Two tills selling the last units: the later sale stands, only existing stock is issued, and the rest is a `stock_shortfall` issue. Resolving it with `record_found_stock` receives the stock that was physically there and issues it to the sale, posting the missing cost of goods sold. No balance is overwritten or made negative.
+- A batch recalled or expired while offline is still issued (it left the shop) and flagged `blocked_batch_sold`. Discount, prescription, payment-shortfall and late-shift findings become issues. Reviewed shifts and foreign terminals are refused.
+- New columns: `pos_sales.captured_offline`, `client_completed_at`, `device_id`; `pos_sale_lines.unallocated_base_quantity`; `pos_payments.recorded_offline`. 193 tests passing.
+
 ### 2026-10-21: Phase 3a, device registration and the sync engine
 - `devices` with device-bound API tokens (sliding expiry, `SYNC_DEVICE_TOKEN_TTL_HOURS`), registration per role (field, or POS with a terminal), and revocation by the owner or a device manager, optionally requesting a data wipe. `EnsureDeviceActive` refuses revoked devices (once with `device_revoked {wipe}`, then the token is gone) and blocks device tokens used for another organization.
 - `POST /sync/batches`: envelopes are stored in `sync_inbox` before processing, processed in order in their own transactions, and acknowledged individually as synced, conflict, rejected or retry_required. Replays return the stored acknowledgement and are never applied twice; another device's transaction id is refused. Unsupported types or versions and future device clocks are rejected.

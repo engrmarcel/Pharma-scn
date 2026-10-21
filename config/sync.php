@@ -22,5 +22,6 @@ return [
         'field.order.capture' => [1],
         'field.order.resubmit' => [1],
         'field.follow_up.complete' => [1],
+        'pos.sale' => [1],
     ],
 ];

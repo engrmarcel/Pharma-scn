@@ -2,7 +2,8 @@
 
 Status:
 - **Server sync engine: built (3a; ADR-0011).** Covers devices, device-bound tokens, revocation, `sync_inbox`, per-envelope acknowledgements, conflict and rejected states, the review endpoints and the reconciliation report.
-- **Offline POS replay (3b) and the app (3c): in progress.**
+- **Offline POS replay: built (3b).** Covers the `pos.sale` envelope, offline cash, pending card payments, stock shortfalls and their reconciliation.
+- **The app (3c): in progress.**
 
 Phase 1 already provides the foundations this design depends on: ULID keys (clients can generate them), idempotency keys scoped by user and tenant, and correlation ids.
 
@@ -47,12 +48,29 @@ Retry uses exponential backoff with jitter (2 s doubling to 15 min), runs when c
 
 ## Inventory conflicts
 
-- During server-side replay, the server allocates with row locks in transaction order. If two terminals sold the last units, the second sale is still recorded (cash was taken), but its shortfall becomes an **inventory discrepancy**: a negative-availability exception routed to supervisor reconciliation. It is never silently dropped.
-- Offline batch selections are validated: an expired, recalled or quarantined batch produces a `CONFLICT` for review.
+- During server-side replay, the server allocates with the same row locks (FEFO, `ReservationService`) as online sales, in the order the envelopes arrive.
+- **When two terminals sold the last units:**
+  - The second sale is still recorded and invoiced, because cash was taken.
+  - Only the stock that exists is issued; balances never go negative and are never overwritten.
+  - The unissued quantity is kept on the line (`unallocated_base_quantity`) and raised as a high-severity `stock_shortfall` sync issue.
+  - A supervisor (`sync.reconcile`) resolves it in one of two ways:
+    - **acknowledge** it;
+    - **record found stock**: a found-stock receipt into a batch (existing, or a new number with an expiry) at an optional unit cost, issued straight to the sale line, which posts the missing cost of goods sold.
+- **A scanned batch that was expired, recalled or quarantined while the till was offline** is still issued, because it is what physically left. It raises a high-severity `blocked_batch_sold` issue for recall follow-up. Replay does not refuse the sale.
+- **Other replay findings become issues instead of refusals:**
+  - prices differing from the list (`price_variance`);
+  - discounts above the limit;
+  - prescription controls not met;
+  - payments below the total;
+  - sales that sync after their shift was closed (`late_offline_sale`).
+- **Refused outright:**
+  - a shift that has already been reviewed (`conflict shift_reviewed`, kept in the inbox for a supervisor);
+  - a shift on another terminal;
+  - a non-POS device.
 
 ## Offline payments
 
-Only **cash** can be recorded offline, as `offline_cash_recorded`. It is not reconciled until the shift is closed and counted. Card, transfer and mobile-money payments stay `pending` until the provider confirms them, unless a provider explicitly supports offline confirmation.
+Only **cash** can be recorded offline. It goes into the drawer and counts toward completing the sale, and it is shown as `offline_cash_recorded` (`pos_payments.recorded_offline`) until its shift has been counted and reviewed. Card, transfer and mobile-money payments taken on a standalone terminal arrive `pending` and are confirmed only by a supervisor's settlement check. The sale stays `awaiting_payment` with its stock reserved until then. Integrated-provider payments cannot be taken offline (built in 3b; `PosPayment::presentationState`).
 
 ## Limits (stated to users)
 
