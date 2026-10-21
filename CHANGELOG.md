@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-21: Phase 3a, device registration and the sync engine
+- `devices` with device-bound API tokens (sliding expiry, `SYNC_DEVICE_TOKEN_TTL_HOURS`), registration per role (field, or POS with a terminal), and revocation by the owner or a device manager, optionally requesting a data wipe. `EnsureDeviceActive` refuses revoked devices (once with `device_revoked {wipe}`, then the token is gone) and blocks device tokens used for another organization.
+- `POST /sync/batches`: envelopes are stored in `sync_inbox` before processing, processed in order in their own transactions, and acknowledged individually as synced, conflict, rejected or retry_required. Replays return the stored acknowledgement and are never applied twice; another device's transaction id is refused. Unsupported types or versions and future device clocks are rejected.
+- Field-force envelope types (check-in, check-out, cancel, order capture and resubmit, follow-up completion) run through the same services and validation as the online endpoints (`FieldForceRules`), referencing records by client reference.
+- Review: `sync/inbox` with resolution notes (refused work is never deleted), `sync/issues`, `sync/status`, `sync/reconciliation`. New permissions `devices.manage` and `sync.reconcile`. ADR-0011. 188 tests passing.
+
 ### 2026-10-21: Phase 2.6b, Flutter field app (Phase 2 complete)
 - `mobile/field_app` (Flutter 3.47, Dart 3.13, Android first, iOS runner included).
 - Sign-in with the API token in Keystore/Keychain; organization choice validated against `/field-force/me`; one local database per user and organization.

@@ -1,4 +1,8 @@
-# Offline-first design (Phase 2 to 3) — status: designed, not implemented
+# Offline-first design (Phase 2 to 3)
+
+Status:
+- **Server sync engine: built (3a; ADR-0011).** Covers devices, device-bound tokens, revocation, `sync_inbox`, per-envelope acknowledgements, conflict and rejected states, the review endpoints and the reconciliation report.
+- **Offline POS replay (3b) and the app (3c): in progress.**
 
 Phase 1 already provides the foundations this design depends on: ULID keys (clients can generate them), idempotency keys scoped by user and tenant, and correlation ids.
 
@@ -37,7 +41,7 @@ Each outbound record is an envelope:
 
 States: `LOCAL_DRAFT → PENDING_SYNC → SYNCING → SYNCED | RETRY_REQUIRED | CONFLICT | REJECTED → REVIEW/CORRECTION`.
 
-The server endpoint `POST /api/v1/sync/batches` accepts up to N envelopes, stores each durably in a `sync_inbox` table, and acknowledges per envelope with `{client_txn_id, status, server_id?, error_code?, conflict?}`. It acknowledges only after a durable write. Processing is idempotent on `client_txn_id`.
+The server endpoint `POST /api/v1/sync/batches` accepts up to 50 envelopes `{client_txn_id, type, schema_version, client_created_at, attempt, payload}`, stores each durably in `sync_inbox`, and acknowledges each one with `{client_txn_id, status: synced|conflict|rejected|retry_required, result?, warnings?, error?, duplicate?}`. Processing is idempotent on `client_txn_id`. The device and user come from the device-bound token, and the tenant comes from the device's organization (built in 3a).
 
 Retry uses exponential backoff with jitter (2 s doubling to 15 min), runs when connectivity returns, and uses WorkManager on Android for background runs. The app shows pending counts, the last successful sync time and failed items.
 

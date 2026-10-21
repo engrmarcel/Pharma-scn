@@ -52,6 +52,8 @@ use App\Domain\Sales\Models\PriceList;
 use App\Domain\Sales\Models\Quotation;
 use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesOrder;
+use App\Domain\Sync\Models\Device;
+use App\Domain\Sync\Models\SyncIssue;
 use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -140,6 +142,8 @@ class AppServiceProvider extends ServiceProvider
             'field_visit' => FieldVisit::class,
             'field_follow_up' => FieldFollowUp::class,
             'field_order' => FieldOrder::class,
+            'device' => Device::class,
+            'sync_issue' => SyncIssue::class,
             'attachment' => Attachment::class,
         ]);
 

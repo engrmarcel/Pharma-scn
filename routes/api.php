@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CustomerController;
+use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\FieldForceController;
 use App\Http\Controllers\Api\V1\FinanceController;
 use App\Http\Controllers\Api\V1\InventoryController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Api\V1\SalesController;
 use App\Http\Controllers\Api\V1\StockDocumentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierController;
+use App\Http\Controllers\Api\V1\SyncController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,7 +54,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     });
 
     // Authenticated, no tenant
-    Route::middleware(['auth:sanctum', 'active', 'secure', 'throttle:api'])->group(function () {
+    Route::middleware(['auth:sanctum', 'active', 'device', 'secure', 'throttle:api'])->group(function () {
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
 
         // Reachable before the account satisfies the security policy (see EnsureAccountSecurity).
@@ -200,6 +202,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('procurement/suggestions', [ProcurementController::class, 'suggestions'])->name('procurement.suggestions');
                 Route::get('procurement/settings', [ProcurementController::class, 'settings'])->name('procurement.settings');
                 Route::patch('procurement/settings', [ProcurementController::class, 'updateSettings'])->name('procurement.settings.update');
+            });
+
+            // Devices and offline synchronization (spec §13).
+            Route::middleware('module:field_force|pos')->group(function () {
+                Route::get('devices', [DeviceController::class, 'index'])->name('devices.index');
+                Route::post('devices', [DeviceController::class, 'store'])->name('devices.store');
+                Route::post('devices/{id}/revoke', [DeviceController::class, 'revoke'])->whereUlid('id')->name('devices.revoke');
+                Route::post('sync/batches', [SyncController::class, 'batch'])->name('sync.batches');
+                Route::get('sync/status', [SyncController::class, 'status'])->name('sync.status');
+                Route::get('sync/inbox', [SyncController::class, 'inbox'])->name('sync.inbox');
+                Route::post('sync/inbox/{id}/resolve', [SyncController::class, 'resolveInbox'])->whereNumber('id')->name('sync.inbox.resolve');
+                Route::get('sync/issues', [SyncController::class, 'issues'])->name('sync.issues');
+                Route::post('sync/issues/{id}/resolve', [SyncController::class, 'resolveIssue'])->whereUlid('id')->name('sync.issues.resolve');
+                Route::get('sync/reconciliation', [SyncController::class, 'reconciliation'])->name('sync.reconciliation');
             });
 
             // Field force / light CRM (spec §12). Device records are idempotent by client_reference.
