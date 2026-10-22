@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 8c, reporting assistant
+- `POST /analytics/assistant {question}` and a question box on the `/analytics` page. A question is turned into a plan of read-only catalogue reports (sales, purchases, stock, expiry, POS, marketplace, integrations, sync, recalls, field force, forecasts, recommendations). The reports run under the asker's permissions and locations, and the answer is written on the platform from the figures, labelled as a generated explanation with caveats.
+- No actions: change requests (approve, create, order, write off…) are declined and nothing is changed (tested).
+- Local planner by default. External planning with Claude (`ClaudePlanner`, official Anthropic PHP SDK, structured output limited to catalogue reports) only when the platform sets `ANALYTICS_AI_PROVIDER=anthropic` and the organization's administrator consents (`PUT /analytics/assistant/settings` with acknowledgement; audited). Only the redacted question is sent; report data never leaves. Falls back to the local planner on refusal or error. ADR-0020.
+- Redacted question log with a 180-day retention (`analytics:purge-assistant-log`).
+- 266 tests passing.
+
 ### 2026-10-22: Phase 8b, forecasting and recommendations
 - Weekly demand forecasts (`/analytics/forecast`) behind a `ForecastProvider` interface. The built-in statistical forecaster picks a moving average, exponential smoothing, damped trend or Croston (intermittent demand) by backtest, and reports its method, accuracy, 80% intervals and assumptions. Labelled `prediction`.
 - Recommendations (`/analytics/recommendations`, nightly `analytics:recommend` at 02:00, or `POST /analytics/recommendations/generate`): reorder (stock plus on-order against forecast lead-time demand or the reorder level), overstock, expiry risk, integration anomalies (error-rate jump, silent connector) and traceability anomalies (broken chain, dispensed or withdrawn codes scanned again). One open recommendation per subject; cleared ones are superseded.

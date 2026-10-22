@@ -103,6 +103,13 @@ Behaviour:
 - **Locations and permissions.** Location-restricted members see their warehouses only. Organization-wide dashboards need access to all locations. Each area needs its own view permission, and stock value needs the valuation permission. What a viewer may not see is listed as withheld, not shown as zero.
 - **Personal data.** Dashboards show customer and supplier names and cashier names to members who can already see those records; no patient data is used.
 
+## Reporting assistant (Phase 8c, ADR-0020)
+
+- **Read-only by construction.** The assistant can only run catalogue reports, each through the dashboard service with the asker's permissions and locations. Plans naming anything else are rejected and logged. Change requests are declined.
+- **External AI is off by default** and needs both the platform operator's configuration (`ANALYTICS_AI_PROVIDER`, API key) and the organization administrator's audited consent with an acknowledgement.
+- **Data minimisation.** Even then only the question is sent, with e-mail addresses, phone numbers and long numbers removed. Report results, product lists and records never leave the platform; answers are written locally. Names in a question cannot be detected, which the consent text states.
+- **Logs.** Questions are stored redacted and deleted after 180 days.
+
 ## Forecasts and recommendations (Phase 8b, ADR-0019)
 
 - **No autonomous action.** The recommendation engine writes only recommendation rows; a test confirms that generation leaves requisitions, orders, stock movements, journals, adjustments, trace events and incidents unchanged.

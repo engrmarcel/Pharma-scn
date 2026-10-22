@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Domain\Access\Services\AccessControl;
+use App\Domain\Analytics\Assistant\ClaudePlanner;
+use App\Domain\Analytics\Assistant\ExternalPlanner;
 use App\Domain\Analytics\Forecasting\ForecastProvider;
 use App\Domain\Analytics\Models\Recommendation;
 use App\Domain\Billing\Models\OrganizationSubscription;
@@ -122,6 +124,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(FieldForceScope::class);
         // Demand forecasting model (spec §19.2): the local statistical one unless configured otherwise.
         $this->app->bind(ForecastProvider::class, fn ($app) => $app->make(config('analytics.forecast.provider')));
+        // Reporting assistant's external planner (used only with platform configuration and organization consent).
+        $this->app->bind(ExternalPlanner::class, ClaudePlanner::class);
     }
 
     /**

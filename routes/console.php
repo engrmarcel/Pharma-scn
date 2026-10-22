@@ -22,3 +22,4 @@ Schedule::command('field-force:purge-locations')->dailyAt('02:30')->withoutOverl
 Schedule::command('analytics:refresh')->dailyAt('01:30')->withoutOverlapping();
 // Recommendations (advisory): reorder, overstock, expiry risk, integration and traceability anomalies.
 Schedule::command('analytics:recommend')->dailyAt('02:00')->withoutOverlapping();
+Schedule::command('analytics:purge-assistant-log')->dailyAt('02:45')->withoutOverlapping();

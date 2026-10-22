@@ -57,6 +57,32 @@
         </div>
     </div>
 
+    <section class="card px-5 py-4">
+        <form wire:submit="ask" class="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label for="assistant-question" class="sr-only">Ask about your figures</label>
+            <input id="assistant-question" type="text" wire:model="question" maxlength="500" class="form-field flex-1 px-3 py-2 text-sm"
+                   placeholder="Ask about your figures, e.g. &quot;What is at risk of expiring?&quot; or &quot;Sales last month&quot;">
+            <button type="submit" class="btn-primary px-4 py-2 text-sm" wire:loading.attr="disabled" wire:target="ask">Ask</button>
+        </form>
+        @error('question') <p class="mt-2 text-sm text-rose-700">{{ $message }}</p> @enderror
+        @if ($answer)
+            <div class="mt-4 space-y-2 text-sm" aria-live="polite">
+                <p class="text-xs uppercase tracking-wider text-slate-400">Generated answer · {{ $answer['planner'] }}</p>
+                @foreach (explode("
+
+", $answer['text']) as $paragraph)
+                    <p class="text-slate-700">{{ $paragraph }}</p>
+                @endforeach
+                @if ($answer['caveats'])
+                    <ul class="list-disc pl-5 text-xs text-slate-500">
+                        @foreach ($answer['caveats'] as $caveat) <li>{{ $caveat }}</li> @endforeach
+                    </ul>
+                @endif
+                <p class="text-xs text-slate-500">{{ $answer['label'] }} Reports used: {{ implode(', ', $answer['reports']) ?: 'none' }}.</p>
+            </div>
+        @endif
+    </section>
+
     @error('from') <p class="text-sm text-rose-700">{{ $message }}</p> @enderror
     @error('to') <p class="text-sm text-rose-700">{{ $message }}</p> @enderror
 

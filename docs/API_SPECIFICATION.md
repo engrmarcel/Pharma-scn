@@ -205,6 +205,8 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET `?product_id&warehouse_id?&horizon_weeks?` (1–26, default 8) | `/analytics/forecast` | `inventory.view`, `sales.view` or `procurement.view`; `forecast_insufficient_history` under 6 weeks |
 | GET (`status`, default open; `type`) · GET `{id}` · POST `generate` | `/analytics/recommendations` | `analytics.view` plus the type's area permission; follows the member's locations; generate throttled to 6 a minute |
 | POST `{id}/accept {notes?, warehouse_id?, quantity?, needed_by?}` · POST `{id}/dismiss {reason}` | `/analytics/recommendations` | accepting a reorder needs `procurement.requisition` and the warehouse, and creates a draft requisition (`decision.action_type` = `purchase_requisition`); `recommendation_not_open` (409) |
+| POST `{question}` (3–500 characters; 20 a minute) | `/analytics/assistant` | `analytics.view`; returns `kind: generated_explanation`, `answer`, `caveats`, `planner`, `steps[] {report, from, to, status: ok\|withheld\|unavailable, data}`, `declined_actions`, `rejected_reports` |
+| GET · PUT `{external_processing, acknowledge_external_processing}` | `/analytics/assistant/settings` | read `analytics.view`; change `organization.manage`; `acknowledgement_required`, `external_ai_unavailable` (409, platform not configured) |
 | GET | `/admin/analytics/platform` | `platform.billing.manage` |
 
 Money is a list of `{currency_code, amount}`. Estimates carry `estimates.kind` (`estimate` or `prediction`), `basis` and `demand_data.refreshed_at`.

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Analytics;
 
+use App\Domain\Analytics\Assistant\AssistantService;
 use App\Domain\Analytics\Services\ExecutiveDashboard as Dashboard;
 use App\Domain\Analytics\Services\RecommendationService;
 use Illuminate\Support\Facades\Gate;
@@ -22,11 +23,24 @@ class ExecutiveDashboard extends Component
 
     public string $to = '';
 
+    public string $question = '';
+
+    /** The last answer from the reporting assistant. */
+    public ?array $answer = null;
+
     public function mount(): void
     {
         Gate::authorize('analytics.view');
         $this->from = today()->subDays(29)->toDateString();
         $this->to = today()->toDateString();
+    }
+
+    public function ask(AssistantService $assistant): void
+    {
+        $this->validate(['question' => ['required', 'string', 'min:3', 'max:500']]);
+        $result = $assistant->ask($this->question, auth()->user());
+        $this->answer = ['text' => $result['answer'], 'caveats' => $result['caveats'], 'label' => $result['label'], 'planner' => $result['planner'],
+            'reports' => array_map(fn ($s) => $s['report'].' ('.$s['status'].')', $result['steps'])];
     }
 
     public function render(Dashboard $dashboard, RecommendationService $recommendations)

@@ -12,7 +12,7 @@ Phases and acceptance criteria follow master spec §31 (`docs/source/MASTER_SPEC
 | **5** Enterprise integration gateway | Canonical model, connector framework, registry, mappings, REST, SFTP/file, webhooks, inbox/outbox, retries, monitoring, reconciliation, SAP adapter | ✅ Done (5a–5c; ADR-0013) |
 | **6** Advanced CRM & field force | Segmentation, territories, visit planning, targets, opportunities, automation, dashboards, detailing, CRM analytics | ✅ Done (6a–6c; ADR-0014) |
 | **7** Traceability, recalls & logistics | Batch traceability, QR, serialization, custody, shipments, proof of delivery, recall, quarantine, exposure reports, cold chain | ✅ 7a traceability ledger, 7b recalls, 7c logistics and cold chain (ADR-0015, ADR-0016, ADR-0017) |
-| **8** Analytics & AI | Dashboards, expiry risk, forecasting, AI assistant and recommendations (human-approved) | 🚧 8a dashboards and 8b forecasting and recommendations done (ADR-0018, ADR-0019); 8c next |
+| **8** Analytics & AI | Dashboards, expiry risk, forecasting, AI assistant and recommendations (human-approved) | ✅ 8a dashboards, 8b forecasting and recommendations, 8c reporting assistant (ADR-0018, ADR-0019, ADR-0020) |
 | **9** Multi-country expansion | Currency, localization, tax rules, regulatory configs, local payment adapters, country onboarding | 🟡 data model ready |
 | **10** Scale & hardening | Measured scaling, replicas, event streaming, DR, load tests | ⬜ |
 

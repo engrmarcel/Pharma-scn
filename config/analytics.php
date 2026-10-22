@@ -45,6 +45,19 @@ return [
         'expiry_window_days' => 90,      // batches expiring within this window are checked for unsold stock
     ],
 
+    // Reporting assistant (spec §19.2). Questions are planned locally unless BOTH the platform sets
+    // ANALYTICS_AI_PROVIDER=anthropic with a key AND the organization consents (analytics/assistant/settings).
+    // Only the redacted question is sent; report data never leaves the platform.
+    'assistant' => [
+        'provider' => env('ANALYTICS_AI_PROVIDER', 'none'), // none | anthropic
+        'anthropic' => [
+            'api_key' => env('ANTHROPIC_API_KEY'),
+            'model' => env('ANALYTICS_AI_MODEL', 'claude-opus-5-5'),
+            'timeout_seconds' => 30,
+        ],
+        'log_retention_days' => 180,
+    ],
+
     // Dashboards are bounded: longest period a single request may cover.
     'max_period_days' => 731,
 ];

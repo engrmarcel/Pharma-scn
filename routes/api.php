@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\MarketplaceAdminController;
 use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
+use App\Http\Controllers\Api\V1\AnalyticsAssistantController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AnalyticsInsightsController;
 use App\Http\Controllers\Api\V1\AuditLogController;
@@ -311,6 +312,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::middleware('module:analytics')->prefix('analytics')->name('analytics.')->group(function () {
                 Route::get('executive', [AnalyticsController::class, 'executive'])->name('executive');
                 Route::get('forecast', [AnalyticsInsightsController::class, 'forecast'])->name('forecast');
+                Route::post('assistant', [AnalyticsAssistantController::class, 'ask'])->middleware('throttle:20,1')->name('assistant.ask');
+                Route::get('assistant/settings', [AnalyticsAssistantController::class, 'settings'])->name('assistant.settings');
+                Route::put('assistant/settings', [AnalyticsAssistantController::class, 'updateSettings'])->name('assistant.settings.update');
                 Route::get('recommendations', [AnalyticsInsightsController::class, 'index'])->name('recommendations.index');
                 Route::post('recommendations/generate', [AnalyticsInsightsController::class, 'generate'])->middleware('throttle:6,1')->name('recommendations.generate');
                 Route::get('recommendations/{id}', [AnalyticsInsightsController::class, 'show'])->whereUlid('id')->name('recommendations.show');
