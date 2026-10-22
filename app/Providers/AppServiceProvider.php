@@ -11,6 +11,11 @@ use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductChangeRequest;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
 use App\Domain\Catalogue\Services\UnitConverter;
+use App\Domain\Crm\Models\CrmInteraction;
+use App\Domain\Crm\Models\CustomerFeedback;
+use App\Domain\Crm\Models\CustomerSegment;
+use App\Domain\Crm\Models\DetailingMessage;
+use App\Domain\Crm\Models\DetailingRecord;
 use App\Domain\FieldForce\Models\FieldFollowUp;
 use App\Domain\FieldForce\Models\FieldOrder;
 use App\Domain\FieldForce\Models\FieldVisit;
@@ -128,6 +133,11 @@ class AppServiceProvider extends ServiceProvider
             'supplier' => Supplier::class,
             'customer' => Customer::class,
             'party_contact' => PartyContact::class,
+            'customer_segment' => CustomerSegment::class,
+            'crm_interaction' => CrmInteraction::class,
+            'customer_feedback' => CustomerFeedback::class,
+            'detailing_message' => DetailingMessage::class,
+            'detailing_record' => DetailingRecord::class,
             'batch' => Batch::class,
             'bin_location' => BinLocation::class,
             'stock_adjustment' => StockAdjustment::class,

@@ -77,6 +77,13 @@ Behaviour:
   - **Signing.** Payloads are signed (HMAC-SHA256 over timestamp and body) with a per-subscription secret, which is encrypted at rest and shown once.
   - **Data in the delivery log.** Only the first 300 characters of a failing response are kept.
 
+## CRM (Phase 6a, ADR-0014)
+
+- **Visibility.** Field and CRM records are visible to their owner, and to team members only where the viewer can also see the customer (supervisors stay within their territories).
+- **Contacts.** Professional contacts hold work data only. Consent to direct contact is recorded and enforced. Anonymization is irreversible and keeps account history, and contact changes are audited by field name, not value.
+- **Adverse events.** Possible adverse events are routed to pharmacovigilance; the CRM keeps no patient data.
+- **Detailing.** Only approved key messages are recorded, with four-eyes approval.
+
 ## Gaps and planned controls
 
 | Gap | Plan |

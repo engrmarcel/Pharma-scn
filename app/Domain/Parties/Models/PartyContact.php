@@ -18,6 +18,6 @@ class PartyContact extends Model
 
     protected function casts(): array
     {
-        return ['is_primary' => 'boolean'];
+        return ['is_primary' => 'boolean', 'consent_recorded_at' => 'datetime', 'anonymized_at' => 'datetime'];
     }
 }

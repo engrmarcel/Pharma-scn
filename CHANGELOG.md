@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### 2026-10-25: Phase 6a, CRM foundations
+- Customer CRM profile (`tier`, `visit_frequency_days`, `potential_value`) and the account list `GET /crm/customers`, with due and overdue visits and filters for segment, tier and territory.
+- Segments (`/crm/segments`): manual, or rule-based on customer type, territory, tier, city, no completed visit in N days, and 12-month revenue. Refresh replaces rule members and keeps manual ones; member lists follow customer visibility.
+- Professional contacts (`/crm/customers/{id}/contacts`, `/crm/contacts/{id}`) hold work data only. Consent to direct contact is recorded with time and source and enforced on outbound calls, e-mails and messages. Anonymization is irreversible; audit entries record field names only.
+- Interactions (`/crm/interactions`) and structured feedback (`/crm/feedback`). A possible adverse event is flagged for pharmacovigilance and cannot be resolved without the safety case reference.
+- Detailing: key messages (`/crm/detailing-messages`) are drafted, then approved by someone other than the author, and retired rather than edited. `POST /field-force/visits/{id}/detailing` records approved messages only, with samples by quantity and batch.
+- Customer timeline (`GET /crm/customers/{id}/timeline`) across field, CRM and (with `sales.view`) ERP records.
+- **Changed:** supervisors see a teammate's activity only for customers they can see themselves (`FieldForceScope::scopeActivity`, ADR-0014). Visits, orders, follow-ups and the activity report all follow it.
+- Permissions `crm.accounts.manage`, `crm.segments.manage`, `crm.feedback.manage` and `crm.detailing.manage`.
+- 230 tests passing.
+
 ### 2026-10-24: Phase 5c, integration outbox and webhooks (Phase 5 complete)
 - Transactional outbox (`integration_outbox`). Domain events now go through `DomainEvents::raise()`: the outbound event and its deliveries are written in the business transaction, only for organizations with a matching subscriber, and delivery jobs are queued after commit.
 - Webhook subscriptions (`/integration/webhooks`):

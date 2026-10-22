@@ -149,6 +149,20 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · POST · POST `{id}/complete {outcome}` · `{id}/cancel` | `/field-force/follow-ups` `{client_reference?, customer_id, field_visit_id?, assigned_to?, title, notes?, due_on}` | `field_force.visits.capture`; assign to self, or within the visible team |
 | GET | `/field-force/reports/activity?from&to` | `field_force.reports.view`; per visible representative: visits, completed, verified and unverified check-ins, without location, customers visited, average minutes, orders captured/submitted/accepted/rejected, accepted value, follow-up compliance |
 
+### CRM (`/crm`, module field_force)
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/crm/customers` (`q`, `segment_id`, `tier`, `territory_id`, `due`) | customer visibility; adds `last_completed_visit_at`, `next_visit_due` and `visit_overdue` |
+| PATCH | `/crm/customers/{id}/profile` `{tier?, visit_frequency_days?, potential_value?}` | `crm.accounts.manage` |
+| GET | `/crm/customers/{id}/timeline` (`types[]`, `before`, `limit`) | customer visible; each entry type follows its own activity scope; sales orders and invoices need `sales.view` |
+| GET · POST | `/crm/customers/{id}/contacts` `{name, job_title?, professional_type?, specialty?, professional_licence?, email?, phone?, preferred_contact_method?, contact_consent?, consent_source?}` | customer visible; create with `field_force.visits.capture`, `customers.manage` or `crm.accounts.manage` |
+| PATCH · POST `{id}/consent {contact_consent, source}` · POST `{id}/anonymize {reason}` | `/crm/contacts/{id}` | as above; anonymize needs `crm.accounts.manage` |
+| GET · POST · PATCH `{id}` · POST `{id}/refresh` · GET `{id}/members` · PUT `{id}/members {add[], remove[]}` | `/crm/segments` `{code, name, type: manual\|rule, criteria?}` | read: customer visibility (members filtered); write: `crm.segments.manage` |
+| GET · POST | `/crm/interactions` `{client_reference?, customer_id, contact_id?, field_visit_id?, channel, direction, subject, summary?, occurred_at}` | activity scope / `field_force.visits.capture`; `contact_consent_withdrawn` (409) for outbound personal channels |
+| GET · POST · POST `{id}/review\|resolve {resolution, pharmacovigilance_reference?}` | `/crm/feedback` `{customer_id, category, rating?, description, product_id?, possible_adverse_event?}` | capture: `field_force.visits.capture`; review: `crm.feedback.manage`; a possible adverse event needs `pharmacovigilance_reference` to resolve |
+| GET · POST · PATCH `{id}` · POST `{id}/approve\|retire` | `/crm/detailing-messages` | field users see approved current messages; manage: `crm.detailing.manage` (approver ≠ author) |
+| POST | `/field-force/visits/{id}/detailing` `{client_reference?, product_id, message_ids[], contact_id?, samples_quantity?, sample_batch_number?, reception?, notes?}` · GET `/crm/detailing-records` | own visit (in progress or ≤24 h after check-out) |
+
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |
 |---|---|---|

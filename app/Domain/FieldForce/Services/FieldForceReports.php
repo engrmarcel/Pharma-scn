@@ -19,7 +19,7 @@ class FieldForceReports
         $range = [$from.' 00:00:00', $to.' 23:59:59'];
         $org = $this->tenant->id();
 
-        $visits = $this->scope->scopeRepresentatives(DB::table('field_visits')->where('organization_id', $org)->whereBetween('check_in_at', $range))
+        $visits = $this->scope->scopeActivity(DB::table('field_visits')->where('organization_id', $org)->whereBetween('check_in_at', $range))
             ->groupBy('representative_id')
             ->selectRaw("representative_id,
                 COUNT(*) as visits,
@@ -32,7 +32,7 @@ class FieldForceReports
                 AVG(CASE WHEN status = 'completed' THEN TIMESTAMPDIFF(MINUTE, check_in_at, check_out_at) END) as average_minutes")
             ->get()->keyBy('representative_id');
 
-        $orders = $this->scope->scopeRepresentatives(DB::table('field_orders as fo')->where('fo.organization_id', $org)->whereBetween('fo.captured_at', $range), 'fo.representative_id')
+        $orders = $this->scope->scopeActivity(DB::table('field_orders as fo')->where('fo.organization_id', $org)->whereBetween('fo.captured_at', $range), 'fo.representative_id', 'fo.customer_id')
             ->leftJoin('sales_orders as so', 'so.id', '=', 'fo.sales_order_id')
             ->groupBy('fo.representative_id')
             ->selectRaw("fo.representative_id as representative_id,
@@ -44,7 +44,7 @@ class FieldForceReports
                 COALESCE(SUM(CASE WHEN fo.status = 'accepted' THEN so.total END), 0) as accepted_value")
             ->get()->keyBy('representative_id');
 
-        $followUps = $this->scope->scopeRepresentatives(DB::table('field_follow_ups')->where('organization_id', $org)->whereBetween('due_on', [$from, $to]), 'assigned_to')
+        $followUps = $this->scope->scopeActivity(DB::table('field_follow_ups')->where('organization_id', $org)->whereBetween('due_on', [$from, $to]), 'assigned_to')
             ->groupBy('assigned_to')
             ->selectRaw("assigned_to as representative_id,
                 COUNT(*) as follow_ups_due,

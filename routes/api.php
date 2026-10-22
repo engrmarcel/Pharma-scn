@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
+use App\Http\Controllers\Api\V1\CrmController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\FieldForceController;
@@ -355,6 +356,35 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('follow-ups/{id}/{action}', [FieldForceController::class, 'closeFollowUp'])->whereUlid('id')->whereIn('action', ['complete', 'cancel'])->name('follow-ups.close');
 
                 Route::get('reports/activity', [FieldForceController::class, 'activityReport'])->name('reports.activity');
+                Route::post('visits/{id}/detailing', [CrmController::class, 'recordDetailing'])->whereUlid('id')->name('visits.detailing');
+            });
+
+            // CRM (spec §17), part of the field-force module.
+            Route::middleware('module:field_force')->prefix('crm')->name('crm.')->group(function () {
+                Route::get('customers', [CrmController::class, 'customers'])->name('customers.index');
+                Route::patch('customers/{id}/profile', [CrmController::class, 'updateProfile'])->whereUlid('id')->name('customers.profile');
+                Route::get('customers/{id}/timeline', [CrmController::class, 'timeline'])->whereUlid('id')->name('customers.timeline');
+                Route::get('customers/{id}/contacts', [CrmController::class, 'contacts'])->whereUlid('id')->name('customers.contacts.index');
+                Route::post('customers/{id}/contacts', [CrmController::class, 'storeContact'])->whereUlid('id')->name('customers.contacts.store');
+                Route::patch('contacts/{id}', [CrmController::class, 'updateContact'])->whereUlid('id')->name('contacts.update');
+                Route::post('contacts/{id}/consent', [CrmController::class, 'contactConsent'])->whereUlid('id')->name('contacts.consent');
+                Route::post('contacts/{id}/anonymize', [CrmController::class, 'anonymizeContact'])->whereUlid('id')->name('contacts.anonymize');
+                Route::get('segments', [CrmController::class, 'segments'])->name('segments.index');
+                Route::post('segments', [CrmController::class, 'storeSegment'])->name('segments.store');
+                Route::patch('segments/{id}', [CrmController::class, 'updateSegment'])->whereUlid('id')->name('segments.update');
+                Route::post('segments/{id}/refresh', [CrmController::class, 'refreshSegment'])->whereUlid('id')->name('segments.refresh');
+                Route::get('segments/{id}/members', [CrmController::class, 'segmentMembers'])->whereUlid('id')->name('segments.members');
+                Route::put('segments/{id}/members', [CrmController::class, 'changeSegmentMembers'])->whereUlid('id')->name('segments.members.change');
+                Route::get('interactions', [CrmController::class, 'interactions'])->name('interactions.index');
+                Route::post('interactions', [CrmController::class, 'storeInteraction'])->name('interactions.store');
+                Route::get('feedback', [CrmController::class, 'feedback'])->name('feedback.index');
+                Route::post('feedback', [CrmController::class, 'storeFeedback'])->name('feedback.store');
+                Route::post('feedback/{id}/{action}', [CrmController::class, 'progressFeedback'])->whereUlid('id')->whereIn('action', ['review', 'resolve'])->name('feedback.progress');
+                Route::get('detailing-messages', [CrmController::class, 'detailingMessages'])->name('detailing-messages.index');
+                Route::post('detailing-messages', [CrmController::class, 'storeDetailingMessage'])->name('detailing-messages.store');
+                Route::patch('detailing-messages/{id}', [CrmController::class, 'updateDetailingMessage'])->whereUlid('id')->name('detailing-messages.update');
+                Route::post('detailing-messages/{id}/{action}', [CrmController::class, 'detailingMessageAction'])->whereUlid('id')->whereIn('action', ['approve', 'retire'])->name('detailing-messages.action');
+                Route::get('detailing-records', [CrmController::class, 'detailingRecords'])->name('detailing-records.index');
             });
 
             Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {

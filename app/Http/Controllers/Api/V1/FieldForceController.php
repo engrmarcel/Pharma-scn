@@ -146,9 +146,9 @@ class FieldForceController extends Controller
     public function customer(string $id): JsonResponse
     {
         $customer = $this->scope->visibleCustomer($id);
-        $visits = $this->scope->scopeRepresentatives(FieldVisit::query()->where('customer_id', $customer->id))->latest('check_in_at')->limit(20)
+        $visits = $this->scope->scopeActivity(FieldVisit::query()->where('customer_id', $customer->id))->latest('check_in_at')->limit(20)
             ->get(['id', 'number', 'representative_id', 'visit_type', 'status', 'check_in_at', 'check_out_at', 'check_in_verification', 'outcome']);
-        $orders = $this->scope->scopeRepresentatives(FieldOrder::query()->where('customer_id', $customer->id))->latest('captured_at')->limit(20)
+        $orders = $this->scope->scopeActivity(FieldOrder::query()->where('customer_id', $customer->id))->latest('captured_at')->limit(20)
             ->get(['id', 'number', 'representative_id', 'status', 'captured_at', 'sales_order_id']);
 
         return response()->json(['data' => $this->presentCustomer($customer) + [
@@ -157,7 +157,7 @@ class FieldForceController extends Controller
                 ->latest('check_in_at')->limit(10)->get(['id', 'check_in_at', 'check_in_verification', 'check_in_distance_m']),
             'recent_visits' => $visits,
             'recent_orders' => $orders,
-            'open_follow_ups' => $this->scope->scopeRepresentatives(FieldFollowUp::query()->where('customer_id', $customer->id)->where('status', 'open'), 'assigned_to')
+            'open_follow_ups' => $this->scope->scopeActivity(FieldFollowUp::query()->where('customer_id', $customer->id)->where('status', 'open'), 'assigned_to')
                 ->orderBy('due_on')->get(['id', 'title', 'due_on', 'assigned_to']),
         ]]);
     }
@@ -182,7 +182,7 @@ class FieldForceController extends Controller
         abort_unless($this->isFieldUser(), 403);
         $f = $request->validate($this->listFilters() + ['status' => ['nullable', Rule::in(['in_progress', 'completed', 'cancelled'])]]);
 
-        $page = $this->scope->scopeRepresentatives(FieldVisit::query())
+        $page = $this->scope->scopeActivity(FieldVisit::query())
             ->when($f['representative_id'] ?? null, fn ($q, $v) => $q->where('representative_id', $v))
             ->when($f['customer_id'] ?? null, fn ($q, $v) => $q->where('customer_id', $v))
             ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
@@ -247,7 +247,7 @@ class FieldForceController extends Controller
         abort_unless($this->isFieldUser(), 403);
         $f = $request->validate($this->listFilters() + ['status' => ['nullable', Rule::in(['draft', 'submitted', 'accepted', 'rejected', 'cancelled'])]]);
 
-        $page = $this->scope->scopeRepresentatives(FieldOrder::query()->with('lines'))
+        $page = $this->scope->scopeActivity(FieldOrder::query()->with('lines'))
             ->when($f['representative_id'] ?? null, fn ($q, $v) => $q->where('representative_id', $v))
             ->when($f['customer_id'] ?? null, fn ($q, $v) => $q->where('customer_id', $v))
             ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
@@ -302,7 +302,7 @@ class FieldForceController extends Controller
         $f = $request->validate(['status' => ['nullable', Rule::in(['open', 'done', 'cancelled'])], 'customer_id' => ['nullable', 'ulid'],
             'assigned_to' => ['nullable', 'integer'], 'due_before' => ['nullable', 'date']]);
 
-        return response()->json($this->scope->scopeRepresentatives(FieldFollowUp::query(), 'assigned_to')
+        return response()->json($this->scope->scopeActivity(FieldFollowUp::query(), 'assigned_to')
             ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($f['customer_id'] ?? null, fn ($q, $v) => $q->where('customer_id', $v))
             ->when($f['assigned_to'] ?? null, fn ($q, $v) => $q->where('assigned_to', $v))
@@ -331,7 +331,7 @@ class FieldForceController extends Controller
     {
         Gate::authorize('field_force.visits.capture');
         $data = $request->validate(['outcome' => [$action === 'complete' ? 'required' : 'nullable', 'string', 'max:5000']]);
-        $followUp = $this->scope->scopeRepresentatives(FieldFollowUp::query(), 'assigned_to')->findOrFail($id);
+        $followUp = $this->scope->scopeActivity(FieldFollowUp::query(), 'assigned_to')->findOrFail($id);
 
         return response()->json(['data' => $followUps->close($followUp, $action === 'complete' ? 'done' : 'cancelled', $data['outcome'] ?? null)]);
     }
@@ -363,14 +363,14 @@ class FieldForceController extends Controller
     {
         abort_unless($this->isFieldUser(), 403);
 
-        return $this->scope->scopeRepresentatives(FieldVisit::query())->findOrFail($id);
+        return $this->scope->scopeActivity(FieldVisit::query())->findOrFail($id);
     }
 
     private function findOrder(string $id): FieldOrder
     {
         abort_unless($this->isFieldUser(), 403);
 
-        return $this->scope->scopeRepresentatives(FieldOrder::query())->findOrFail($id);
+        return $this->scope->scopeActivity(FieldOrder::query())->findOrFail($id);
     }
 
     private function presentTerritory(Territory $t): array

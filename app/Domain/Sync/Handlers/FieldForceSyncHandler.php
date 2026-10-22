@@ -98,7 +98,7 @@ class FieldForceSyncHandler
     private function completeFollowUp(array $p): array
     {
         $data = $this->valid('field_force.visits.capture', $p, ['follow_up_id' => ['required', 'ulid'], 'outcome' => ['required', 'string', 'max:5000']]);
-        $followUp = $this->scope->scopeRepresentatives(FieldFollowUp::query(), 'assigned_to')->find($data['follow_up_id'])
+        $followUp = $this->scope->scopeActivity(FieldFollowUp::query(), 'assigned_to')->find($data['follow_up_id'])
             ?? throw new BusinessRuleViolation('follow_up_not_found', 'The follow-up was not found.', 404);
         if ($followUp->status === 'done') {
             return $followUp->only(['id', 'status']); // already completed (for example from another device)

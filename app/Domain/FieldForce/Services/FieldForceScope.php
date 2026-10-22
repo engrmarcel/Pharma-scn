@@ -116,6 +116,24 @@ class FieldForceScope
         return $ids === null ? $query : $query->whereIn($column, $ids);
     }
 
+    /**
+     * Field activity (visits, orders, follow-ups, interactions, detailing…) the current member may see:
+     * their own records always; a team member's records only when the customer is also visible to
+     * the viewer. A supervisor of Lagos Island therefore sees a representative's Lagos Island visits,
+     * but not that same representative's visits to customers of a territory the supervisor does not
+     * cover (spec Phase 6: "without violating tenant or territory permissions").
+     */
+    public function scopeActivity($query, string $representativeColumn = 'representative_id', string $customerColumn = 'customer_id')
+    {
+        $team = $this->visibleRepresentativeIds();
+        if ($team === null) {
+            return $query; // field_force.view_all
+        }
+
+        return $query->where(fn ($q) => $q->where($representativeColumn, Auth::id())
+            ->orWhere(fn ($w) => $this->scopeCustomers($w->whereIn($representativeColumn, $team), $customerColumn)));
+    }
+
     public function canSeeRepresentative(int $userId): bool
     {
         $ids = $this->visibleRepresentativeIds();
