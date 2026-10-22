@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\DocumentationDownloadController;
 use App\Http\Controllers\Web\LandingPageController;
 use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
 use App\Http\Controllers\Web\TraceScanPageController;
 use App\Livewire\Account\SecuritySettings;
+use App\Livewire\Admin\DocumentationCenter;
 use App\Livewire\Admin\LandingPageEditor;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Analytics\ExecutiveDashboard;
@@ -57,6 +59,10 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::middleware(['tenant', 'module:analytics'])->group(function () {
         Route::get('analytics', ExecutiveDashboard::class)->name('analytics.executive');
     });
+
+    Route::get('admin/documentation', DocumentationCenter::class)->middleware('can:platform.documentation.view')->name('admin.documentation');
+    Route::get('admin/documentation/pdf', DocumentationDownloadController::class)->name('admin.documentation.pdf.all');
+    Route::get('admin/documentation/pdf/{slug}', DocumentationDownloadController::class)->where('slug', '[a-z-]+')->name('admin.documentation.pdf');
 
     Route::get('admin/landing-page', LandingPageEditor::class)->middleware('can:platform.settings.manage')->name('admin.landing-page');
 

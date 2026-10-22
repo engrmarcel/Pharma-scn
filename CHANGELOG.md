@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Platform documentation with PDF download
+- Six manuals in `docs/manual/`: setup and installation, administration, user guide, application flows (eight diagrams: architecture, request lifecycle, onboarding, order to cash, procure to pay, offline sync, traceability and recall, external integration), API guide, and connecting an external system (gateway connectors, message formats, request signing, webhooks with verification code in PHP and Node.js, go-live checklist, troubleshooting).
+- Diagrams are generated SVG (`php docs/manual/diagrams/build.php`) and embedded in both the web pages and the PDFs.
+- **Administration → Documentation** (`/admin/documentation`, permission `platform.documentation.view`: super admin, operations admin, compliance officer): read each manual with its contents, download one as PDF or **Download all (PDF)** as a single document with a cover page (dompdf; cached by content and rebuilt when a manual changes).
+- 278 tests passing.
+
 ### 2026-10-22: Public landing page, editable in the administration panel
 - Landing page at `/` (signed-in users get "Open dashboard"): hero over flowing particles (a supply network drifting left to right, gold hubs, pointer attraction; paused off screen, still frame for reduced motion) or a full background video, with an adjustable overlay; network constellation; animated headline figures; supply-chain infographic with goods flowing along the chain; shared services around the platform; batch journey timeline; features; field force app section with three phone screens beside the text; call to action; footer.
 - Phone screens are real renders of the field force app (`HomeScreen`, `VisitScreen`, `CustomerScreen`) with synthetic data, produced by `mobile/field_app/test/screenshots/landing_screenshots_test.dart` (`FIELD_SCREENSHOTS=1`), served as 2x WebP.

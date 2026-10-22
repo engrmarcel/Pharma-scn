@@ -116,6 +116,28 @@
     }
 }
 
+/* ---- Documentation (rendered Markdown) --------------------------------------------------- */
+@layer components {
+    .doc-prose { @apply text-[15px] leading-relaxed text-slate-700; }
+    .doc-prose h2 { @apply mt-10 scroll-mt-24 border-b border-slate-200 pb-2 text-xl font-semibold text-navy-950 first:mt-0; }
+    .doc-prose h3 { @apply mt-6 text-base font-semibold text-navy-800; }
+    .doc-prose p { @apply my-3; }
+    .doc-prose ul { @apply my-3 list-disc space-y-1 pl-6; }
+    .doc-prose ol { @apply my-3 list-decimal space-y-1 pl-6; }
+    .doc-prose a { @apply font-medium text-[var(--brand-primary)] hover:underline; }
+    .doc-prose strong { @apply font-semibold text-navy-950; }
+    .doc-prose code { @apply rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[13px] text-navy-900; }
+    .doc-prose pre { @apply my-4 overflow-x-auto rounded-xl bg-navy-950 p-4 text-[13px] leading-relaxed text-slate-100; }
+    .doc-prose pre code { @apply bg-transparent p-0 text-slate-100; }
+    .doc-prose table { @apply my-4 block w-full overflow-x-auto text-sm md:table; border-collapse: collapse; }
+    .doc-prose th { @apply bg-navy-900 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-white; }
+    .doc-prose td { @apply border-b border-slate-100 px-3 py-2 align-top; }
+    .doc-prose tr:nth-child(even) td { @apply bg-slate-50; }
+    .doc-prose .doc-diagram { @apply my-6 overflow-x-auto rounded-xl border border-slate-200 bg-white p-3; }
+    .doc-prose .doc-diagram img { @apply mx-auto max-w-none md:max-w-full; }
+    .doc-prose .doc-diagram figcaption { @apply mt-2 text-center text-xs text-slate-500; }
+}
+
 /* ---- Public landing page ---------------------------------------------------------------- */
 @layer components {
     [data-landing-header].is-scrolled { @apply bg-navy-950/85 shadow-lg shadow-navy-950/20 backdrop-blur-md; }

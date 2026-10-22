@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="808" height="358" viewBox="0 0 808 358" font-family="Helvetica, Arial, sans-serif">
+<title>Organization onboarding and verification</title>
+<rect x="0" y="0" width="808" height="358" fill="#ffffff"/>
+<path d="M199,70 L229,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="229,70 220,74.3 220,65.7" fill="#d4951c"/>
+<path d="M389,70 L419,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="419,70 410,74.3 410,65.7" fill="#d4951c"/>
+<path d="M579,70 L609,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="609,70 600,74.3 600,65.7" fill="#d4951c"/>
+<path d="M689,99 L689,133" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="689,133 684.7,124 693.3,124" fill="#d4951c"/>
+<path d="M609,162 L579,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="579,162 588,157.7 588,166.3" fill="#d4951c"/>
+<path d="M419,162 L389,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="389,162 398,157.7 398,166.3" fill="#d4951c"/>
+<path d="M229,162 L199,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="199,162 208,157.7 208,166.3" fill="#d4951c"/>
+<path d="M309,191 L309,225" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="309,225 304.7,216 313.3,216" fill="#d4951c"/>
+<path d="M389,254 L499,254 L499,191" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="499,191 503.3,200 494.7,200" fill="#94a3b8"/>
+<rect x="417.4" y="247" width="53.2" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="444" y="258" font-size="9.5" fill="#475569" text-anchor="middle">resubmit</text>
+<path d="M119,191 L119,225" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="119,225 114.7,216 123.3,216" fill="#d4951c"/>
+<rect x="39" y="41" width="160" height="58" rx="10" fill="#0b1f42" stroke="#0b1f42" stroke-width="1.5"/>
+<text x="119" y="67" font-size="11.5" font-weight="bold" fill="#ffffff" text-anchor="middle">Person signs up</text>
+<text x="119" y="81" font-size="9.5" font-weight="normal" fill="#ffffff" text-anchor="middle">account</text>
+<rect x="229" y="41" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="309" y="67" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Register organization</text>
+<text x="309" y="81" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">type, country</text>
+<rect x="419" y="41" width="160" height="58" rx="10" fill="#e8f5ee" stroke="#059669" stroke-width="1.5"/>
+<text x="499" y="67" font-size="11.5" font-weight="bold" fill="#064e3b" text-anchor="middle">Default modules</text>
+<text x="499" y="81" font-size="9.5" font-weight="normal" fill="#064e3b" text-anchor="middle">trial plan</text>
+<rect x="609" y="41" width="160" height="58" rx="10" fill="#fdf8ec" stroke="#d4951c" stroke-width="1.5"/>
+<text x="689" y="67" font-size="11.5" font-weight="bold" fill="#5c3a0a" text-anchor="middle">Country checklist</text>
+<text x="689" y="81" font-size="9.5" font-weight="normal" fill="#5c3a0a" text-anchor="middle">docs, licences</text>
+<rect x="609" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="689" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Upload documents</text>
+<text x="689" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">add licence numbers</text>
+<rect x="419" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="499" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Submit for</text>
+<text x="499" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">verification</text>
+<rect x="229" y="133" width="160" height="58" rx="10" fill="#fdf8ec" stroke="#d4951c" stroke-width="1.5"/>
+<text x="309" y="159" font-size="11.5" font-weight="bold" fill="#5c3a0a" text-anchor="middle">Compliance review</text>
+<text x="309" y="173" font-size="9.5" font-weight="normal" fill="#5c3a0a" text-anchor="middle">platform staff</text>
+<rect x="39" y="133" width="160" height="58" rx="10" fill="#e8f5ee" stroke="#059669" stroke-width="1.5"/>
+<text x="119" y="159" font-size="11.5" font-weight="bold" fill="#064e3b" text-anchor="middle">Approved: verified</text>
+<text x="119" y="173" font-size="9.5" font-weight="normal" fill="#064e3b" text-anchor="middle">full network access</text>
+<rect x="229" y="225" width="160" height="58" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+<text x="309" y="251" font-size="11.5" font-weight="bold" fill="#881337" text-anchor="middle">Changes requested</text>
+<text x="309" y="265" font-size="9.5" font-weight="normal" fill="#881337" text-anchor="middle">with notes</text>
+<rect x="39" y="225" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="119" y="251" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Invite team</text>
+<text x="119" y="265" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">roles, locations</text>
+<rect x="24" y="332" width="14" height="14" rx="3" fill="#0b1f42" stroke="#0b1f42"/>
+<text x="44" y="343" font-size="10" fill="#334155">Person or system</text>
+<rect x="147.6" y="332" width="14" height="14" rx="3" fill="#ffffff" stroke="#1f4b8f"/>
+<text x="167.6" y="343" font-size="10" fill="#334155">Platform step</text>
+<rect x="254.4" y="332" width="14" height="14" rx="3" fill="#fdf8ec" stroke="#d4951c"/>
+<text x="274.4" y="343" font-size="10" fill="#334155">Check or approval</text>
+<rect x="383.6" y="332" width="14" height="14" rx="3" fill="#e8f5ee" stroke="#059669"/>
+<text x="403.6" y="343" font-size="10" fill="#334155">Record kept</text>
+<rect x="479.2" y="332" width="14" height="14" rx="3" fill="#f1f5f9" stroke="#64748b"/>
+<text x="499.2" y="343" font-size="10" fill="#334155">Outside the platform</text>
+<rect x="625.2" y="332" width="14" height="14" rx="3" fill="#fff1f2" stroke="#e11d48"/>
+<text x="645.2" y="343" font-size="10" fill="#334155">Exception</text>
+</svg>

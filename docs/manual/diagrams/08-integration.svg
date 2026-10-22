@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="998" height="358" viewBox="0 0 998 358" font-family="Helvetica, Arial, sans-serif">
+<title>External system integration</title>
+<rect x="0" y="0" width="998" height="358" fill="#ffffff"/>
+<path d="M199,70 L229,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="229,70 220,74.3 220,65.7" fill="#d4951c"/>
+<path d="M389,70 L419,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="419,70 410,74.3 410,65.7" fill="#d4951c"/>
+<path d="M579,70 L609,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="609,70 600,74.3 600,65.7" fill="#d4951c"/>
+<path d="M769,70 L799,70" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="799,70 790,74.3 790,65.7" fill="#d4951c"/>
+<path d="M689,99 L689,133" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="689,133 684.7,124 693.3,124" fill="#94a3b8"/>
+<rect x="665.1" y="109" width="47.8" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="689" y="120" font-size="9.5" fill="#475569" text-anchor="middle">invalid</text>
+<path d="M499,99 L499,116 L404,116 L404,162 L389,162" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="389,162 398,157.7 398,166.3" fill="#94a3b8"/>
+<rect x="427.6" y="109" width="47.8" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="451.5" y="120" font-size="9.5" fill="#475569" text-anchor="middle">202 ack</text>
+<path d="M119,99 L119,162 L229,162" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="229,162 220,166.3 220,157.7" fill="#94a3b8"/>
+<rect x="158.2" y="155" width="31.6" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="174" y="166" font-size="9.5" fill="#475569" text-anchor="middle">poll</text>
+<path d="M879,99 L879,133" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="879,133 874.7,124 883.3,124" fill="#d4951c"/>
+<path d="M879,191 L879,225" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="879,225 874.7,216 883.3,216" fill="#d4951c"/>
+<path d="M799,254 L579,254" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="579,254 588,249.7 588,258.3" fill="#d4951c"/>
+<path d="M419,254 L199,254" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="199,254 208,249.7 208,258.3" fill="#d4951c"/>
+<rect x="39" y="41" width="160" height="58" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="119" y="67" font-size="11.5" font-weight="bold" fill="#1e293b" text-anchor="middle">External system</text>
+<text x="119" y="81" font-size="9.5" font-weight="normal" fill="#1e293b" text-anchor="middle">ERP, WMS</text>
+<rect x="229" y="41" width="160" height="58" rx="10" fill="#fdf8ec" stroke="#d4951c" stroke-width="1.5"/>
+<text x="309" y="67" font-size="11.5" font-weight="bold" fill="#5c3a0a" text-anchor="middle">POST with key</text>
+<text x="309" y="81" font-size="9.5" font-weight="normal" fill="#5c3a0a" text-anchor="middle">+ optional HMAC</text>
+<rect x="419" y="41" width="160" height="58" rx="10" fill="#e8f5ee" stroke="#059669" stroke-width="1.5"/>
+<text x="499" y="67" font-size="11.5" font-weight="bold" fill="#064e3b" text-anchor="middle">Durable inbox</text>
+<text x="499" y="81" font-size="9.5" font-weight="normal" fill="#064e3b" text-anchor="middle">message_id dedupe</text>
+<rect x="609" y="41" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="689" y="67" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Field mappings</text>
+<text x="689" y="81" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">to canonical model</text>
+<rect x="799" y="41" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="879" y="67" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Domain services</text>
+<text x="879" y="81" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">products, stock</text>
+<rect x="229" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="309" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Status by</text>
+<text x="309" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">message_id</text>
+<rect x="609" y="133" width="160" height="58" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+<text x="689" y="159" font-size="11.5" font-weight="bold" fill="#881337" text-anchor="middle">Quarantine</text>
+<text x="689" y="173" font-size="9.5" font-weight="normal" fill="#881337" text-anchor="middle">fix, map, retry</text>
+<rect x="799" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="879" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Business event</text>
+<text x="879" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">e.g. stock received</text>
+<rect x="39" y="225" width="160" height="58" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="119" y="251" font-size="11.5" font-weight="bold" fill="#1e293b" text-anchor="middle">Your endpoint</text>
+<text x="119" y="265" font-size="9.5" font-weight="normal" fill="#1e293b" text-anchor="middle">verify, dedupe</text>
+<rect x="419" y="225" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="499" y="251" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Signed webhook</text>
+<text x="499" y="265" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">retries</text>
+<rect x="799" y="225" width="160" height="58" rx="10" fill="#e8f5ee" stroke="#059669" stroke-width="1.5"/>
+<text x="879" y="251" font-size="11.5" font-weight="bold" fill="#064e3b" text-anchor="middle">Outbox</text>
+<text x="879" y="265" font-size="9.5" font-weight="normal" fill="#064e3b" text-anchor="middle">same transaction</text>
+<rect x="24" y="332" width="14" height="14" rx="3" fill="#0b1f42" stroke="#0b1f42"/>
+<text x="44" y="343" font-size="10" fill="#334155">Person or system</text>
+<rect x="147.6" y="332" width="14" height="14" rx="3" fill="#ffffff" stroke="#1f4b8f"/>
+<text x="167.6" y="343" font-size="10" fill="#334155">Platform step</text>
+<rect x="254.4" y="332" width="14" height="14" rx="3" fill="#fdf8ec" stroke="#d4951c"/>
+<text x="274.4" y="343" font-size="10" fill="#334155">Check or approval</text>
+<rect x="383.6" y="332" width="14" height="14" rx="3" fill="#e8f5ee" stroke="#059669"/>
+<text x="403.6" y="343" font-size="10" fill="#334155">Record kept</text>
+<rect x="479.2" y="332" width="14" height="14" rx="3" fill="#f1f5f9" stroke="#64748b"/>
+<text x="499.2" y="343" font-size="10" fill="#334155">Outside the platform</text>
+<rect x="625.2" y="332" width="14" height="14" rx="3" fill="#fff1f2" stroke="#e11d48"/>
+<text x="645.2" y="343" font-size="10" fill="#334155">Exception</text>
+</svg>

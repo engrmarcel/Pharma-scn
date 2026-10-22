@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1188" height="450" viewBox="0 0 1188 450" font-family="Helvetica, Arial, sans-serif">
+<title>Order to cash</title>
+<rect x="0" y="0" width="1188" height="450" fill="#ffffff"/>
+<path d="M309,99 L309,133" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="309,133 304.7,124 313.3,124" fill="#d4951c"/>
+<rect x="282.4" y="109" width="53.2" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="309" y="120" font-size="9.5" fill="#475569" text-anchor="middle">accepted</text>
+<path d="M199,162 L229,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="229,162 220,166.3 220,157.7" fill="#d4951c"/>
+<path d="M389,162 L419,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="419,162 410,166.3 410,157.7" fill="#d4951c"/>
+<path d="M579,162 L609,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="609,162 600,166.3 600,157.7" fill="#d4951c"/>
+<path d="M769,162 L799,162" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="799,162 790,166.3 790,157.7" fill="#d4951c"/>
+<path d="M959,162 L989,162" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="989,162 980,166.3 980,157.7" fill="#94a3b8"/>
+<path d="M879,191 L879,225" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="879,225 874.7,216 883.3,216" fill="#d4951c"/>
+<path d="M799,254 L769,254" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="769,254 778,249.7 778,258.3" fill="#d4951c"/>
+<path d="M609,254 L579,254" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="579,254 588,249.7 588,258.3" fill="#d4951c"/>
+<path d="M419,254 L389,254" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="5,4"/>
+<polygon points="389,254 398,249.7 398,258.3" fill="#94a3b8"/>
+<path d="M689,317 L689,283" fill="none" stroke="#d4951c" stroke-width="1.8"/>
+<polygon points="689,283 693.3,292 684.7,292" fill="#d4951c"/>
+<rect x="643.5" y="293" width="91" height="15" rx="3" fill="#ffffff" stroke="#e2e8f0"/>
+<text x="689" y="304" font-size="9.5" fill="#475569" text-anchor="middle">invoice + stock</text>
+<rect x="229" y="41" width="160" height="58" rx="10" fill="#0b1f42" stroke="#0b1f42" stroke-width="1.5"/>
+<text x="309" y="67" font-size="11.5" font-weight="bold" fill="#ffffff" text-anchor="middle">Field order</text>
+<text x="309" y="81" font-size="9.5" font-weight="normal" fill="#ffffff" text-anchor="middle">from the app</text>
+<rect x="39" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="119" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Quotation</text>
+<text x="119" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">optional</text>
+<rect x="229" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="309" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Sales order</text>
+<text x="309" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">prices, tax</text>
+<rect x="419" y="133" width="160" height="58" rx="10" fill="#fdf8ec" stroke="#d4951c" stroke-width="1.5"/>
+<text x="499" y="159" font-size="11.5" font-weight="bold" fill="#5c3a0a" text-anchor="middle">Approval</text>
+<text x="499" y="173" font-size="9.5" font-weight="normal" fill="#5c3a0a" text-anchor="middle">discount, credit</text>
+<rect x="609" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="689" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Confirm</text>
+<text x="689" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">reserve stock FEFO</text>
+<rect x="799" y="133" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="879" y="159" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Delivery</text>
+<text x="879" y="173" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">stock issued</text>
+<rect x="989" y="133" width="160" height="58" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+<text x="1069" y="159" font-size="11.5" font-weight="bold" fill="#1e293b" text-anchor="middle">Shipment</text>
+<text x="1069" y="173" font-size="9.5" font-weight="normal" fill="#1e293b" text-anchor="middle">proof of delivery</text>
+<rect x="799" y="225" width="160" height="58" rx="10" fill="#e8f5ee" stroke="#059669" stroke-width="1.5"/>
+<text x="879" y="251" font-size="11.5" font-weight="bold" fill="#064e3b" text-anchor="middle">Stock ledger + COGS</text>
+<text x="879" y="265" font-size="9.5" font-weight="normal" fill="#064e3b" text-anchor="middle">trace event</text>
+<rect x="609" y="225" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="689" y="251" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Invoice</text>
+<text x="689" y="265" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">receivable</text>
+<rect x="419" y="225" width="160" height="58" rx="10" fill="#ffffff" stroke="#1f4b8f" stroke-width="1.5"/>
+<text x="499" y="251" font-size="11.5" font-weight="bold" fill="#0b1f42" text-anchor="middle">Payment</text>
+<text x="499" y="265" font-size="9.5" font-weight="normal" fill="#0b1f42" text-anchor="middle">allocated</text>
+<rect x="229" y="225" width="160" height="58" rx="10" fill="#fff1f2" stroke="#e11d48" stroke-width="1.5"/>
+<text x="309" y="251" font-size="11.5" font-weight="bold" fill="#881337" text-anchor="middle">Credit note</text>
+<text x="309" y="265" font-size="9.5" font-weight="normal" fill="#881337" text-anchor="middle">returns</text>
+<rect x="609" y="317" width="160" height="58" rx="10" fill="#0b1f42" stroke="#0b1f42" stroke-width="1.5"/>
+<text x="689" y="343" font-size="11.5" font-weight="bold" fill="#ffffff" text-anchor="middle">POS sale</text>
+<text x="689" y="357" font-size="9.5" font-weight="normal" fill="#ffffff" text-anchor="middle">counter, offline</text>
+<rect x="24" y="424" width="14" height="14" rx="3" fill="#0b1f42" stroke="#0b1f42"/>
+<text x="44" y="435" font-size="10" fill="#334155">Person or system</text>
+<rect x="147.6" y="424" width="14" height="14" rx="3" fill="#ffffff" stroke="#1f4b8f"/>
+<text x="167.6" y="435" font-size="10" fill="#334155">Platform step</text>
+<rect x="254.4" y="424" width="14" height="14" rx="3" fill="#fdf8ec" stroke="#d4951c"/>
+<text x="274.4" y="435" font-size="10" fill="#334155">Check or approval</text>
+<rect x="383.6" y="424" width="14" height="14" rx="3" fill="#e8f5ee" stroke="#059669"/>
+<text x="403.6" y="435" font-size="10" fill="#334155">Record kept</text>
+<rect x="479.2" y="424" width="14" height="14" rx="3" fill="#f1f5f9" stroke="#64748b"/>
+<text x="499.2" y="435" font-size="10" fill="#334155">Outside the platform</text>
+<rect x="625.2" y="424" width="14" height="14" rx="3" fill="#fff1f2" stroke="#e11d48"/>
+<text x="645.2" y="435" font-size="10" fill="#334155">Exception</text>
+</svg>
