@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 6: integrations, offline sync, analytics
+- Integrations: connectors (register, edit, activate, pause, disable; inbound key and request-signing secret shown once; encrypted outbound credentials), field mappings per canonical entity with templates and a sample-record preview, file upload, SFTP check and CSV exports, reconciliation of references and stock against the source system; messages (payload as received with personal data masked, mapped result, error; retry, ignore, or map a code to a product or warehouse and reprocess); runs; webhooks (subscriptions with event types, secret shown once, test event, deliveries with redelivery, event outbox); external references; health refreshed every minute.
+- Offline sync: issues raised by offline transactions (acknowledge, or record found stock for a shortfall), unresolved conflicts and rejections, and per-device reconciliation.
+- Analytics: area dashboards (sales, purchases, inventory, expiry risk, POS, marketplace, integrations, sync, recalls) rendered from the API's figures, weekly demand forecast with an 80% range and backtest accuracy, recommendations to accept (a reorder becomes a draft requisition) or dismiss, and the reporting assistant with the organization's external-processing setting.
+- Test runs get a 512 MB memory limit: the suite now loads about a hundred more views.
+- 310 tests passing.
+
 ### 2026-10-22: Web screens, part 5: marketplace and logistics
 - Marketplace: discover offers (filters for supplier type, verified suppliers, availability; supplier profile; prescription-only products flagged), request to trade, build an order per supplier and send it; orders seen from either side (buyers submit, approve internally, cancel, receive shipments and record the supplier's invoice in payables; suppliers accept into their ERP, ship by first expiry with carrier and tracking, invoice); RFQs (invite trading partners, compare offers per line with the lowest first, accept a quote into an order; suppliers answer with a quote or decline), quotes, listings (live stock or declared availability, minimums, allowed buyer types), trading partners (approve with payment terms, reject, suspend), disputes (messages, escalation, resolution), fees and the marketplace profile.
 - Logistics: shipments planned from a sales delivery, a dispatched transfer or by hand; assignment of carrier, driver, vehicle and temperature logger; dispatch, tracking events, manual temperature readings with a chart and excursion assessment, delivery with proof (receiver, condition, delivered quantities, optional signature image), failure, return to origin and cancellation; vehicles; reconciliation of shipped, delivered and returned quantities.

@@ -11,6 +11,7 @@ use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\DocumentationCenter;
 use App\Livewire\Admin\LandingPageEditor;
 use App\Livewire\Admin\VerificationQueue;
+use App\Livewire\Analytics;
 use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue;
 use App\Livewire\Catalogue\ProductBrowser;
@@ -19,6 +20,7 @@ use App\Livewire\Crm;
 use App\Livewire\FieldForce;
 use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Finance;
+use App\Livewire\Integration;
 use App\Livewire\Inventory;
 use App\Livewire\Logistics;
 use App\Livewire\Marketplace;
@@ -28,6 +30,7 @@ use App\Livewire\Pos;
 use App\Livewire\Pos\Register;
 use App\Livewire\Procurement;
 use App\Livewire\Sales;
+use App\Livewire\Sync;
 use App\Livewire\Traceability;
 use Illuminate\Support\Facades\Route;
 
@@ -135,6 +138,17 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
         Route::get('reconciliation', Logistics\Reconciliation::class)->name('reconciliation');
     });
 
+    Route::middleware(['tenant', 'module:integrations'])->prefix('integrations')->name('integration.')->group(function () {
+        Route::get('connectors', Integration\Connectors::class)->name('connectors');
+        Route::get('messages', Integration\Messages::class)->name('messages');
+        Route::get('runs', Integration\Runs::class)->name('runs');
+        Route::get('webhooks', Integration\Webhooks::class)->name('webhooks');
+        Route::get('references', Integration\References::class)->name('references');
+        Route::get('health', Integration\Health::class)->name('health');
+    });
+
+    Route::get('sync', Sync\Overview::class)->middleware('tenant')->name('sync.overview');
+
     // Traceability and recalls are shared platform services: no module needed.
     Route::middleware('tenant')->group(function () {
         Route::get('trace/verify', Traceability\Verify::class)->name('trace.verify');
@@ -181,6 +195,10 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
 
     Route::middleware(['tenant', 'module:analytics'])->group(function () {
         Route::get('analytics', ExecutiveDashboard::class)->name('analytics.executive');
+        Route::get('analytics/dashboards', Analytics\Dashboards::class)->name('analytics.dashboards');
+        Route::get('analytics/forecast', Analytics\Forecast::class)->name('analytics.forecast');
+        Route::get('analytics/recommendations', Analytics\Recommendations::class)->name('analytics.recommendations');
+        Route::get('analytics/assistant', Analytics\Assistant::class)->name('analytics.assistant');
     });
 
     Route::get('admin/documentation', DocumentationCenter::class)->middleware('can:platform.documentation.view')->name('admin.documentation');
