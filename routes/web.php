@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Web\DashboardController;
+use App\Http\Controllers\Web\LandingPageController;
 use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
 use App\Http\Controllers\Web\TraceScanPageController;
 use App\Livewire\Account\SecuritySettings;
+use App\Livewire\Admin\LandingPageEditor;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue\ProductBrowser;
@@ -13,7 +15,9 @@ use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Pos\Register;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/dashboard');
+// Public landing page (content edited at /admin/landing-page) and the media uploaded for it.
+Route::get('/', [LandingPageController::class, 'show'])->name('landing');
+Route::get('landing-media/{file}', [LandingPageController::class, 'media'])->where('file', '[a-z0-9]{32}\.[a-z0-9]{2,5}')->name('landing.media');
 
 // QR codes point here: a public page showing what is recorded about the pack (spec §16.3).
 Route::get('t/{token}', TraceScanPageController::class)->where('token', '[A-Za-z0-9]{22}')->middleware('throttle:'.config('traceability.public_scan_rate_per_minute').',1')->name('trace.page');
@@ -53,6 +57,8 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::middleware(['tenant', 'module:analytics'])->group(function () {
         Route::get('analytics', ExecutiveDashboard::class)->name('analytics.executive');
     });
+
+    Route::get('admin/landing-page', LandingPageEditor::class)->middleware('can:platform.settings.manage')->name('admin.landing-page');
 
     Route::get('admin/verifications', VerificationQueue::class)
         ->middleware('can:platform.organizations.view')

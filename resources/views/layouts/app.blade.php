@@ -6,6 +6,7 @@
         'analytics.executive' => ['chart-bar', 'Analytics', 'Headline figures across sales, stock, expiry risk and operations.'],
         'account.security' => ['finger-print', 'Account', 'Your sign-in, email verification and two-factor settings.'],
         'admin.verifications' => ['shield-check', 'Administration', 'Review organization documents submitted for platform verification.'],
+        'admin.landing-page' => ['globe-alt', 'Administration', 'Edit the public landing page: hero, network infographic, features and app screens.'],
     ];
     $page = $pages[request()->route()?->getName()] ?? ['squares-2x2', 'Workspace', null];
     $current = $nav['current'] ?? null;
@@ -116,8 +117,14 @@
 
                     @if ($nav['admin'])
                         <x-nav.dropdown label="Administration" icon="cog-6-tooth" :active="request()->routeIs('admin.*')">
-                            <x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"
-                                        description="Review documents and decide platform verification." :active="request()->routeIs('admin.verifications')"/>
+                            @if ($nav['admin_verifications'] ?? true)
+                                <x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"
+                                            description="Review documents and decide platform verification." :active="request()->routeIs('admin.verifications')"/>
+                            @endif
+                            @if ($nav['admin_landing'] ?? false)
+                                <x-nav.item :href="route('admin.landing-page')" icon="globe-alt" title="Landing page"
+                                            description="Edit the public page: hero, network, features and app screens." :active="request()->routeIs('admin.landing-page')"/>
+                            @endif
                         </x-nav.dropdown>
                     @endif
                 </nav>
@@ -165,7 +172,8 @@
                         <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"/>
                     @endif
                     @if ($nav['admin'])
-                        <x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"/>
+                        @if ($nav['admin_verifications'] ?? true)<x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"/>@endif
+                        @if ($nav['admin_landing'] ?? false)<x-nav.item :href="route('admin.landing-page')" icon="globe-alt" title="Landing page"/>@endif
                     @endif
                     <x-nav.item :href="route('account.security')" icon="finger-print" title="Account security"/>
                     <form method="POST" action="{{ route('logout') }}">

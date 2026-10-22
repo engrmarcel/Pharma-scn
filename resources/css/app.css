@@ -116,6 +116,63 @@
     }
 }
 
+/* ---- Public landing page ---------------------------------------------------------------- */
+@layer components {
+    [data-landing-header].is-scrolled { @apply bg-navy-950/85 shadow-lg shadow-navy-950/20 backdrop-blur-md; }
+    .landing-overlay {
+        background:
+            radial-gradient(900px 500px at 80% 20%, transparent, rgb(6 19 43 / calc(var(--hero-overlay) * 0.6))),
+            linear-gradient(100deg, rgb(6 19 43 / var(--hero-overlay)) 0%, rgb(6 19 43 / calc(var(--hero-overlay) * 0.75)) 45%, rgb(6 19 43 / calc(var(--hero-overlay) * 0.35)) 100%);
+    }
+    .landing-gradient-text {
+        background: linear-gradient(90deg, var(--color-gold-300), #fff 45%, var(--color-gold-300));
+        background-size: 200% auto;
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        animation: landing-shine 6s linear infinite;
+    }
+
+    /* Scroll reveal (content is visible without JavaScript; the script adds .reveal-ready first). */
+    .reveal-ready [data-reveal] { opacity: 0; transform: translateY(18px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal-ready [data-reveal].is-visible { opacity: 1; transform: none; }
+
+    /* Supply chain: vertical on phones, horizontal from md. */
+    .landing-chain { @apply grid grid-cols-1 gap-8 md:grid-cols-6 md:gap-4; }
+    .landing-chain-line { @apply absolute left-7 top-7 bottom-7 w-0.5 overflow-hidden rounded-full md:left-[8%] md:right-[8%] md:top-7 md:bottom-auto md:h-0.5 md:w-auto; background: repeating-linear-gradient(180deg, var(--color-navy-200) 0 8px, transparent 8px 14px); }
+    @media (width >= 48rem) { .landing-chain-line { background: repeating-linear-gradient(90deg, var(--color-navy-200) 0 8px, transparent 8px 14px); } }
+    .landing-packet { @apply absolute left-[-3px] size-2 rounded-full bg-[var(--brand-primary)] shadow-[0_0_10px_2px] shadow-sky-400/60; animation: landing-packet-y 6.6s linear infinite; }
+    .landing-packet-gold { @apply bg-gold-400 shadow-gold-300/70; }
+    @media (width >= 48rem) { .landing-packet { top: -3px; left: auto; animation-name: landing-packet-x; } }
+    .landing-node { @apply relative flex items-start gap-4 md:flex-col md:items-center md:text-center; }
+    .landing-node-icon { @apply relative z-10 grid size-14 shrink-0 place-items-center rounded-2xl bg-white text-[var(--brand-primary)] shadow-lg shadow-navy-900/10 ring-1 ring-navy-100 transition duration-300 group-hover:-translate-y-1 group-hover:bg-[var(--brand-primary)] group-hover:text-white; }
+    .landing-node-ring { @apply absolute inset-0 rounded-2xl ring-2 ring-gold-300/0 transition group-hover:ring-gold-300/70; }
+    .landing-node-text { @apply md:mt-4; }
+
+    .landing-service { @apply flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg hover:shadow-navy-900/10; }
+    .landing-service-icon { @apply grid size-12 shrink-0 place-items-center rounded-xl bg-gold-100 text-gold-700 ring-1 ring-gold-200; }
+
+    .landing-step { @apply relative z-10 grid size-14 place-items-center rounded-full border-2 border-gold-300 bg-navy-950/60 font-display text-xl font-bold text-white shadow-[0_0_0_6px] shadow-white/5; }
+    @media (width >= 48rem) {
+        .landing-journey > li:not(:last-child)::after { content: ''; @apply absolute left-[calc(50%+2.25rem)] right-[calc(-50%+2.25rem)] top-7 h-0.5 bg-gradient-to-r from-gold-300 to-white/20; }
+    }
+
+    /* Phones beside the app text: fanned on large screens, a swipeable row on small ones. */
+    .landing-phones { @apply relative flex min-w-0 snap-x snap-mandatory gap-6 overflow-x-auto pb-4 lg:h-[640px] lg:overflow-visible lg:pb-0; }
+    .landing-phone { @apply w-60 shrink-0 snap-center lg:absolute lg:w-64; }
+    .landing-phone-frame { @apply relative aspect-[9/19.5] overflow-hidden rounded-[2.6rem] border-[10px] border-navy-950 bg-navy-950 pt-6 shadow-2xl shadow-navy-900/30; }
+    .landing-phone-notch { @apply absolute left-1/2 top-1.5 z-10 h-5 w-24 -translate-x-1/2 rounded-full bg-navy-950; }
+    @media (width >= 64rem) {
+        .landing-phone-0 { left: 50%; top: 0; z-index: 3; transform: translateX(-50%); animation: float 8s ease-in-out infinite; }
+        .landing-phone-1 { left: 0; top: 70px; z-index: 2; transform: rotate(-7deg) scale(.88); }
+        .landing-phone-2 { right: 0; top: 70px; z-index: 1; transform: rotate(7deg) scale(.88); }
+        .landing-phone-solo { left: 50%; transform: translateX(-50%); }
+        .landing-phone-1:hover, .landing-phone-2:hover { z-index: 4; transform: rotate(0) scale(.95); transition: transform .4s ease; }
+    }
+}
+
+@keyframes landing-packet-x { from { left: 0; } to { left: 100%; } }
+@keyframes landing-packet-y { from { top: 0; } to { top: 100%; } }
+@keyframes landing-shine { to { background-position: 200% center; } }
+
 @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
         animation-duration: 0.01ms !important;

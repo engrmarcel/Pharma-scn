@@ -54,7 +54,9 @@ class NavigationComposer
                 'pos' => $canPos,
                 'field_dashboard' => $canFieldDashboard,
                 'analytics' => $canAnalytics,
-                'admin' => Gate::forUser($user)->allows('platform.organizations.view'),
+                'admin' => Gate::forUser($user)->allows('platform.organizations.view') || Gate::forUser($user)->allows('platform.settings.manage'),
+                'admin_verifications' => Gate::forUser($user)->allows('platform.organizations.view'),
+                'admin_landing' => Gate::forUser($user)->allows('platform.settings.manage'),
                 'initials' => collect(preg_split('/\s+/', trim($user->name)))->take(2)->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode(''),
             ],
         ];

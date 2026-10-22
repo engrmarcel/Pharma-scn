@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Public landing page, editable in the administration panel
+- Landing page at `/` (signed-in users get "Open dashboard"): hero over flowing particles (a supply network drifting left to right, gold hubs, pointer attraction; paused off screen, still frame for reduced motion) or a full background video, with an adjustable overlay; network constellation; animated headline figures; supply-chain infographic with goods flowing along the chain; shared services around the platform; batch journey timeline; features; field force app section with three phone screens beside the text; call to action; footer.
+- Phone screens are real renders of the field force app (`HomeScreen`, `VisitScreen`, `CustomerScreen`) with synthetic data, produced by `mobile/field_app/test/screenshots/landing_screenshots_test.dart` (`FIELD_SCREENSHOTS=1`), served as 2x WebP.
+- Editor at `/admin/landing-page` (`platform.settings.manage`): every text, link, figure, chain link, service, step, feature, bullet and screen (add, reorder, remove), background mode, video or poster upload or link, overlay and particle density; screenshot uploads; reset to defaults. Saves are validated (site-relative or http(s) links only, a video background needs a source) and audited; text is always escaped; uploads are stored privately and served at `/landing-media/{random name}`.
+- Responsive from 390 px phones (vertical chain, swipeable phones) to wide desktops; checked with Chrome device emulation.
+- 276 tests passing.
+
 ### 2026-10-22: Phase 9c, country-aware reports, payment methods and regional readiness
 - Platform view by country (organizations, verification, subscriptions, monthly recurring revenue, marketplace value by buyer country), with optional `reporting_currency` conversion at recorded, effective-dated exchange rates (`/admin/exchange-rates`). Rates used are listed; amounts without a rate are left unconverted.
 - `GET /organization/payment-methods`: cash, standalone terminal, and the electronic providers enabled for the organization's country and currency.
