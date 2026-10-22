@@ -502,6 +502,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('terminals/{id}/offline-catalogue', [PosController::class, 'offlineCatalogue'])->whereUlid('id')->name('terminals.offline-catalogue');
 
                 Route::post('shifts', [PosController::class, 'openShift'])->name('shifts.open');
+                Route::get('shifts', [PosController::class, 'shifts'])->name('shifts.index');
                 Route::get('shifts/current', [PosController::class, 'currentShift'])->name('shifts.current');
                 Route::get('shifts/{id}', [PosController::class, 'showShift'])->whereUlid('id')->name('shifts.show');
                 Route::post('shifts/{id}/cash-movements', [PosController::class, 'cashMovement'])->whereUlid('id')->middleware('idempotent:required')->name('shifts.cash');
@@ -509,6 +510,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('shifts/{id}/review', [PosController::class, 'reviewShift'])->whereUlid('id')->name('shifts.review');
 
                 Route::get('lookup', [PosController::class, 'lookup'])->name('lookup');
+                Route::get('sales', [PosController::class, 'sales'])->name('sales.index');
                 Route::post('sales', [PosController::class, 'startSale'])->name('sales.start');
                 Route::get('sales/{id}', [PosController::class, 'showSale'])->whereUlid('id')->name('sales.show');
                 Route::put('sales/{id}/lines', [PosController::class, 'setLines'])->whereUlid('id')->name('sales.lines');

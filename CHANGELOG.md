@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 3: point of sale back office, traceability, recalls
+- Point of sale: terminals (register, enable, disable), shifts (open now, to review, reviewed; cash in drawer, variance, sales in the shift; supervisors record cash movements, close a cashier's shift and mark it reviewed), refunds (find a sale by receipt number, request, approve or reject by a second person), pending card and transfer payments to confirm, and reports (summary, products, cashiers, terminals, payment methods, refunds, shifts, batches sold).
+- New API reads used by the back office: `GET /pos/shifts` (supervisors and reporting, within the member's locations) and `GET /pos/sales` (cashiers see their own).
+- Traceability: verify a pack by scanning or typing a code (with your own stock of the lot) and record dispensing of a serial; issue batch, product and SSCC identifiers with their QR code, commission serials, pack identifiers into a logistic unit, revoke or decommission; the event log with corrections and reversals; lot history as a timeline; hash-chain check and EPCIS download.
+- Recalls: draft, activate (by a second person), follow exposure per holder, close or cancel; recall notices received with instructions, recovery figures and the customers supplied, acknowledged and completed; regulatory incidents with their reporting deadline, marked reported or closed.
+- 304 tests passing.
+
 ### 2026-10-22: Web screens, part 2: procurement, sales, finance
 - Procurement: requisitions (submit, approve or reject, convert), purchase orders (draft, edit, submit, approve, send, cancel, close), goods receipts against orders (batch, expiry, quality), supplier invoices pre-filled from the order and matched against receipts (approve with an override reason when unmatched, cancel), supplier returns, reorder suggestions that become a requisition, settings.
 - Sales: sales orders (draft, confirm, approve or reject, deliver by first expiry, invoice, cancel, close), quotations converted into orders, invoices with credit notes (returns with restocking state, price adjustments), customer payments allocated to open invoices (oldest first), receivables aging, price lists, settings.

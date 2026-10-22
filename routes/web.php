@@ -14,14 +14,17 @@ use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue;
 use App\Livewire\Catalogue\ProductBrowser;
+use App\Livewire\Compliance;
 use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Finance;
 use App\Livewire\Inventory;
 use App\Livewire\Organization;
 use App\Livewire\Parties;
+use App\Livewire\Pos;
 use App\Livewire\Pos\Register;
 use App\Livewire\Procurement;
 use App\Livewire\Sales;
+use App\Livewire\Traceability;
 use Illuminate\Support\Facades\Route;
 
 // Public landing page (content edited at /admin/landing-page) and the media uploaded for it.
@@ -110,9 +113,26 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
         Route::get('periods', Finance\Periods::class)->name('periods');
     });
 
+    // Traceability and recalls are shared platform services: no module needed.
+    Route::middleware('tenant')->group(function () {
+        Route::get('trace/verify', Traceability\Verify::class)->name('trace.verify');
+        Route::get('trace/identifiers', Traceability\Identifiers::class)->name('trace.identifiers');
+        Route::get('trace/events', Traceability\Events::class)->name('trace.events');
+        Route::get('trace/lots', Traceability\Lots::class)->name('trace.lots');
+        Route::get('trace/integrity', Traceability\Integrity::class)->name('trace.integrity');
+        Route::get('recalls', Compliance\Recalls::class)->name('recalls.index');
+        Route::get('recalls/notices', Compliance\Notices::class)->name('recalls.notices');
+        Route::get('regulatory-incidents', Compliance\Incidents::class)->name('recalls.incidents');
+    });
+
     Route::middleware(['tenant', 'module:pos'])->group(function () {
         Route::get('pos', Register::class)->name('pos.register');
         Route::get('pos/receipts/{sale}', PosReceiptController::class)->whereUlid('sale')->name('pos.receipt');
+        Route::get('pos/terminals', Pos\Terminals::class)->name('pos.terminals');
+        Route::get('pos/shifts', Pos\Shifts::class)->name('pos.shifts');
+        Route::get('pos/refunds', Pos\Refunds::class)->name('pos.refunds');
+        Route::get('pos/pending-payments', Pos\PendingPayments::class)->name('pos.payments');
+        Route::get('pos/reports', Pos\Reports::class)->name('pos.reports');
     });
 
     Route::middleware(['tenant', 'module:field_force'])->group(function () {

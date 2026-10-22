@@ -19,10 +19,12 @@ use App\Domain\Pos\Services\PosSaleService;
 use App\Domain\Pos\Services\PosSessionService;
 use App\Domain\Pos\Services\ReceiptPresenter;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -76,6 +78,46 @@ class PosController extends Controller
         $this->locations->assertWarehouse($terminal->warehouse_id);
 
         return response()->json(['data' => $this->sessions->openShift($terminal, $request->user(), (string) $data['opening_float'])], 201);
+    }
+
+    /** Shifts for supervisors and reporting: newest first, within the member's locations. */
+    public function shifts(Request $request): JsonResponse
+    {
+        abort_unless(Gate::any(['pos.shift.review', 'pos.reports.view']), 403);
+        $f = $request->validate([
+            'status' => ['nullable', Rule::in(['open', 'closed', 'reviewed'])],
+            'pos_terminal_id' => ['nullable', 'ulid'],
+            'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+        $terminals = $this->locations->scope(PosTerminal::query())->pluck('id');
+
+        return response()->json(PosShift::query()->select('pos_shifts.*')
+            ->addSelect(['cashier_name' => User::query()->select('name')->whereColumn('users.id', 'pos_shifts.cashier_id')])
+            ->whereIn('pos_terminal_id', $terminals)
+            ->when($f['status'] ?? null, fn ($q, $v) => $v === 'reviewed' ? $q->whereNotNull('reviewed_at') : $q->where('status', $v)->when($v === 'closed', fn ($c) => $c->whereNull('reviewed_at')))
+            ->when($f['pos_terminal_id'] ?? null, fn ($q, $v) => $q->where('pos_terminal_id', $v))
+            ->when($f['from'] ?? null, fn ($q, $v) => $q->where('opened_at', '>=', $v))
+            ->when($f['to'] ?? null, fn ($q, $v) => $q->where('opened_at', '<', Carbon::parse($v)->addDay()))
+            ->latest('opened_at')->paginate(50));
+    }
+
+    /** Completed and other sales, for finding a sale to refund or review. Cashiers see their own. */
+    public function sales(Request $request): JsonResponse
+    {
+        Gate::authorize('pos.sell');
+        $f = $request->validate([
+            'number' => ['nullable', 'string', 'max:32'],
+            'status' => ['nullable', 'string', 'max:20'],
+            'pos_shift_id' => ['nullable', 'ulid'],
+        ]);
+        $seesAll = Gate::any(['pos.sale.cancel', 'pos.refund.approve', 'pos.reports.view']);
+
+        return response()->json($this->locations->scope(PosSale::query())
+            ->when(! $seesAll, fn ($q) => $q->where('cashier_id', $request->user()->id))
+            ->when($f['number'] ?? null, fn ($q, $v) => $q->where('number', strtoupper(trim($v))))
+            ->when($f['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
+            ->when($f['pos_shift_id'] ?? null, fn ($q, $v) => $q->where('pos_shift_id', $v))
+            ->latest()->paginate(50, ['id', 'number', 'pos_shift_id', 'pos_terminal_id', 'cashier_id', 'customer_id', 'status', 'currency_code', 'total', 'completed_at', 'created_at']));
     }
 
     public function currentShift(Request $request): JsonResponse
