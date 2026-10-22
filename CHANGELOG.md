@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 4: field force and CRM
+- Field force: territories (warehouse, members and roles, customer assignment), visits (list, detail with activities; visits logged on the web carry no device location and stay unverified), field orders (capture, submit into a sales order, cancel), follow-ups (add, complete with an outcome, cancel; overdue highlighted) and the activity report per representative.
+- CRM: accounts (tier, call frequency, potential; visit due dates; contacts with recorded consent, consent withdrawal and anonymization; customer timeline), visit plans (build with suggested customers, submit, approve or send back by a supervisor, adherence), opportunities (pipeline by stage with weighted value, lead conversion into a customer), targets (achievement and pace), interactions, feedback (possible adverse events flagged with the pharmacovigilance notice; review and resolve), detailing messages (draft, approval by a second person, retire) and what was presented, segments (by rule with refresh, or by hand), CRM analytics, and automation settings with run now and work handover.
+- 306 tests passing.
+
 ### 2026-10-22: Web screens, part 3: point of sale back office, traceability, recalls
 - Point of sale: terminals (register, enable, disable), shifts (open now, to review, reviewed; cash in drawer, variance, sales in the shift; supervisors record cash movements, close a cashier's shift and mark it reviewed), refunds (find a sale by receipt number, request, approve or reject by a second person), pending card and transfer payments to confirm, and reports (summary, products, cashiers, terminals, payment methods, refunds, shifts, batches sold).
 - New API reads used by the back office: `GET /pos/shifts` (supervisors and reporting, within the member's locations) and `GET /pos/sales` (cashiers see their own).

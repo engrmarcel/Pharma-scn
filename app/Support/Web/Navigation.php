@@ -115,7 +115,7 @@ class Navigation
             ['crm.feedback', 'Feedback', 'megaphone', ['crm.feedback.manage', 'customers.view', 'customers.view_assigned'], 'Complaints, requests and product feedback with follow-through.'],
             ['crm.detailing', 'Detailing', 'presentation-chart-bar', ['crm.detailing.manage', 'field_force.visits.capture'], 'Approved product messages and what was presented.'],
             ['crm.segments', 'Segments', 'squares-plus', ['crm.segments.manage', 'customers.view'], 'Groups of customers by rule or by hand.'],
-            ['crm.analytics', 'CRM analytics', 'chart-pie', ['field_force.team.view', 'field_force.view_all', 'crm.targets.manage'], 'Coverage, frequency and conversion.'],
+            ['crm.analytics', 'CRM analytics', 'chart-pie', ['field_force.reports.view'], 'Coverage, frequency and conversion.'],
             ['crm.automation', 'Automation', 'bolt', ['crm.automation.manage'], 'Automatic follow-ups and visit suggestions.'],
         ]],
         'finance' => ['Finance', 'calculator', 'Finance & insight', ['finance'], 'tenant', [

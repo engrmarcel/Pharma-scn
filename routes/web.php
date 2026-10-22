@@ -15,6 +15,8 @@ use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Livewire\Compliance;
+use App\Livewire\Crm;
+use App\Livewire\FieldForce;
 use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Finance;
 use App\Livewire\Inventory;
@@ -137,6 +139,24 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
 
     Route::middleware(['tenant', 'module:field_force'])->group(function () {
         Route::get('field-force/dashboard', SupervisorDashboard::class)->name('field-force.dashboard');
+        Route::get('field-force/territories', FieldForce\Territories::class)->name('field-force.territories');
+        Route::get('field-force/visits', FieldForce\Visits::class)->name('field-force.visits');
+        Route::get('field-force/orders', FieldForce\Orders::class)->name('field-force.orders');
+        Route::get('field-force/follow-ups', FieldForce\FollowUps::class)->name('field-force.follow-ups');
+        Route::get('field-force/activity', FieldForce\Activity::class)->name('field-force.activity');
+
+        Route::prefix('crm')->name('crm.')->group(function () {
+            Route::get('accounts', Crm\Accounts::class)->name('accounts');
+            Route::get('plans', Crm\Plans::class)->name('plans');
+            Route::get('opportunities', Crm\Opportunities::class)->name('opportunities');
+            Route::get('targets', Crm\Targets::class)->name('targets');
+            Route::get('interactions', Crm\Interactions::class)->name('interactions');
+            Route::get('feedback', Crm\Feedback::class)->name('feedback');
+            Route::get('detailing', Crm\Detailing::class)->name('detailing');
+            Route::get('segments', Crm\Segments::class)->name('segments');
+            Route::get('analytics', Crm\Analytics::class)->name('analytics');
+            Route::get('automation', Crm\Automation::class)->name('automation');
+        });
     });
 
     Route::middleware(['tenant', 'module:analytics'])->group(function () {
