@@ -103,6 +103,12 @@ Behaviour:
 - **Locations and permissions.** Location-restricted members see their warehouses only. Organization-wide dashboards need access to all locations. Each area needs its own view permission, and stock value needs the valuation permission. What a viewer may not see is listed as withheld, not shown as zero.
 - **Personal data.** Dashboards show customer and supplier names and cashier names to members who can already see those records; no patient data is used.
 
+## Forecasts and recommendations (Phase 8b, ADR-0019)
+
+- **No autonomous action.** The recommendation engine writes only recommendation rows; a test confirms that generation leaves requisitions, orders, stock movements, journals, adjustments, trace events and incidents unchanged.
+- **Human decision under the person's own rights.** Accepting a reorder creates a draft requisition as the accepting person, checked against `procurement.requisition` and their warehouse access; approval and ordering keep their normal rules. Other types record the decision only.
+- **Data stays local.** The built-in forecaster runs on the platform. Another provider that sends data out would fall under the external-AI controls (8c).
+
 ## Logistics (Phase 7c, ADR-0017)
 
 - **Shared shipments.** A shipment is visible to its shipper and its assigned carrier only. The carrier records execution (dispatch, tracking, temperatures, proof of delivery); planning, cancellation and excursion assessment stay with the shipper. Drivers must be active members of the shipper or the carrier.

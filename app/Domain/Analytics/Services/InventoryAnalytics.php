@@ -80,15 +80,7 @@ class InventoryAnalytics
         $horizon = end($buckets);
         $today = today();
 
-        $rows = $this->scope->scope(AnalyticsDb::table('inventory_balances as b')->join('batches as bt', 'bt.id', '=', 'b.batch_id')
-            ->join('products as p', 'p.id', '=', 'b.product_id')
-            ->leftJoin('organization_products as op', fn ($j) => $j->on('op.product_id', '=', 'b.product_id')->on('op.organization_id', '=', 'b.organization_id'))
-            ->where('b.organization_id', $org)->where('b.quantity', '>', 0)->whereNotNull('bt.expiry_date')
-            ->where('bt.expiry_date', '<=', $today->copy()->addDays($horizon)->toDateString()), 'b.warehouse_id', $warehouses)
-            ->groupBy('b.product_id', 'op.sku', 'p.display_name', 'b.batch_id', 'bt.batch_number', 'bt.expiry_date', 'bt.unit_cost', 'bt.currency_code')
-            ->selectRaw("b.product_id, op.sku, p.display_name as product_name, b.batch_id, bt.batch_number, bt.expiry_date, bt.unit_cost, bt.currency_code,
-                SUM(b.quantity) as quantity, SUM(CASE WHEN b.stock_state = 'available' THEN b.quantity ELSE 0 END) as available")
-            ->orderBy('bt.expiry_date')->get();
+        $rows = $this->expiryRows($org, $warehouses, $horizon);
 
         $label = function (int $days) use ($buckets) {
             if ($days < 0) {
@@ -120,8 +112,48 @@ class InventoryAnalytics
             return $g;
         })->values();
 
+        $atRisk = $this->expiryAtRisk($org, $warehouses, $showValue, $rows);
+
+        return [
+            'as_of' => $today->toDateString(), 'warehouse_id' => $warehouseId,
+            'buckets' => $summary,
+            'at_risk' => $atRisk->take(50),
+            'at_risk_batches' => $atRisk->count(),
+            'estimates' => ['kind' => 'prediction', 'basis' => 'Average net daily demand over the last '.config('analytics.demand_window_days').' days, consumed first-expiry-first-out across each product\'s batches. Available stock only.',
+                'demand_data' => $this->demand->lastRefresh($org)],
+        ];
+    }
+
+    /**
+     * Batches in scope expiring within $horizon days (or already expired), with quantity in all
+     * states and available quantity.
+     */
+    private function expiryRows(string $org, ?array $warehouses, int $horizon): Collection
+    {
+        return $this->scope->scope(AnalyticsDb::table('inventory_balances as b')->join('batches as bt', 'bt.id', '=', 'b.batch_id')
+            ->join('products as p', 'p.id', '=', 'b.product_id')
+            ->leftJoin('organization_products as op', fn ($j) => $j->on('op.product_id', '=', 'b.product_id')->on('op.organization_id', '=', 'b.organization_id'))
+            ->where('b.organization_id', $org)->where('b.quantity', '>', 0)->whereNotNull('bt.expiry_date')
+            ->where('bt.expiry_date', '<=', today()->addDays($horizon)->toDateString()), 'b.warehouse_id', $warehouses)
+            ->groupBy('b.product_id', 'op.sku', 'p.display_name', 'b.batch_id', 'bt.batch_number', 'bt.expiry_date', 'bt.unit_cost', 'bt.currency_code')
+            ->selectRaw("b.product_id, op.sku, p.display_name as product_name, b.batch_id, bt.batch_number, bt.expiry_date, bt.unit_cost, bt.currency_code,
+                SUM(b.quantity) as quantity, SUM(CASE WHEN b.stock_state = 'available' THEN b.quantity ELSE 0 END) as available")
+            ->orderBy('bt.expiry_date')->get();
+    }
+
+    /**
+     * Batches likely to expire unsold: average daily demand, consumed first-expiry-first-out
+     * across each product's batches. Also used by the recommendation engine (no viewer checks).
+     *
+     * @return Collection<int, array>
+     */
+    public function expiryAtRisk(string $org, ?array $warehouses, bool $showValue, ?Collection $rows = null): Collection
+    {
+        $rows ??= $this->expiryRows($org, $warehouses, (int) collect(config('analytics.expiry_buckets'))->last());
+        $today = today();
         $average = $this->demand->averageDaily($org, $warehouses, config('analytics.demand_window_days'));
-        $atRisk = $rows->filter(fn ($r) => Carbon::parse($r->expiry_date)->gte($today))->groupBy('product_id')
+
+        return $rows->filter(fn ($r) => Carbon::parse($r->expiry_date)->gte($today))->groupBy('product_id')
             ->flatMap(function (Collection $batches, $productId) use ($average, $today, $showValue) {
                 $daily = $average[$productId] ?? '0';
                 $consumedBefore = '0';
@@ -141,15 +173,6 @@ class InventoryAnalytics
                         'estimated_unsold_value' => $showValue && $r->unit_cost !== null ? ['currency_code' => $r->currency_code, 'amount' => bcmul($unsold, (string) $r->unit_cost, 4)] : null];
                 });
             })->filter(fn ($l) => bccomp($l['estimated_unsold'], '0', 4) > 0)->sortBy('expiry_date')->values();
-
-        return [
-            'as_of' => $today->toDateString(), 'warehouse_id' => $warehouseId,
-            'buckets' => $summary,
-            'at_risk' => $atRisk->take(50),
-            'at_risk_batches' => $atRisk->count(),
-            'estimates' => ['kind' => 'prediction', 'basis' => 'Average net daily demand over the last '.config('analytics.demand_window_days').' days, consumed first-expiry-first-out across each product\'s batches. Available stock only.',
-                'demand_data' => $this->demand->lastRefresh($org)],
-        ];
     }
 
     /**

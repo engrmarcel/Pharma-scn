@@ -155,6 +155,28 @@
         @endisset
     </div>
 
+    @if ($recommendations->isNotEmpty())
+        <section class="card overflow-hidden">
+            <header class="border-b border-slate-100 px-5 py-4">
+                <h2 class="font-semibold text-navy-950">Recommendations</h2>
+                <p class="mt-1 text-xs text-slate-500">Machine-generated. Review before acting; nothing changes until a person accepts one.</p>
+            </header>
+            <ul class="divide-y divide-slate-100">
+                @foreach ($recommendations as $rec)
+                    @php $tone = ['critical' => 'bg-rose-100 text-rose-800', 'warning' => 'bg-amber-100 text-amber-800', 'info' => 'bg-slate-100 text-slate-700'][$rec->severity] ?? 'bg-slate-100 text-slate-700'; @endphp
+                    <li class="px-5 py-3">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $tone }}">{{ ucfirst($rec->severity) }}</span>
+                            <span class="text-xs uppercase tracking-wider text-slate-400">{{ str_replace('_', ' ', $rec->kind) }}</span>
+                            <span class="font-medium text-navy-950">{{ $rec->title }}</span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-600">{{ $rec->rationale }}</p>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
+
     @if ($board['withheld'])
         <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
             Not shown:

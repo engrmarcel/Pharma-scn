@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
 use App\Http\Controllers\Api\V1\AnalyticsController;
+use App\Http\Controllers\Api\V1\AnalyticsInsightsController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
@@ -309,6 +310,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Analytics (spec §19.1): dashboards under each area's own permissions and the member's locations.
             Route::middleware('module:analytics')->prefix('analytics')->name('analytics.')->group(function () {
                 Route::get('executive', [AnalyticsController::class, 'executive'])->name('executive');
+                Route::get('forecast', [AnalyticsInsightsController::class, 'forecast'])->name('forecast');
+                Route::get('recommendations', [AnalyticsInsightsController::class, 'index'])->name('recommendations.index');
+                Route::post('recommendations/generate', [AnalyticsInsightsController::class, 'generate'])->middleware('throttle:6,1')->name('recommendations.generate');
+                Route::get('recommendations/{id}', [AnalyticsInsightsController::class, 'show'])->whereUlid('id')->name('recommendations.show');
+                Route::post('recommendations/{id}/{decision}', [AnalyticsInsightsController::class, 'decide'])->whereUlid('id')->whereIn('decision', ['accept', 'dismiss'])->name('recommendations.decide');
                 Route::get('{dashboard}', [AnalyticsController::class, 'dashboard'])->whereIn('dashboard', AnalyticsController::DASHBOARDS)->name('dashboard');
             });
 

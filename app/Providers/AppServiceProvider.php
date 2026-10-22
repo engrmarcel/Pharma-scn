@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Domain\Access\Services\AccessControl;
+use App\Domain\Analytics\Forecasting\ForecastProvider;
+use App\Domain\Analytics\Models\Recommendation;
 use App\Domain\Billing\Models\OrganizationSubscription;
 use App\Domain\Billing\Models\SubscriptionPlan;
 use App\Domain\Catalogue\Models\Manufacturer;
@@ -118,6 +120,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(UnitConverter::class);
         $this->app->scoped(ChartOfAccounts::class);
         $this->app->scoped(FieldForceScope::class);
+        // Demand forecasting model (spec §19.2): the local statistical one unless configured otherwise.
+        $this->app->bind(ForecastProvider::class, fn ($app) => $app->make(config('analytics.forecast.provider')));
     }
 
     /**
@@ -155,6 +159,7 @@ class AppServiceProvider extends ServiceProvider
             'visit_plan' => VisitPlan::class,
             'sales_target' => SalesTarget::class,
             'opportunity' => Opportunity::class,
+            'recommendation' => Recommendation::class,
             'trace_event' => TraceEvent::class,
             'trace_identifier' => TraceIdentifier::class,
             'recall' => Recall::class,

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 8b, forecasting and recommendations
+- Weekly demand forecasts (`/analytics/forecast`) behind a `ForecastProvider` interface. The built-in statistical forecaster picks a moving average, exponential smoothing, damped trend or Croston (intermittent demand) by backtest, and reports its method, accuracy, 80% intervals and assumptions. Labelled `prediction`.
+- Recommendations (`/analytics/recommendations`, nightly `analytics:recommend` at 02:00, or `POST /analytics/recommendations/generate`): reorder (stock plus on-order against forecast lead-time demand or the reorder level), overstock, expiry risk, integration anomalies (error-rate jump, silent connector) and traceability anomalies (broken chain, dispensed or withdrawn codes scanned again). One open recommendation per subject; cleared ones are superseded.
+- Advisory only (ADR-0019): generation writes nothing but recommendation rows. A person accepts or dismisses with a reason. Accepting a reorder creates a draft purchase requisition as that person, who needs `procurement.requisition` and access to the warehouse. Visibility follows area permissions and locations. Decisions are audited.
+- Open recommendations appear on the executive web page, labelled machine-generated.
+- 259 tests passing.
+
 ### 2026-10-22: Phase 8a, analytics dashboards
 - Dashboards (`/analytics/{sales|purchases|inventory|expiry-risk|pos|field-force|marketplace|integrations|sync|recalls}`) and the executive view (`/analytics/executive`, web page `/analytics`), module `analytics`.
 - Scope (ADR-0018): current organization only; location-restricted members see their warehouses only, and organization-wide dashboards need all locations. Each dashboard needs its area's view permission. The executive view lists sections the viewer may not see as withheld, never as zero. Stock value needs `inventory.valuation.view`. Money is per currency.

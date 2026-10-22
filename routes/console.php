@@ -20,3 +20,5 @@ Schedule::command('field-force:purge-locations')->dailyAt('02:30')->withoutOverl
 
 // Analytical store: recompute recent daily demand facts (late and offline postings included).
 Schedule::command('analytics:refresh')->dailyAt('01:30')->withoutOverlapping();
+// Recommendations (advisory): reorder, overstock, expiry risk, integration and traceability anomalies.
+Schedule::command('analytics:recommend')->dailyAt('02:00')->withoutOverlapping();

@@ -202,6 +202,9 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET | `/analytics/executive` | `analytics.view`; `sections` the viewer may see, `withheld[] {section, reason: permission\|location_scope}` |
 | GET (`warehouse_id?`) | `/analytics/sales` · `/analytics/purchases` · `/analytics/inventory` · `/analytics/pos` · `/analytics/expiry-risk` | `sales.view` · `procurement.view` · `inventory.view` (value: `inventory.valuation.view`) · `pos.reports.view` · `inventory.view`; limited to the member's warehouses (`location_access_denied`) |
 | GET | `/analytics/field-force` (`territory_id?`) · `/analytics/marketplace` · `/analytics/integrations` · `/analytics/sync` · `/analytics/recalls` | `field_force.reports.view` · marketplace permissions · `integrations.view` · `sync.reconcile` · recall permissions; organization-wide ones need all locations (`analytics_requires_all_locations`) |
+| GET `?product_id&warehouse_id?&horizon_weeks?` (1–26, default 8) | `/analytics/forecast` | `inventory.view`, `sales.view` or `procurement.view`; `forecast_insufficient_history` under 6 weeks |
+| GET (`status`, default open; `type`) · GET `{id}` · POST `generate` | `/analytics/recommendations` | `analytics.view` plus the type's area permission; follows the member's locations; generate throttled to 6 a minute |
+| POST `{id}/accept {notes?, warehouse_id?, quantity?, needed_by?}` · POST `{id}/dismiss {reason}` | `/analytics/recommendations` | accepting a reorder needs `procurement.requisition` and the warehouse, and creates a draft requisition (`decision.action_type` = `purchase_requisition`); `recommendation_not_open` (409) |
 | GET | `/admin/analytics/platform` | `platform.billing.manage` |
 
 Money is a list of `{currency_code, amount}`. Estimates carry `estimates.kind` (`estimate` or `prediction`), `basis` and `demand_data.refreshed_at`.

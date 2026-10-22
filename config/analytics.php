@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Analytics\Forecasting\StatisticalForecaster;
+
 /*
 |--------------------------------------------------------------------------
 | Analytics and AI (spec §19, Phase 8)
@@ -29,6 +31,19 @@ return [
 
     // Expiry-risk buckets in days from today.
     'expiry_buckets' => [30, 90, 180],
+
+    // Forecasting (spec §19.2). Any class implementing App\Domain\Analytics\Forecasting\ForecastProvider.
+    'forecast' => [
+        'provider' => env('ANALYTICS_FORECAST_PROVIDER', StatisticalForecaster::class),
+    ],
+
+    // Recommendations: advisory only; a person accepts or dismisses each one.
+    'recommendations' => [
+        'default_lead_time_days' => 14,  // when the preferred supplier has fewer than two receipts on record
+        'target_cover_days' => 30,       // a reorder covers the lead time plus this many days of demand
+        'overstock_cover_days' => 180,   // more cover than this is reported as overstock
+        'expiry_window_days' => 90,      // batches expiring within this window are checked for unsold stock
+    ],
 
     // Dashboards are bounded: longest period a single request may cover.
     'max_period_days' => 731,

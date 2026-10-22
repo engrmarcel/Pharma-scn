@@ -3,6 +3,7 @@
 namespace App\Livewire\Analytics;
 
 use App\Domain\Analytics\Services\ExecutiveDashboard as Dashboard;
+use App\Domain\Analytics\Services\RecommendationService;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -28,11 +29,15 @@ class ExecutiveDashboard extends Component
         $this->to = today()->toDateString();
     }
 
-    public function render(Dashboard $dashboard)
+    public function render(Dashboard $dashboard, RecommendationService $recommendations)
     {
         Gate::authorize('analytics.view');
         $this->validate(['from' => ['required', 'date_format:Y-m-d'], 'to' => ['required', 'date_format:Y-m-d', 'after_or_equal:from', 'before_or_equal:today']]);
 
-        return view('livewire.analytics.executive-dashboard', ['board' => $dashboard->build($this->from, $this->to)]);
+        return view('livewire.analytics.executive-dashboard', [
+            'board' => $dashboard->build($this->from, $this->to),
+            'recommendations' => $recommendations->visible()->where('status', 'open')
+                ->orderByRaw("FIELD(severity, 'critical', 'warning', 'info')")->orderByDesc('generated_at')->limit(6)->get(),
+        ]);
     }
 }
