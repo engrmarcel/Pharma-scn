@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 2: procurement, sales, finance
+- Procurement: requisitions (submit, approve or reject, convert), purchase orders (draft, edit, submit, approve, send, cancel, close), goods receipts against orders (batch, expiry, quality), supplier invoices pre-filled from the order and matched against receipts (approve with an override reason when unmatched, cancel), supplier returns, reorder suggestions that become a requisition, settings.
+- Sales: sales orders (draft, confirm, approve or reject, deliver by first expiry, invoice, cancel, close), quotations converted into orders, invoices with credit notes (returns with restocking state, price adjustments), customer payments allocated to open invoices (oldest first), receivables aging, price lists, settings.
+- Finance: profit and loss, balance sheet, trial balance, account ledger and payables aging; journal entries with balanced manual entries and reversals; supplier payments and allocation of payments on account; chart of accounts; closing and reopening periods.
+- 300 tests passing.
+
 ### 2026-10-22: Web screens, part 1: foundation, organization, catalogue, customers and suppliers, inventory
 - Web screens are in-process clients of the API (ADR-0024). `InternalApi` runs each call through the same middleware, validation, permissions and business rules as any API client. Field errors appear on the form, and other refusals appear as a message with a reference.
 - One navigation registry drives a Workspace menu grouped by area (supply chain, commerce, field and CRM, finance and insight, connect), the Organization menu, the Administration menu, page banners and section tabs. A page shows only when its module is on and the member has a permission for it.

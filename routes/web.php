@@ -15,10 +15,13 @@ use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Livewire\FieldForce\SupervisorDashboard;
+use App\Livewire\Finance;
 use App\Livewire\Inventory;
 use App\Livewire\Organization;
 use App\Livewire\Parties;
 use App\Livewire\Pos\Register;
+use App\Livewire\Procurement;
+use App\Livewire\Sales;
 use Illuminate\Support\Facades\Route;
 
 // Public landing page (content edited at /admin/landing-page) and the media uploaded for it.
@@ -77,6 +80,34 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
         Route::get('counts', Inventory\Counts::class)->name('counts');
         Route::get('transfers', Inventory\Transfers::class)->name('transfers');
         Route::get('settings', Inventory\Settings::class)->name('settings');
+    });
+
+    Route::middleware(['tenant', 'module:procurement'])->prefix('procurement')->name('procurement.')->group(function () {
+        Route::get('requisitions', Procurement\Requisitions::class)->name('requisitions');
+        Route::get('orders', Procurement\PurchaseOrders::class)->name('orders');
+        Route::get('receipts', Procurement\GoodsReceipts::class)->name('receipts');
+        Route::get('invoices', Procurement\SupplierInvoices::class)->name('invoices');
+        Route::get('returns', Procurement\SupplierReturns::class)->name('returns');
+        Route::get('suggestions', Procurement\Suggestions::class)->name('suggestions');
+        Route::get('settings', Procurement\Settings::class)->name('settings');
+    });
+
+    Route::middleware(['tenant', 'module:sales'])->prefix('sales')->name('sales.')->group(function () {
+        Route::get('orders', Sales\SalesOrders::class)->name('orders');
+        Route::get('quotations', Sales\Quotations::class)->name('quotations');
+        Route::get('invoices', Sales\Invoices::class)->name('invoices');
+        Route::get('payments', Sales\Payments::class)->name('payments');
+        Route::get('aging', Sales\Aging::class)->name('aging');
+        Route::get('price-lists', Sales\PriceLists::class)->name('price-lists');
+        Route::get('settings', Sales\Settings::class)->name('settings');
+    });
+
+    Route::middleware(['tenant', 'module:finance'])->prefix('finance')->name('finance.')->group(function () {
+        Route::get('reports', Finance\Reports::class)->name('reports');
+        Route::get('journals', Finance\Journals::class)->name('journals');
+        Route::get('payments', Finance\SupplierPayments::class)->name('payments');
+        Route::get('accounts', Finance\Accounts::class)->name('accounts');
+        Route::get('periods', Finance\Periods::class)->name('periods');
     });
 
     Route::middleware(['tenant', 'module:pos'])->group(function () {
