@@ -42,6 +42,9 @@ use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\Inventory\Models\StockCount;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Services\LocationAccess;
+use App\Domain\Logistics\Models\ProofOfDelivery;
+use App\Domain\Logistics\Models\Shipment;
+use App\Domain\Logistics\Models\Vehicle;
 use App\Domain\Marketplace\Models\MarketplaceDispute;
 use App\Domain\Marketplace\Models\MarketplaceListing;
 use App\Domain\Marketplace\Models\MarketplaceOrder;
@@ -157,6 +160,9 @@ class AppServiceProvider extends ServiceProvider
             'recall' => Recall::class,
             'recall_notice' => RecallNotice::class,
             'regulatory_incident' => RegulatoryIncident::class,
+            'shipment' => Shipment::class,
+            'proof_of_delivery' => ProofOfDelivery::class,
+            'vehicle' => Vehicle::class,
             'batch' => Batch::class,
             'bin_location' => BinLocation::class,
             'stock_adjustment' => StockAdjustment::class,

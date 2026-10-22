@@ -97,6 +97,12 @@ Behaviour:
 - **Writes into other organizations.** Activation is the only write into other organizations' books: batches are marked recalled and available stock is quarantined, which only makes stock less available. It runs in each holder's context and appears in each holder's audit and trace chain. Cancelling never releases stock automatically.
 - **What each party sees.** The exposure report is for the issuer and platform compliance. The names of parties outside the platform are shown to platform staff only; the issuer sees counts. Holders see only their own customers.
 
+## Logistics (Phase 7c, ADR-0017)
+
+- **Shared shipments.** A shipment is visible to its shipper and its assigned carrier only. The carrier records execution (dispatch, tracking, temperatures, proof of delivery); planning, cancellation and excursion assessment stay with the shipper. Drivers must be active members of the shipper or the carrier.
+- **No writes to the books.** Shipments never post stock or money, so a carrier cannot change another organization's stock.
+- **Proof of delivery.** Signature and photo are stored as attachments of the shipper's organization. Receiver names and locations are personal data kept with the delivery record.
+
 ## Gaps and planned controls
 
 | Gap | Plan |

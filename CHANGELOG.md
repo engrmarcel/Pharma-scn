@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 7c, logistics, proof of delivery and cold chain
+- Shipments (`/logistics/shipments`) created from a sales delivery, a dispatched stock transfer, or manually, with items by batch. No stock or finance postings: the source document's own flow corrects the books, and each shipment lists the `next_steps`.
+- Carrier (a logistics provider on the platform, or by name), driver and vehicle (`/logistics/vehicles`). The carrier and its drivers see the shipment and record dispatch, tracking, temperatures, proof of delivery, failure and return. Planning, cancelling and excursion assessment stay with the shipper.
+- Proof of delivery with receiver, condition, location, signature and photo (attachments), delivered quantity per item and discrepancy notes. Partial delivery, failed delivery and return to origin.
+- Cold chain from the products (strictest range). Dispatch needs a refrigerated vehicle or a temperature logger. Readings are idempotent; consecutive out-of-range readings form one excursion, which sends an e-mail (`TemperatureExcursionNotification`), adds a shipment event and raises the webhook event `logistics.temperature_excursion`. Excursions are assessed by the shipper.
+- Reconciliation (`/logistics/reconciliation`): shipped, delivered, returned and unaccounted quantities, on-time rate, failures and excursions.
+- Permissions `logistics.view`, `logistics.manage`, `logistics.deliver` (driver, logistics coordinator, organization admin, inventory and sales managers, warehouse officer; auditor read-only). ADR-0017.
+- 251 tests passing.
+
 ### 2026-10-26: Phase 7b, recalls and regulatory incidents
 - Recalls (`/recalls`, `/admin/recalls`), prepared by the brand owner (`recalls.initiate`) or platform compliance (`recalls.manage`); activation needs a second person.
 - Activation, in every organization holding the lots: batches are recalled, reservations released and available stock quarantined (`BatchQualityService::quarantineForRecall`, adjustment reason `recall`). Each holder gets a notice, an e-mail (`RecallNoticeNotification`) and the webhook event `recall.notice_issued`.

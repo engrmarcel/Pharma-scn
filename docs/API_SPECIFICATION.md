@@ -196,6 +196,16 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · GET `{id}` · POST `{id}/acknowledge {notes?}` · POST `{id}/complete {notes}` | `/recall-notices` | `recalls.respond`; detail includes `recovery` and `your_customers` |
 | GET (`status`, `overdue`) · POST `{type, description, product_id?, batch_number?, serials[]?, quantity?, detected_at?}` · POST `{id}/report {authority_reference, reported_at?}` · POST `{id}/close {notes}` | `/regulatory-incidents` | `regulatory.incidents.manage`; `report_due_at` from the type (24 h or 48 h), `overdue`, `reported_late` |
 
+### Logistics (`/logistics`, module logistics or inventory)
+| Method | Path | Permission |
+|---|---|---|
+| GET · POST `{registration, description?, refrigerated?}` · PATCH `{id}` | `/logistics/vehicles` | view `logistics.view`; write `logistics.manage` |
+| GET (`status`, `role: shipper\|carrier`, `mine`) · POST `{source_type: sales_delivery\|stock_transfer\|manual, source_id?, origin_warehouse_id?, destination_name?, destination_address?, items[]? {product_id, batch_number, quantity}, planned_delivery_at?, notes?}` · GET `{id}` | `/logistics/shipments` | view `logistics.view` (shipper or assigned carrier); create `logistics.manage`; `shipment_exists` (409), `cold_chain_ranges_incompatible`, `transfer_not_dispatched` |
+| POST `{id}/assign {carrier_organization_id?, carrier_name?, driver_user_id?, driver_name?, driver_phone?, vehicle_id?, vehicle_registration?, temperature_logger_id?, tracking_reference?, planned_delivery_at?}` · POST `{id}/cancel {reason}` | `/logistics/shipments` | shipper, `logistics.manage`; `carrier_invalid`, `driver_invalid`, `vehicle_invalid`, `shipment_not_cancellable` |
+| POST `{id}/dispatch` · `{id}/events {event_type: location_update\|arrived\|delivery_attempted\|note, latitude?, longitude?, location_text?, notes?}` · `{id}/deliver` (multipart: `received_by_name, received_by_role?, received_at?, condition: good\|damaged\|temperature_concern, items[] {shipment_item_id, delivered_quantity, discrepancy_note?}, signature?, photo?`) · `{id}/fail {reason}` · `{id}/return {items[]? {shipment_item_id, returned_quantity}, notes?}` | `/logistics/shipments` | shipper or carrier, `logistics.deliver`; `shipment_unassigned`, `cold_chain_equipment_required` |
+| GET · POST `{source: logger\|manual\|iot, readings[] {recorded_at, temperature_c, device_id?}}` `{id}/temperatures` · POST `{id}/excursions/{excursionId}/assess {assessment: product_usable\|quarantine\|destroy, notes}` | `/logistics/shipments` | readings `logistics.deliver`; assessment shipper `logistics.manage` |
+| GET `?from&to` | `/logistics/reconciliation` | `logistics.view` |
+
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |
 |---|---|---|

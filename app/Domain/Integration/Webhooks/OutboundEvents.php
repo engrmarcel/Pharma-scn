@@ -7,6 +7,7 @@ use App\Domain\Inventory\Events\BatchCreated;
 use App\Domain\Inventory\Events\InventoryAdjusted;
 use App\Domain\Inventory\Events\StockReceived;
 use App\Domain\Inventory\Events\StockTransferred;
+use App\Domain\Logistics\Events\TemperatureExcursionDetected;
 use App\Domain\Organizations\Events\OrganizationVerificationChanged;
 use App\Domain\Procurement\Events\PurchaseOrderApproved;
 use App\Domain\Procurement\Events\PurchaseOrderCreated;
@@ -41,6 +42,7 @@ final class OutboundEvents
         PaymentConfirmed::class => 'finance.payment_confirmed',
         OrganizationVerificationChanged::class => 'organization.verification_changed',
         RecallNoticeIssued::class => 'recall.notice_issued',
+        TemperatureExcursionDetected::class => 'logistics.temperature_excursion',
     ];
 
     public const DESCRIPTIONS = [
@@ -56,6 +58,7 @@ final class OutboundEvents
         'finance.payment_confirmed' => 'A payment was confirmed. Data: payment.',
         'organization.verification_changed' => 'The organization\'s platform verification status changed. Data: from and to status.',
         'recall.notice_issued' => 'A recall reached the organization. Data: recall, product (SKU, GTIN), batches, classification, instructions, quantity held.',
+        'logistics.temperature_excursion' => 'A cold-chain shipment went outside its required temperature range. Data: shipment, required range, excursion start, lowest and highest reading.',
         'webhook.test' => 'Sent on request to check a subscription. Data: a message.',
     ];
 
@@ -92,6 +95,7 @@ final class OutboundEvents
             $event instanceof PaymentConfirmed => ['payment', $event->paymentId, self::payment($event->organizationId, $event->paymentId)],
             $event instanceof OrganizationVerificationChanged => ['organization', $event->organizationId, ['from' => $event->fromStatus, 'to' => $event->toStatus]],
             $event instanceof RecallNoticeIssued => ['recall', $event->recallId, self::recallNotice($event->organizationId, $event->recallId, $event->noticeId)],
+            $event instanceof TemperatureExcursionDetected => ['shipment', $event->shipmentId, self::excursion($event->shipmentId, $event->excursionId)],
             default => [null, null, []],
         };
     }
@@ -169,6 +173,14 @@ final class OutboundEvents
         return (array) $r + ['sku' => $sku, 'gtin' => self::gtin($r->product_id), 'notice_id' => $noticeId,
             'batch_numbers' => DB::table('recall_batches')->where('recall_id', $recallId)->orderBy('batch_number')->pluck('batch_number')->all(),
             'held_at_notice' => DB::table('recall_notices')->where('id', $noticeId)->value('held_at_notice')];
+    }
+
+    private static function excursion(string $shipmentId, string $excursionId): array
+    {
+        $s = DB::table('shipments')->where('id', $shipmentId)->first(['number', 'source_type', 'source_id', 'destination_name', 'temperature_min_c', 'temperature_max_c', 'temperature_logger_id']);
+        $e = DB::table('temperature_excursions')->where('id', $excursionId)->first(['started_at', 'lowest_c', 'highest_c']);
+
+        return ['shipment_id' => $shipmentId, 'excursion_id' => $excursionId] + (array) $s + (array) $e;
     }
 
     private static function gtin(string $productId): ?string

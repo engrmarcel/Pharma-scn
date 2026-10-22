@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\IntegrationInboundController;
 use App\Http\Controllers\Api\V1\IntegrationWebhookController;
 use App\Http\Controllers\Api\V1\InventoryController;
 use App\Http\Controllers\Api\V1\LocationController;
+use App\Http\Controllers\Api\V1\LogisticsController;
 use App\Http\Controllers\Api\V1\MarketplaceController;
 use App\Http\Controllers\Api\V1\MarketplaceFulfilmentController;
 use App\Http\Controllers\Api\V1\MarketplaceTradingController;
@@ -303,6 +304,25 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('regulatory-incidents', [RecallController::class, 'incidents'])->name('regulatory-incidents.index');
             Route::post('regulatory-incidents', [RecallController::class, 'storeIncident'])->name('regulatory-incidents.store');
             Route::post('regulatory-incidents/{id}/{action}', [RecallController::class, 'incidentAction'])->whereUlid('id')->whereIn('action', ['report', 'close'])->name('regulatory-incidents.action');
+
+            // Logistics and delivery (spec §18): shipments over the stock documents, proof of delivery, cold chain.
+            Route::middleware('module:logistics|inventory')->prefix('logistics')->name('logistics.')->group(function () {
+                Route::get('vehicles', [LogisticsController::class, 'vehicles'])->name('vehicles.index');
+                Route::post('vehicles', [LogisticsController::class, 'storeVehicle'])->name('vehicles.store');
+                Route::patch('vehicles/{id}', [LogisticsController::class, 'updateVehicle'])->whereUlid('id')->name('vehicles.update');
+                Route::get('shipments', [LogisticsController::class, 'index'])->name('shipments.index');
+                Route::post('shipments', [LogisticsController::class, 'store'])->name('shipments.store');
+                Route::get('shipments/{id}', [LogisticsController::class, 'show'])->whereUlid('id')->name('shipments.show');
+                Route::post('shipments/{id}/assign', [LogisticsController::class, 'assign'])->whereUlid('id')->name('shipments.assign');
+                Route::post('shipments/{id}/events', [LogisticsController::class, 'track'])->whereUlid('id')->name('shipments.events');
+                Route::post('shipments/{id}/deliver', [LogisticsController::class, 'deliver'])->whereUlid('id')->name('shipments.deliver');
+                Route::post('shipments/{id}/return', [LogisticsController::class, 'returnToOrigin'])->whereUlid('id')->name('shipments.return');
+                Route::post('shipments/{id}/{action}', [LogisticsController::class, 'action'])->whereUlid('id')->whereIn('action', ['dispatch', 'fail', 'cancel'])->name('shipments.action');
+                Route::get('shipments/{id}/temperatures', [LogisticsController::class, 'temperatures'])->whereUlid('id')->name('shipments.temperatures.index');
+                Route::post('shipments/{id}/temperatures', [LogisticsController::class, 'recordTemperatures'])->whereUlid('id')->name('shipments.temperatures.store');
+                Route::post('shipments/{id}/excursions/{excursionId}/assess', [LogisticsController::class, 'assess'])->whereUlid(['id', 'excursionId'])->name('shipments.excursions.assess');
+                Route::get('reconciliation', [LogisticsController::class, 'reconciliation'])->name('reconciliation');
+            });
 
             // Enterprise integration gateway (spec §15).
             Route::middleware('module:integrations')->prefix('integration')->name('integration.')->group(function () {
