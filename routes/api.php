@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CrmController;
+use App\Http\Controllers\Api\V1\CrmPlanningController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DeviceController;
 use App\Http\Controllers\Api\V1\FieldForceController;
@@ -385,6 +386,28 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::patch('detailing-messages/{id}', [CrmController::class, 'updateDetailingMessage'])->whereUlid('id')->name('detailing-messages.update');
                 Route::post('detailing-messages/{id}/{action}', [CrmController::class, 'detailingMessageAction'])->whereUlid('id')->whereIn('action', ['approve', 'retire'])->name('detailing-messages.action');
                 Route::get('detailing-records', [CrmController::class, 'detailingRecords'])->name('detailing-records.index');
+
+                Route::get('visit-plans', [CrmPlanningController::class, 'plans'])->name('visit-plans.index');
+                Route::post('visit-plans', [CrmPlanningController::class, 'storePlan'])->name('visit-plans.store');
+                Route::get('visit-plans/{id}', [CrmPlanningController::class, 'showPlan'])->whereUlid('id')->name('visit-plans.show');
+                Route::patch('visit-plans/{id}', [CrmPlanningController::class, 'updatePlan'])->whereUlid('id')->name('visit-plans.update');
+                Route::post('visit-plans/{id}/route', [CrmPlanningController::class, 'orderRoute'])->whereUlid('id')->name('visit-plans.route');
+                Route::post('visit-plans/{id}/{action}', [CrmPlanningController::class, 'planAction'])->whereUlid('id')->whereIn('action', ['submit', 'approve', 'reject', 'cancel'])->name('visit-plans.action');
+                Route::post('visit-plan-items/{id}/cancel', [CrmPlanningController::class, 'cancelPlanItem'])->whereUlid('id')->name('visit-plan-items.cancel');
+                Route::get('visit-suggestions', [CrmPlanningController::class, 'suggestions'])->name('visit-suggestions');
+                Route::get('targets', [CrmPlanningController::class, 'targets'])->name('targets.index');
+                Route::post('targets', [CrmPlanningController::class, 'storeTarget'])->name('targets.store');
+                Route::get('targets/{id}', [CrmPlanningController::class, 'showTarget'])->whereUlid('id')->name('targets.show');
+                Route::delete('targets/{id}', [CrmPlanningController::class, 'destroyTarget'])->whereUlid('id')->name('targets.destroy');
+                Route::get('opportunities', [CrmPlanningController::class, 'opportunities'])->name('opportunities.index');
+                Route::post('opportunities', [CrmPlanningController::class, 'storeOpportunity'])->name('opportunities.store');
+                Route::get('opportunities/{id}', [CrmPlanningController::class, 'opportunity'])->whereUlid('id')->name('opportunities.show');
+                Route::patch('opportunities/{id}', [CrmPlanningController::class, 'updateOpportunity'])->whereUlid('id')->name('opportunities.update');
+                Route::post('opportunities/{id}/convert-customer', [CrmPlanningController::class, 'convertLead'])->whereUlid('id')->name('opportunities.convert');
+                Route::get('automation/settings', [CrmPlanningController::class, 'automationSettings'])->name('automation.settings');
+                Route::patch('automation/settings', [CrmPlanningController::class, 'updateAutomationSettings'])->name('automation.settings.update');
+                Route::post('automation/run', [CrmPlanningController::class, 'runAutomation'])->name('automation.run');
+                Route::post('handover', [CrmPlanningController::class, 'handover'])->name('handover');
             });
 
             Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {

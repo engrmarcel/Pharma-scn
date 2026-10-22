@@ -163,6 +163,17 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · POST · PATCH `{id}` · POST `{id}/approve\|retire` | `/crm/detailing-messages` | field users see approved current messages; manage: `crm.detailing.manage` (approver ≠ author) |
 | POST | `/field-force/visits/{id}/detailing` `{client_reference?, product_id, message_ids[], contact_id?, samples_quantity?, sample_batch_number?, reception?, notes?}` · GET `/crm/detailing-records` | own visit (in progress or ≤24 h after check-out) |
 
+### CRM planning (`/crm`, module field_force)
+| Method | Path | Permission |
+|---|---|---|
+| GET · POST · GET `{id}` · PATCH `{id}` | `/crm/visit-plans` `{period_start, period_end, notes?, items[{customer_id, planned_date, sequence?, objective?}]}` | own plans (`field_force.visits.capture`); team plans readable, with calls outside the viewer's reach hidden (`hidden_items`) |
+| POST `{id}/submit\|cancel {reason}\|approve {notes?}\|reject {notes}` · POST `{id}/route {date, start_latitude?, start_longitude?}` · POST `/crm/visit-plan-items/{id}/cancel {reason}` | `/crm/visit-plans/{id}` | approve/reject: `crm.plans.approve`, not own, every customer visible (`visit_plan_outside_scope`) |
+| GET | `/crm/visit-suggestions?from&to` | own: due by call frequency or open follow-ups, not yet planned |
+| GET · POST · GET `{id}` · DELETE `{id}` | `/crm/targets` `{scope_type, representative_id\|territory_id, metric, product_id?, period_start, period_end, target_value}` | own, team and own-territory targets; write: `crm.targets.manage`; `achievement.scope: full\|partial` |
+| GET · POST · GET `{id}` · PATCH `{id}` · POST `{id}/convert-customer {code, type, name?}` | `/crm/opportunities` (`stage`, `owner_id`, `customer_id`, `open`) | owner edits; won needs `field_order_id` or `sales_order_id`; lost needs `lost_reason`; list includes `pipeline` per stage; conversion needs `customers.manage` |
+| GET · PATCH · POST `run` | `/crm/automation/settings` · `/crm/automation/run` | `crm.automation.manage` |
+| POST | `/crm/handover {from_user_id, to_user_id, territory_id?}` | `field_force.territories.manage` |
+
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |
 |---|---|---|

@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### 2026-10-25: Phase 6b, CRM planning and selling
+- Visit plans (`/crm/visit-plans`):
+  - submit, then approve or reject; approval needs `crm.plans.approve`, a different person, and visibility of every planned customer;
+  - cancel, cancel individual calls, adherence;
+  - nearest-neighbour route order (`…/route`);
+  - suggestions (`/crm/visit-suggestions`);
+  - a check-in marks the planned call as visited.
+- Sales targets (`/crm/targets`, `crm.targets.manage`): invoiced revenue, product units, field-order value and completed visits per representative or territory, with attainment and pace. Figures are limited to the viewer's customers unless the viewer is the representative or has `view_all`.
+- Leads and opportunities (`/crm/opportunities`):
+  - pipeline with weighted value;
+  - won only with a mobile or sales order, lost only with a reason;
+  - lead conversion (`…/convert-customer`, `customers.manage`).
+- Follow-up automation (`crm:automation`, daily 05:30; `/crm/automation/run|settings`, `crm.automation.manage`): missed planned calls, overdue visits, stale opportunities, and escalation to the territory supervisor. Each follow-up is created once per cause. Unavailable or rescheduled visits get a follow-up the next working day.
+- Handover (`POST /crm/handover`): accounts, open follow-ups and opportunities move to another representative, and future calls are cancelled.
+- Permissions `crm.plans.approve` (supervisors), `crm.targets.manage` and `crm.automation.manage`.
+- 236 tests passing.
+
 ### 2026-10-25: Phase 6a, CRM foundations
 - Customer CRM profile (`tier`, `visit_frequency_days`, `potential_value`) and the account list `GET /crm/customers`, with due and overdue visits and filters for segment, tier and territory.
 - Segments (`/crm/segments`): manual, or rule-based on customer type, territory, tier, city, no completed visit in N days, and 12-month revenue. Refresh replaces rule members and keeps manual ones; member lists follow customer visibility.

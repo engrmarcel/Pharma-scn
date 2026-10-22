@@ -16,6 +16,9 @@ use App\Domain\Crm\Models\CustomerFeedback;
 use App\Domain\Crm\Models\CustomerSegment;
 use App\Domain\Crm\Models\DetailingMessage;
 use App\Domain\Crm\Models\DetailingRecord;
+use App\Domain\Crm\Models\Opportunity;
+use App\Domain\Crm\Models\SalesTarget;
+use App\Domain\Crm\Models\VisitPlan;
 use App\Domain\FieldForce\Models\FieldFollowUp;
 use App\Domain\FieldForce\Models\FieldOrder;
 use App\Domain\FieldForce\Models\FieldVisit;
@@ -138,6 +141,9 @@ class AppServiceProvider extends ServiceProvider
             'customer_feedback' => CustomerFeedback::class,
             'detailing_message' => DetailingMessage::class,
             'detailing_record' => DetailingRecord::class,
+            'visit_plan' => VisitPlan::class,
+            'sales_target' => SalesTarget::class,
+            'opportunity' => Opportunity::class,
             'batch' => Batch::class,
             'bin_location' => BinLocation::class,
             'stock_adjustment' => StockAdjustment::class,

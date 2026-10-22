@@ -10,7 +10,7 @@ Phases and acceptance criteria follow master spec §31 (`docs/source/MASTER_SPEC
 | **3** Offline-first POS & mobile sync | Encrypted local storage, offline sales, receipts, visits and orders, sync queue, idempotency, conflicts, reconciliation, device registration and revocation, offline payment states, 6-hour outage test | ✅ Done (3a–3c; `OFFLINE_FIRST_DESIGN.md`, `OFFLINE_OUTAGE_PLAYBOOK.md`) |
 | **4** B2B marketplace | Discovery, listings, relationships, RFQ, quotes, B2B orders, approvals, fulfilment, returns and disputes, payment status, marketplace fees, supplier verification | ✅ Done (4a–4c; ADR-0012) |
 | **5** Enterprise integration gateway | Canonical model, connector framework, registry, mappings, REST, SFTP/file, webhooks, inbox/outbox, retries, monitoring, reconciliation, SAP adapter | ✅ Done (5a–5c; ADR-0013) |
-| **6** Advanced CRM & field force | Segmentation, territories, visit planning, targets, opportunities, automation, dashboards, detailing, CRM analytics | 🚧 6a CRM foundations done (ADR-0014); 6b next |
+| **6** Advanced CRM & field force | Segmentation, territories, visit planning, targets, opportunities, automation, dashboards, detailing, CRM analytics | 🚧 6a CRM foundations and 6b planning/selling done (ADR-0014); 6c next |
 | **7** Traceability, recalls & logistics | Batch traceability, QR, serialization, custody, shipments, proof of delivery, recall, quarantine, exposure reports, cold chain | 📐 `TRACEABILITY_DESIGN.md` |
 | **8** Analytics & AI | Dashboards, expiry risk, forecasting, AI assistant and recommendations (human-approved) | ⬜ |
 | **9** Multi-country expansion | Currency, localization, tax rules, regulatory configs, local payment adapters, country onboarding | 🟡 data model ready |

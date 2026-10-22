@@ -13,4 +13,7 @@ Artisan::command('inspire', function () {
 Schedule::command('integration:process-due')->everyMinute()->withoutOverlapping();
 Schedule::command('integration:sftp-poll')->everyFiveMinutes()->withoutOverlapping();
 
+// CRM follow-up automation (missed plans, overdue visits, stale opportunities, escalations).
+Schedule::command('crm:automation')->dailyAt('05:30')->withoutOverlapping();
+
 Schedule::command('field-force:purge-locations')->dailyAt('02:30')->withoutOverlapping();

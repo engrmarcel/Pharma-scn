@@ -2,6 +2,7 @@
 
 namespace App\Domain\FieldForce\Services;
 
+use App\Domain\Crm\Services\VisitPlanService;
 use App\Domain\FieldForce\Models\FieldFollowUp;
 use App\Domain\FieldForce\Models\FieldVisit;
 use App\Domain\Inventory\Services\DocumentNumberer;
@@ -68,6 +69,9 @@ class VisitService
                 'captured_offline' => (bool) ($data['captured_offline'] ?? false),
             ] + $this->evidence->evaluate('check_in', $data['check_in'], $customer));
 
+            // A planned call for this customer today is now fulfilled.
+            app(VisitPlanService::class)->linkVisit($visit);
+
             $this->audit->record('field_visit.checked_in', $visit, new: [
                 'number' => $visit->number, 'customer_id' => $customer->id, 'location_status' => $visit->check_in_location_status, 'verification' => $visit->check_in_verification,
             ]);
@@ -130,7 +134,14 @@ class VisitService
                 FieldFollowUp::query()->create([
                     'customer_id' => $locked->customer_id, 'field_visit_id' => $locked->id, 'assigned_to' => Auth::id(), 'created_by' => Auth::id(),
                     'title' => mb_strimwidth($locked->next_action ?: "Follow up on visit {$locked->number}", 0, 255),
-                    'due_on' => $locked->follow_up_date,
+                    'due_on' => $locked->follow_up_date, 'source' => 'visit',
+                ]);
+            } elseif (in_array($locked->outcome, ['customer_unavailable', 'rescheduled'], true)) {
+                // Follow-up automation: an unfinished call is never silently dropped.
+                FieldFollowUp::query()->firstOrCreate(['automation_key' => "visit_outcome:{$locked->id}"], [
+                    'customer_id' => $locked->customer_id, 'field_visit_id' => $locked->id, 'assigned_to' => Auth::id(), 'created_by' => null,
+                    'title' => $locked->outcome === 'rescheduled' ? "Rescheduled visit {$locked->number}: arrange a new date" : "Customer unavailable at visit {$locked->number}: visit again",
+                    'due_on' => today()->addWeekday()->toDateString(), 'source' => 'automation',
                 ]);
             }
 

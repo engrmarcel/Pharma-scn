@@ -28,6 +28,12 @@ Phase 2.6 let a supervisor see every record of the representatives in the territ
   - a representative can record only approved, unexpired messages of the product detailed, against their own visit;
   - samples are recorded with quantity and batch for accountability, but are not issued from stock by the CRM.
 
+- **Planning and selling (6b) follow the same boundary:**
+  - a visit plan is approved only by someone who can see every customer in it;
+  - supervisors are not shown planned calls outside their reach;
+  - target achievement shown to anyone other than the target's representative (without `view_all`) is limited to the viewer's customers and labelled `partial`;
+  - team leads without a customer are visible within the lead's territory.
+
 ## Consequences
 - **Phase 2.6 behaviour narrows.** Supervisors no longer see a representative's activity outside the supervisor's customer visibility. Organization-wide reviewers need `field_force.view_all` (or `customers.view` combined with team visibility).
 - **Contact data now stays in the CRM.** Personal data entered in free-text fields (summaries, notes) is the user's responsibility. The forms say so, and anonymization does not rewrite free text.
