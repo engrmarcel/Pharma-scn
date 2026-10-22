@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 9a, country profiles, onboarding and activation
+- Country profile (`CountryProfile`, ADR-0021): formats, phone and address rules, tax identity, verification requirements per organization type, regulatory settings, payment providers, data residency and reviews. Business code reads countries only through it.
+- Hard-coded rules moved into the profile: incident reporting deadlines (none configured means no due date), the single-2D-code notice, the opportunity currency fallback, and the mapping-template authority (placeholder filled from the profile).
+- Regulatory identifier types per authority (`regulatory_identifier_types`: subject, name, optional format and example). Identifiers are accepted only for configured, applicable, well-formed types.
+- Country-specific onboarding: `GET /organization/onboarding-requirements`, and organizations record their own licences (`/organization/regulatory-identifiers`, own country's regulators only). Verification submission enforces documents, identifiers and address fields. Phone, tax and registration numbers are validated against country patterns. Nigeria: pharmacies need a premises licence and a PCN licence number, and their state.
+- Country administration (`/admin/countries`, `platform.countries.manage`): profile, effective-dated tax rates, identifier types and a readiness checklist. Activation is refused until it passes, including completed tax, regulatory and legal reviews with references. This replaces the older endpoint that switched countries on directly. Currencies with minor units in `config/currencies.php`. `GET /reference/countries` gives clients labels, formats and currency decimals.
+- Payment providers declare their countries and currencies, and the country profile enables them; the POS uses only providers available for the organization's country and the sale currency.
+- 268 tests passing.
+
 ### 2026-10-22: Phase 8c, reporting assistant
 - `POST /analytics/assistant {question}` and a question box on the `/analytics` page. A question is turned into a plan of read-only catalogue reports (sales, purchases, stock, expiry, POS, marketplace, integrations, sync, recalls, field force, forecasts, recommendations). The reports run under the asker's permissions and locations, and the answer is written on the platform from the figures, labelled as a generated explanation with caveats.
 - No actions: change requests (approve, create, order, write off…) are declined and nothing is changed (tested).

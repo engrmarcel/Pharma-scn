@@ -97,6 +97,11 @@ Behaviour:
 - **Writes into other organizations.** Activation is the only write into other organizations' books: batches are marked recalled and available stock is quarantined, which only makes stock less available. It runs in each holder's context and appears in each holder's audit and trace chain. Cancelling never releases stock automatically.
 - **What each party sees.** The exposure report is for the issuer and platform compliance. The names of parties outside the platform are shown to platform staff only; the issuer sees counts. Holders see only their own customers.
 
+## Countries (Phase 9a, ADR-0021)
+
+- **Activation is gated and audited.** Only `platform.countries.manage` changes country configuration; every change is audited, and a country goes live only when its checklist passes, including completed tax, regulatory and legal reviews with references. The platform does not claim compliance for a country before that.
+- **Onboarding by country.** Organizations can record identifiers only with their own country's regulators; identifiers start unverified, as before.
+
 ## Analytics (Phase 8a, ADR-0018)
 
 - **Tenant boundary.** Analytical queries use the query builder on a separate connection, not tenant-scoped models, so each one filters on the current organization explicitly; tests check that another organization's figures never appear.

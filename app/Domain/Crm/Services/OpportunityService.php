@@ -79,7 +79,7 @@ class OpportunityService
                 'stage' => $stage,
                 'probability' => $data['probability'] ?? Opportunity::PROBABILITY[$stage],
                 'owner_id' => Auth::id(),
-                'currency_code' => $data['currency_code'] ?? $customer?->currency_code ?? $this->tenant->organization()->country?->currency_code ?? 'NGN',
+                'currency_code' => $data['currency_code'] ?? $customer?->currency_code ?? $this->tenant->organization()->country->currency_code,
                 'last_activity_at' => now(),
             ]);
             $this->audit->record('opportunity.created', $opportunity, new: ['number' => $opportunity->number, 'customer_id' => $customer?->id, 'stage' => $stage]);

@@ -369,7 +369,7 @@ class PosSaleService
                 // A standalone terminal cannot be verified from here: the payment waits for a supervisor's settlement check.
                 $payment = $locked->payments()->create(['method' => $method, 'channel' => 'manual_terminal', 'amount' => $amount, 'status' => 'pending', 'external_approval_code' => $approvalCode]);
             } else {
-                $provider = $this->providers->get($channel);
+                $provider = $this->providers->forPayment($channel, $this->tenant->organization()->country_code, $locked->currency_code);
                 $payment = $locked->payments()->create(['method' => $method, 'channel' => $provider->code(), 'amount' => $amount, 'status' => 'pending']);
                 $intent = $provider->initiate($payment, $locked->currency_code);
                 $payment->forceFill(['provider_reference' => $intent['reference']])->save();

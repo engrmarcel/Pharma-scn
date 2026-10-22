@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Platform\Support\CountryProfile;
 use App\Domain\Traceability\Models\TraceEvent;
 use App\Domain\Traceability\Models\TraceIdentifier;
 use App\Domain\Traceability\Services\EpcisExporter;
@@ -152,7 +153,7 @@ class TraceabilityController extends Controller
         ]);
 
         $identifier = $identifiers->issue($data, $request->user());
-        $restricted = in_array($this->tenant->organization()->country_code, config('traceability.single_2d_code_countries'), true) && $identifier->kind !== 'sscc';
+        $restricted = CountryProfile::of($this->tenant->organization()->country)->get('regulatory.single_2d_code_on_packs') && $identifier->kind !== 'sscc';
 
         return response()->json(['data' => $this->identifier($identifier), 'meta' => array_filter(['regulatory_notice' => $restricted
             ? 'Do not print this QR code on the product pack: in this country a pack may carry only one two-dimensional code for identification and verification (the GS1 DataMatrix). Use it on documents, shelf or bin labels; scanning the pack\'s DataMatrix gives the same check.'

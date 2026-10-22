@@ -44,12 +44,17 @@ class OrganizationVerificationService
                 throw new BusinessRuleViolation('verification_transition_invalid', "Cannot submit for verification from status {$org->verification_status->value}.", 409);
             }
 
-            $required = $org->country?->setting('verification.required_document_categories', []) ?? [];
-            $present = $org->documents()->pluck('category')->unique()->all();
-            $missing = array_values(array_diff($required, $present));
-
-            if ($present === [] || $missing !== []) {
+            // Documents, identifiers and profile fields required in the organization's country for its type.
+            $requirements = app(OnboardingRequirements::class)->for($org);
+            $missing = $requirements['documents']->where('present', false)->pluck('category')->values()->all();
+            if (! $requirements['any_document'] || $missing !== []) {
                 throw new BusinessRuleViolation('verification_documents_missing', 'Upload the required verification documents before submitting.', 422, ['missing_categories' => $missing]);
+            }
+            if (! $requirements['ready']) {
+                throw new BusinessRuleViolation('verification_requirements_missing', 'Complete the identifiers and profile details your country requires before submitting.', 422, [
+                    'missing_identifiers' => $requirements['identifiers']->where('present', false)->values()->all(),
+                    'missing_fields' => $requirements['profile_fields']->where('present', false)->pluck('field')->values()->all(),
+                ]);
             }
 
             return $this->transition($org, 'submitted', VerificationStatus::PendingReview, $user, null);

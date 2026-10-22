@@ -29,6 +29,7 @@ return [
         'platform.audit.view' => ['platform', 'View platform-level audit events'],
         'platform.billing.manage' => ['platform', 'Manage plans, organization subscriptions and entitlement overrides'],
         'platform.operations.manage' => ['platform', 'View system health and retry failed jobs'],
+        'platform.countries.manage' => ['platform', 'Configure countries (profile, tax rates, regulators and identifier types) and activate them when ready'],
         'catalogue.manage' => ['platform', 'Create and edit canonical products'],
         'catalogue.review' => ['platform', 'Approve or reject product change requests'],
         'regulatory.verify' => ['platform', 'Record regulatory identifier verification results'],
@@ -138,7 +139,7 @@ return [
             'platform_super_admin' => ['Platform super administrator', '*'],
             'platform_operations_admin' => ['Platform operations administrator', [
                 'platform.organizations.view', 'platform.organizations.suspend', 'platform.organizations.modules',
-                'platform.users.manage', 'platform.audit.view', 'catalogue.manage', 'platform.billing.manage', 'platform.operations.manage', 'platform.marketplace.manage', 'traceability.view_all']],
+                'platform.users.manage', 'platform.audit.view', 'catalogue.manage', 'platform.billing.manage', 'platform.operations.manage', 'platform.countries.manage', 'platform.marketplace.manage', 'traceability.view_all']],
             'compliance_officer' => ['Compliance / verification officer', [
                 'platform.organizations.view', 'platform.organizations.verify', 'catalogue.review', 'regulatory.verify', 'platform.audit.view', 'traceability.view_all', 'traceability.verify', 'recalls.manage',
             ]],

@@ -69,6 +69,25 @@ class OrganizationOnboardingTest extends FeatureTestCase
         $this->assertStringStartsWith("tenants/{$org->id}/", $stored->path);
         Storage::disk('local')->assertExists($stored->path);
 
+        // A Nigerian pharmacy also needs its premises licence, its PCN licence number and its state (country profile).
+        $requirements = $this->api('GET', 'organization/onboarding-requirements')->assertOk()->json('data');
+        $this->assertSame(['State', 'CAC registration number (RC or BN)'], [$requirements['labels']['state_region'], $requirements['labels']['business_registration_number']]);
+        $this->assertSame([['category' => 'business_registration', 'present' => true], ['category' => 'premises_licence', 'present' => false]], $requirements['documents']);
+        $this->api('POST', 'organization/verification/submit')->assertUnprocessable()->assertJsonPath('error.details.missing_categories', ['premises_licence']);
+        $this->api('POST', 'organization/documents', ['category' => 'premises_licence', 'file' => UploadedFile::fake()->create('pcn-premises.pdf', 80, 'application/pdf')])->assertCreated();
+        $missing = $this->api('POST', 'organization/verification/submit')->assertUnprocessable()->assertJsonPath('error.code', 'verification_requirements_missing')->json('error.details');
+        $this->assertSame([['PCN', 'licence_number'], ['address_line1', 'state_region']],
+            [[$missing['missing_identifiers'][0]['authority'], $missing['missing_identifiers'][0]['identifier_type']], $missing['missing_fields']]);
+        $this->api('POST', 'organization/regulatory-identifiers', ['authority_code' => 'NAFDAC', 'identifier_type' => 'licence_number', 'value' => 'X-1'])
+            ->assertUnprocessable()->assertJsonPath('error.code', 'identifier_type_not_configured');
+        $this->api('POST', 'organization/regulatory-identifiers', ['authority_code' => 'FDA_GH', 'identifier_type' => 'registration_number', 'value' => 'X-1'])
+            ->assertUnprocessable()->assertJsonPath('error.code', 'authority_other_country');
+        $this->api('POST', 'organization/regulatory-identifiers', ['authority_code' => 'PCN', 'identifier_type' => 'licence_number', 'value' => 'DEMO-PCN-0001'])
+            ->assertCreated()->assertJsonPath('data.platform_verification.status', 'unverified');
+        $this->api('PATCH', 'organization', ['address_line1' => '1 Demo Street', 'state_region' => 'Lagos', 'phone' => '12'])->assertUnprocessable()->assertJsonValidationErrors('phone');
+        $this->api('PATCH', 'organization', ['address_line1' => '1 Demo Street', 'state_region' => 'Lagos', 'phone' => '+234 803 555 0101'])->assertOk();
+        $this->assertTrue($this->api('GET', 'organization/onboarding-requirements')->json('data.ready'));
+
         $this->api('POST', 'organization/verification/submit')->assertOk()
             ->assertJsonPath('data.platform_verification.status', 'pending_review');
 

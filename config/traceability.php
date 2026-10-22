@@ -10,11 +10,8 @@ return [
     // QR codes encode "<scan_base_url>/<opaque token>" and nothing else.
     'scan_base_url' => env('TRACE_SCAN_BASE_URL', rtrim((string) env('APP_URL', 'http://localhost'), '/').'/t'),
 
-    // Countries whose rules prohibit a second two-dimensional code on a pack used for identification
-    // or authenticity checks (Nigeria: NAFDAC Pharmaceutical Products (Traceability) Regulations 2024,
-    // reg. 7(1)). Platform QR codes issued there carry a warning: use them on documents, shelf or bin
-    // labels, not on the pack; on packs, the GS1 DataMatrix is scanned instead.
-    'single_2d_code_countries' => ['NG'],
+    // Whether a pack may carry only one 2D code is a country rule: regulatory.single_2d_code_on_packs
+    // in the country profile (Nigeria: NAFDAC Traceability Regulations 2024, reg. 7(1)).
 
     // Public scans per minute per client.
     'public_scan_rate_per_minute' => 60,

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Api\V1\Admin\CatalogueAdminController;
+use App\Http\Controllers\Api\V1\Admin\CountryAdminController;
 use App\Http\Controllers\Api\V1\Admin\MarketplaceAdminController;
 use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
@@ -120,6 +121,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('organization/documents', [OrganizationController::class, 'uploadDocument'])->name('organization.documents.upload');
             Route::get('organization/documents/{attachmentId}', [OrganizationController::class, 'downloadDocument'])->whereUlid('attachmentId')->name('organization.documents.download');
             Route::post('organization/verification/submit', [OrganizationController::class, 'submitVerification'])->name('organization.verification.submit');
+            Route::get('organization/onboarding-requirements', [OrganizationController::class, 'onboardingRequirements'])->name('organization.onboarding-requirements');
+            Route::get('organization/regulatory-identifiers', [OrganizationController::class, 'regulatoryIdentifiers'])->name('organization.regulatory-identifiers.index');
+            Route::post('organization/regulatory-identifiers', [OrganizationController::class, 'storeRegulatoryIdentifier'])->name('organization.regulatory-identifiers.store');
 
             Route::get('members', [MemberController::class, 'index'])->name('members.index');
             Route::get('roles', [MemberController::class, 'roles'])->name('roles.index');
@@ -574,6 +578,13 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('marketplace/fees/{id}/waive', [MarketplaceAdminController::class, 'waive'])->whereUlid('id')->name('marketplace.fees.waive');
             Route::get('marketplace/disputes', [MarketplaceAdminController::class, 'disputes'])->name('marketplace.disputes');
             Route::post('marketplace/disputes/{id}/notes', [MarketplaceAdminController::class, 'note'])->whereUlid('id')->name('marketplace.disputes.notes');
+            Route::get('countries', [CountryAdminController::class, 'index'])->name('countries.index');
+            Route::get('countries/{code}', [CountryAdminController::class, 'show'])->where('code', '[A-Za-z]{2}')->name('countries.show');
+            Route::patch('countries/{code}', [CountryAdminController::class, 'update'])->where('code', '[A-Za-z]{2}')->name('countries.update');
+            Route::post('countries/{code}/activate', [CountryAdminController::class, 'activate'])->where('code', '[A-Za-z]{2}')->name('countries.activate');
+            Route::post('countries/{code}/deactivate', [CountryAdminController::class, 'deactivate'])->where('code', '[A-Za-z]{2}')->name('countries.deactivate');
+            Route::post('countries/{code}/tax-rates', [CountryAdminController::class, 'storeTaxRate'])->where('code', '[A-Za-z]{2}')->name('countries.tax-rates.store');
+            Route::post('regulatory-authorities/{code}/identifier-types', [CountryAdminController::class, 'storeIdentifierType'])->name('regulatory-authorities.identifier-types.store');
             Route::get('organizations', [OrganizationAdminController::class, 'index'])->name('organizations.index');
             Route::get('organizations/{organization}', [OrganizationAdminController::class, 'show'])->whereUlid('organization')->name('organizations.show');
             Route::get('organizations/{organization}/documents/{attachmentId}', [OrganizationAdminController::class, 'downloadDocument'])->whereUlid(['organization', 'attachmentId'])->name('organizations.documents.download');
@@ -617,8 +628,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('operations/failed-jobs', [OperationsController::class, 'failedJobs'])->name('operations.failed-jobs');
             Route::post('operations/failed-jobs/{uuid}/retry', [OperationsController::class, 'retryFailedJob'])->whereUuid('uuid')->name('operations.failed-jobs.retry');
             Route::get('users', [OperationsController::class, 'users'])->name('users.index');
-            Route::get('countries', [OperationsController::class, 'countries'])->name('countries.index');
-            Route::patch('countries/{code}', [OperationsController::class, 'updateCountry'])->where('code', '[A-Za-z]{2}')->name('countries.update');
         });
     });
 });

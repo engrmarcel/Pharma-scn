@@ -115,34 +115,6 @@ class OperationsController extends Controller
         ]));
     }
 
-    public function countries(): JsonResponse
-    {
-        Gate::authorize('platform.settings.manage');
-
-        return response()->json(['data' => Country::query()->orderBy('name')->get()]);
-    }
-
-    public function updateCountry(Request $request, string $code, AuditLogger $audit): JsonResponse
-    {
-        Gate::authorize('platform.settings.manage');
-        $country = Country::query()->findOrFail(strtoupper($code));
-
-        $data = $request->validate([
-            'is_active' => ['sometimes', 'boolean'],
-            'timezone' => ['sometimes', 'timezone'],
-            'default_locale' => ['sometimes', 'string', 'max:10'],
-            'settings' => ['sometimes', 'array'],
-            'settings.verification.required_document_categories' => ['sometimes', 'array'],
-            'settings.verification.required_document_categories.*' => ['string', 'max:64'],
-        ]);
-
-        $before = $country->only(array_keys($data));
-        $country->fill($data)->save();
-        $audit->record('country.updated', $country, $before, $data, organizationId: false);
-
-        return response()->json(['data' => $country]);
-    }
-
     private function probe(callable $check): bool
     {
         try {

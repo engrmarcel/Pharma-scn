@@ -64,6 +64,7 @@ use App\Domain\Parties\Models\PartyContact;
 use App\Domain\Parties\Models\Supplier;
 use App\Domain\Platform\Models\Attachment;
 use App\Domain\Platform\Models\Country;
+use App\Domain\Platform\Models\RegulatoryIdentifierType;
 use App\Domain\Pos\Models\PosRefund;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosShift;
@@ -79,6 +80,7 @@ use App\Domain\Sales\Models\PriceList;
 use App\Domain\Sales\Models\Quotation;
 use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesOrder;
+use App\Domain\Sales\Models\TaxRate;
 use App\Domain\Sync\Models\Device;
 use App\Domain\Sync\Models\SyncIssue;
 use App\Domain\Traceability\Models\Recall;
@@ -147,6 +149,8 @@ class AppServiceProvider extends ServiceProvider
             'product' => Product::class,
             'manufacturer' => Manufacturer::class,
             'regulatory_identifier' => RegulatoryIdentifier::class,
+            'regulatory_identifier_type' => RegulatoryIdentifierType::class,
+            'tax_rate' => TaxRate::class,
             'product_change_request' => ProductChangeRequest::class,
             'organization_product' => OrganizationProduct::class,
             'subscription_plan' => SubscriptionPlan::class,

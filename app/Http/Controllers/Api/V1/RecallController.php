@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Inventory\Services\DocumentNumberer;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Domain\Traceability\Models\Recall;
 use App\Domain\Traceability\Models\RecallNotice;
 use App\Domain\Traceability\Models\RegulatoryIncident;
@@ -141,7 +142,7 @@ class RecallController extends Controller
     {
         Gate::authorize('regulatory.incidents.manage');
         $data = $request->validate([
-            'type' => ['required', Rule::in(array_keys(RegulatoryIncident::DEADLINE_HOURS))],
+            'type' => ['required', Rule::in(CountryProfile::INCIDENT_TYPES)],
             'product_id' => ['nullable', 'ulid', 'exists:products,id'],
             'batch_number' => ['nullable', 'string', 'max:64'],
             'serials' => ['nullable', 'array', 'max:1000'],
@@ -154,8 +155,9 @@ class RecallController extends Controller
         // Derived values first: with + the left-hand keys win.
         $incident = RegulatoryIncident::query()->create(['number' => $numbers->next('RIN'), 'detected_at' => $detected,
             'batch_number' => isset($data['batch_number']) ? strtoupper($data['batch_number']) : null,
-            'report_due_at' => $detected->copy()->addHours(RegulatoryIncident::DEADLINE_HOURS[$data['type']]), 'created_by' => $request->user()->id] + $data);
-        $audit->record('regulatory_incident.recorded', $incident, new: ['type' => $incident->type, 'report_due_at' => $incident->report_due_at->toIso8601String()]);
+            'report_due_at' => ($hours = CountryProfile::of($this->tenant->organization()->country)->incidentDeadlineHours($data['type'])) ? $detected->copy()->addHours($hours) : null,
+            'created_by' => $request->user()->id] + $data);
+        $audit->record('regulatory_incident.recorded', $incident, new: ['type' => $incident->type, 'report_due_at' => $incident->report_due_at?->toIso8601String()]);
 
         return response()->json(['data' => $this->incident($incident)], 201);
     }
@@ -195,7 +197,7 @@ class RecallController extends Controller
     {
         return $i->only(['id', 'number', 'type', 'product_id', 'batch_number', 'serials', 'description', 'status', 'authority', 'authority_reference', 'closing_notes'])
             + ['quantity' => $i->quantity === null ? null : (string) $i->quantity, 'detected_at' => $i->detected_at->toIso8601String(),
-                'report_due_at' => $i->report_due_at->toIso8601String(), 'reported_at' => $i->reported_at?->toIso8601String(),
-                'overdue' => $i->isOverdue(), 'reported_late' => $i->reported_at !== null && $i->reported_at->gt($i->report_due_at)];
+                'report_due_at' => $i->report_due_at?->toIso8601String(), 'reported_at' => $i->reported_at?->toIso8601String(),
+                'overdue' => $i->isOverdue(), 'reported_late' => $i->reported_at !== null && $i->report_due_at !== null && $i->reported_at->gt($i->report_due_at)];
     }
 }

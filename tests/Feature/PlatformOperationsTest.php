@@ -52,8 +52,9 @@ class PlatformOperationsTest extends FeatureTestCase
 
         $this->actingAsApi($admin)->api('GET', 'admin/users?q=findme')->assertOk()->assertJsonPath('data.0.email', 'findme@example.test');
 
+        // Activation is a separate, checked step (CountryConfigurationTest); a patch cannot switch a country on.
         $this->api('PATCH', 'admin/countries/gh', ['is_active' => true, 'settings' => ['verification' => ['required_document_categories' => ['business_registration', 'regulatory_licence']]]])
-            ->assertOk()->assertJsonPath('data.is_active', true);
+            ->assertOk()->assertJsonPath('data.is_active', false)->assertJsonPath('data.profile.verification.required_document_categories', ['business_registration', 'regulatory_licence']);
         $this->assertDatabaseHas('audit_logs', ['action' => 'country.updated', 'auditable_id' => 'GH']);
     }
 

@@ -20,6 +20,7 @@ use App\Domain\Integration\Services\MessageReviewService;
 use App\Domain\Integration\Services\PayloadRedactor;
 use App\Domain\Integration\Services\ReferenceResolver;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Http\Controllers\Controller;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
@@ -202,7 +203,11 @@ class IntegrationController extends Controller
         if ($template['entity'] !== $entity) {
             throw new BusinessRuleViolation('mapping_template_entity_mismatch', "This template maps {$template['entity']} records, not {$entity}.", 422);
         }
-        $this->connectors->replaceMappings($connector, $entity, $template['mappings']);
+        // Placeholders in templates are filled from the organization's country profile.
+        $profile = CountryProfile::of($this->tenant->organization()->country);
+        $mappings = array_map(fn ($m) => isset($m['default_value']) && preg_match('/^\{country\.(.+)\}$/', (string) $m['default_value'], $k)
+            ? ['default_value' => $profile->get('regulatory.'.$k[1])] + $m : $m, $template['mappings']);
+        $this->connectors->replaceMappings($connector, $entity, array_values(array_filter($mappings, fn ($m) => ($m['source_path'] ?? null) !== null || ($m['default_value'] ?? null) !== null)));
 
         return $this->mappings($id);
     }

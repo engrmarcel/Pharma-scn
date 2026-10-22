@@ -10,6 +10,7 @@ use App\Domain\Platform\Models\DosageForm;
 use App\Domain\Platform\Models\RegulatoryAuthority;
 use App\Domain\Platform\Models\UnitOfMeasure;
 use App\Domain\Platform\Services\BrandingService;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 
@@ -25,8 +26,20 @@ class ReferenceDataController extends Controller
 
     public function countries(): JsonResponse
     {
-        return response()->json(['data' => Country::query()->where('is_active', true)->orderBy('name')
-            ->get(['code', 'name', 'currency_code', 'timezone', 'default_locale', 'phone_code'])]);
+        // What a client needs to build forms and format values for each country (CountryProfile).
+        return response()->json(['data' => Country::query()->where('is_active', true)->orderBy('name')->get()->map(function (Country $c) {
+            $p = CountryProfile::of($c);
+
+            return $c->only('code', 'name', 'currency_code', 'timezone', 'default_locale', 'phone_code') + [
+                'currency_minor_units' => $p->minorUnits(),
+                'date_format' => $p->get('formats.date'),
+                'first_day_of_week' => $p->get('formats.first_day_of_week'),
+                'labels' => ['state_region' => $p->get('address.region_label'), 'tax_identification_number' => $p->get('tax.registration_label'),
+                    'business_registration_number' => $p->get('business_registration.label')],
+                'address_required_for_verification' => $p->get('address.required_fields'),
+                'prices_include_tax' => $p->get('tax.prices_include_tax'),
+            ];
+        })]);
     }
 
     public function organizationTypes(): JsonResponse

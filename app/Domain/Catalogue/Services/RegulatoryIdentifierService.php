@@ -7,6 +7,7 @@ use App\Domain\Catalogue\Events\RegulatoryIdentifierUpdated;
 use App\Domain\Catalogue\Models\RegulatoryIdentifier;
 use App\Domain\Catalogue\Models\RegulatoryVerification;
 use App\Domain\Platform\Models\RegulatoryAuthority;
+use App\Domain\Platform\Models\RegulatoryIdentifierType;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Models\User;
 use App\Support\Events\DomainEvents;
@@ -26,6 +27,17 @@ class RegulatoryIdentifierService
     {
         $authority = RegulatoryAuthority::query()->where('code', $data['authority_code'])->firstOrFail();
         $value = RegulatoryIdentifier::normalizeValue($data['value']);
+        $type = RegulatoryIdentifierType::query()->where('authority_id', $authority->id)->where('identifier_type', $data['identifier_type'])->where('is_active', true)->first();
+        if ($type === null) {
+            throw new BusinessRuleViolation('identifier_type_not_configured', "{$authority->code} has no {$data['identifier_type']} configured.", 422,
+                ['configured' => RegulatoryIdentifierType::query()->where('authority_id', $authority->id)->where('is_active', true)->pluck('identifier_type')->all()]);
+        }
+        if (! $type->appliesTo($subject->getMorphClass())) {
+            throw new BusinessRuleViolation('identifier_type_not_applicable', "A {$type->name} does not identify a {$subject->getMorphClass()}.", 422, ['applies_to' => $type->subject_types]);
+        }
+        if (! RegulatoryIdentifier::isSynthetic($value) && ! $type->matchesFormat($value)) {
+            throw new BusinessRuleViolation('identifier_format_invalid', "This does not look like a {$type->name}.", 422, array_filter(['example' => $type->format_example]));
+        }
 
         if (RegulatoryIdentifier::isSynthetic($value) && app()->isProduction()) {
             throw new BusinessRuleViolation('synthetic_identifier_rejected', 'Identifiers prefixed DEMO- or TEST- are reserved for synthetic data and cannot be used in production.');

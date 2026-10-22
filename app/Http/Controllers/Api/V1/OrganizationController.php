@@ -3,15 +3,24 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Billing\Services\EntitlementService;
+use App\Domain\Catalogue\Models\RegulatoryIdentifier;
+use App\Domain\Catalogue\Services\RegulatoryIdentifierService;
 use App\Domain\Catalogue\Support\Gtin;
+use App\Domain\Catalogue\Support\RegulatoryIdentifierRules;
 use App\Domain\Organizations\Enums\OrganizationType;
+use App\Domain\Organizations\Services\OnboardingRequirements;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
 use App\Domain\Organizations\Services\OrganizationVerificationService;
 use App\Domain\Platform\Models\Attachment;
+use App\Domain\Platform\Models\Country;
+use App\Domain\Platform\Models\RegulatoryAuthority;
 use App\Domain\Platform\Services\AttachmentService;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrganizationResource;
+use App\Http\Resources\RegulatoryIdentifierResource;
+use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,11 +36,13 @@ class OrganizationController extends Controller
     /** Onboarding step 1-3: any authenticated user may register an organization they will own. */
     public function register(Request $request, OrganizationOnboardingService $onboarding): JsonResponse
     {
-        $data = $request->validate($this->profileRules() + [
+        $base = [
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::enum(OrganizationType::class)],
             'country_code' => ['required', 'string', Rule::exists('countries', 'code')->where('is_active', true)],
-        ]);
+        ];
+        $country = Country::query()->where('is_active', true)->find($request->input('country_code'));
+        $data = $request->validate(array_merge_recursive($this->profileRules(), $base, $country ? CountryProfile::of($country)->partyRules() : []));
 
         $organization = $onboarding->register($request->user(), $data);
 
@@ -51,7 +62,8 @@ class OrganizationController extends Controller
 
         $organization = $this->tenant->organization();
         $original = $organization->getAttributes();
-        $organization->fill($request->validate($this->profileRules() + ['name' => ['sometimes', 'string', 'max:255']]))->save();
+        $organization->fill($request->validate(array_merge_recursive($this->profileRules() + ['name' => ['sometimes', 'string', 'max:255']],
+            CountryProfile::of($organization->country)->partyRules())))->save();
 
         [$old, $new] = $audit->diff($organization, $original);
         if ($new !== []) {
@@ -101,6 +113,37 @@ class OrganizationController extends Controller
         Gate::authorize('organization.manage');
 
         return OrganizationResource::make($verification->submit($this->tenant->organization(), $request->user()));
+    }
+
+    /** What the organization's country requires for verification, and what is still missing. */
+    public function onboardingRequirements(OnboardingRequirements $requirements): JsonResponse
+    {
+        Gate::authorize('organization.view');
+
+        return response()->json(['data' => $requirements->for($this->tenant->organization())]);
+    }
+
+    /** The organization's own regulatory identifiers (licences, registrations). */
+    public function regulatoryIdentifiers(): JsonResponse
+    {
+        Gate::authorize('organization.view');
+        $rows = RegulatoryIdentifier::query()->with('authority')->where('subject_type', 'organization')->where('subject_id', $this->tenant->id())->orderBy('created_at')->get();
+
+        return response()->json(['data' => RegulatoryIdentifierResource::collection($rows)]);
+    }
+
+    public function storeRegulatoryIdentifier(Request $request, RegulatoryIdentifierService $identifiers): JsonResponse
+    {
+        Gate::authorize('organization.manage');
+        $organization = $this->tenant->organization();
+        $data = $request->validate(RegulatoryIdentifierRules::rules());
+        $authority = RegulatoryAuthority::query()->where('code', $data['authority_code'])->firstOrFail();
+        if ($authority->country_code !== $organization->country_code) {
+            throw new BusinessRuleViolation('authority_other_country', "{$authority->code} is not a regulator in this organization's country.", 422);
+        }
+        $identifier = $identifiers->attach($organization, $data, $request->user(), $organization->id);
+
+        return RegulatoryIdentifierResource::make($identifier->load('authority'))->response()->setStatusCode(201);
     }
 
     private function profileRules(): array

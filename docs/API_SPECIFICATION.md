@@ -196,6 +196,18 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · GET `{id}` · POST `{id}/acknowledge {notes?}` · POST `{id}/complete {notes}` | `/recall-notices` | `recalls.respond`; detail includes `recovery` and `your_customers` |
 | GET (`status`, `overdue`) · POST `{type, description, product_id?, batch_number?, serials[]?, quantity?, detected_at?}` · POST `{id}/report {authority_reference, reported_at?}` · POST `{id}/close {notes}` | `/regulatory-incidents` | `regulatory.incidents.manage`; `report_due_at` from the type (24 h or 48 h), `overdue`, `reported_late` |
 
+### Countries and country-specific onboarding
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/reference/countries` | any authenticated user; active countries with currency decimals, date format, labels (region, tax and registration numbers), address fields required for verification |
+| GET · GET `{code}` · PATCH `{code} {name?, currency_code?, timezone?, default_locale?, phone_code?, settings: {formats, phone, address, tax, business_registration, verification, regulatory, payments, data, reviews}}` | `/admin/countries` | `platform.countries.manage`; `{code}` includes profile, tax rates, regulators with identifier types and `readiness {ready, checks[] {check, status: pass\|fail\|warning, message}}`; `review_reference_required`, `country_currency_locked` (409) |
+| POST `{code}/activate` · POST `{code}/deactivate {reason}` · POST `{code}/tax-rates {category_code, name, rate, effective_from, source}` | `/admin/countries` | `platform.countries.manage`; `country_not_ready` (409, `details.failing`), `tax_rate_overlap` (409); a new rate closes the open one the day before |
+| POST `{authority}/identifier-types {identifier_type, name, subject_types[], format_pattern?, format_example?, source?, is_active?}` | `/admin/regulatory-authorities` | `platform.countries.manage`; `format_example_mismatch` |
+| GET | `/organization/onboarding-requirements` | `organization.view`; documents, identifiers and profile fields required for the organization's country and type, with `ready` |
+| GET · POST `{authority_code, identifier_type, value, …}` | `/organization/regulatory-identifiers` | read `organization.view`, add `organization.manage`; own country's regulators (`authority_other_country`); `identifier_type_not_configured`, `identifier_type_not_applicable`, `identifier_format_invalid` |
+
+Verification submission returns `verification_documents_missing` (`missing_categories`) or `verification_requirements_missing` (`missing_identifiers`, `missing_fields`).
+
 ### Analytics (`/analytics`, module analytics; `from`, `to` as `Y-m-d`, default month to date, at most two years)
 | Method | Path | Permission |
 |---|---|---|
