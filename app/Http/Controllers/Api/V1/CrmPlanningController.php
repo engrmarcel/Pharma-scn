@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Crm\Models\DetailingMessage;
 use App\Domain\Crm\Models\Opportunity;
 use App\Domain\Crm\Models\SalesTarget;
 use App\Domain\Crm\Models\VisitPlan;
@@ -11,6 +12,7 @@ use App\Domain\Crm\Services\HandoverService;
 use App\Domain\Crm\Services\OpportunityService;
 use App\Domain\Crm\Services\TargetService;
 use App\Domain\Crm\Services\VisitPlanService;
+use App\Domain\FieldForce\Models\FieldFollowUp;
 use App\Domain\FieldForce\Services\FieldForceScope;
 use App\Domain\Parties\Models\Customer;
 use App\Domain\Platform\Services\AuditLogger;
@@ -126,6 +128,34 @@ class CrmPlanningController extends Controller
         $d = $request->validate(['from' => ['required', 'date'], 'to' => ['required', 'date', 'after_or_equal:from']]);
 
         return response()->json(['data' => $plans->suggestions($d['from'], $d['to'])]);
+    }
+
+    /**
+     * The representative's day for the mobile app: planned calls (with customer and route
+     * order), open follow-ups due by that day, and the approved key messages to cache offline.
+     */
+    public function myDay(Request $request): JsonResponse
+    {
+        Gate::authorize('field_force.visits.capture');
+        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? today()->toDateString();
+
+        $calls = VisitPlanItem::query()->join('visit_plans as p', 'p.id', '=', 'visit_plan_items.visit_plan_id')
+            ->join('customers as c', 'c.id', '=', 'visit_plan_items.customer_id')
+            ->where('p.representative_id', Auth::id())->whereIn('p.status', ['submitted', 'approved'])
+            ->where('visit_plan_items.planned_date', $date)->where('visit_plan_items.status', '!=', 'cancelled')
+            ->orderBy('visit_plan_items.sequence')
+            ->get(['visit_plan_items.id', 'visit_plan_items.customer_id', 'c.name as customer_name', 'c.city', 'visit_plan_items.sequence',
+                'visit_plan_items.objective', 'visit_plan_items.status', 'p.status as plan_status', 'p.id as visit_plan_id']);
+
+        return response()->json(['data' => [
+            'date' => $date,
+            'calls' => $calls,
+            'follow_ups' => FieldFollowUp::query()->where('assigned_to', Auth::id())->where('status', 'open')
+                ->where('due_on', '<=', $date)->orderBy('due_on')->get(['id', 'customer_id', 'title', 'due_on', 'source']),
+            'detailing_messages' => DetailingMessage::query()->where('status', 'approved')
+                ->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', $date))
+                ->get(['id', 'product_id', 'title', 'key_message', 'valid_until']),
+        ]]);
     }
 
     // ---- Targets ---------------------------------------------------------------------------------------

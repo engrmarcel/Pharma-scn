@@ -22,6 +22,9 @@ return [
         'field.order.capture' => [1],
         'field.order.resubmit' => [1],
         'field.follow_up.complete' => [1],
+        'crm.detailing.record' => [1],
+        'crm.feedback.record' => [1],
+        'crm.interaction.log' => [1],
         'pos.sale' => [1],
     ],
 ];

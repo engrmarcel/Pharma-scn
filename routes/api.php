@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
 use App\Http\Controllers\Api\V1\CrmController;
+use App\Http\Controllers\Api\V1\CrmInsightsController;
 use App\Http\Controllers\Api\V1\CrmPlanningController;
 use App\Http\Controllers\Api\V1\CustomerController;
 use App\Http\Controllers\Api\V1\DeviceController;
@@ -395,6 +396,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('visit-plans/{id}/{action}', [CrmPlanningController::class, 'planAction'])->whereUlid('id')->whereIn('action', ['submit', 'approve', 'reject', 'cancel'])->name('visit-plans.action');
                 Route::post('visit-plan-items/{id}/cancel', [CrmPlanningController::class, 'cancelPlanItem'])->whereUlid('id')->name('visit-plan-items.cancel');
                 Route::get('visit-suggestions', [CrmPlanningController::class, 'suggestions'])->name('visit-suggestions');
+                Route::get('my-day', [CrmPlanningController::class, 'myDay'])->name('my-day');
                 Route::get('targets', [CrmPlanningController::class, 'targets'])->name('targets.index');
                 Route::post('targets', [CrmPlanningController::class, 'storeTarget'])->name('targets.store');
                 Route::get('targets/{id}', [CrmPlanningController::class, 'showTarget'])->whereUlid('id')->name('targets.show');
@@ -408,6 +410,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::patch('automation/settings', [CrmPlanningController::class, 'updateAutomationSettings'])->name('automation.settings.update');
                 Route::post('automation/run', [CrmPlanningController::class, 'runAutomation'])->name('automation.run');
                 Route::post('handover', [CrmPlanningController::class, 'handover'])->name('handover');
+                Route::get('dashboard/supervisor', [CrmInsightsController::class, 'dashboard'])->name('dashboard.supervisor');
+                Route::get('analytics', [CrmInsightsController::class, 'analytics'])->name('analytics');
             });
 
             Route::middleware('module:pos')->prefix('pos')->name('pos.')->group(function () {

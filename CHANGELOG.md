@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### 2026-10-25: Phase 6c, supervisor dashboards, CRM analytics and mobile workflows (Phase 6 complete)
+- Supervisor dashboard (`GET /crm/dashboard/supervisor`, plus the web page `/field-force/dashboard` under Operations):
+  - the day's visits and calls in progress, planned calls done and unverified check-ins;
+  - per-representative orders, adherence and overdue follow-ups;
+  - plans awaiting approval, approvable on the page;
+  - pipeline, targets with pace, and feedback including possible adverse events.
+- CRM analytics (`GET /crm/analytics?from&to&territory_id`): coverage and call-frequency compliance by tier and segment, visit outcomes and verification, visit-to-order conversion, pipeline win rate, detailing reach, feedback and interactions. Everything is limited to the viewer's customers.
+- Mobile:
+  - `GET /crm/my-day` (planned calls in route order, due follow-ups, approved key messages);
+  - the app's My day tab;
+  - offline detailing and feedback with the pharmacovigilance notice;
+  - local database schema v3;
+  - sync types `crm.detailing.record`, `crm.feedback.record` and `crm.interaction.log` (`CrmSyncHandler`, sharing `CrmRules` with the REST endpoints).
+- Synthetic CRM demo data for the distributor.
+- 241 server tests and 17 app tests passing; both live end-to-end app tests pass against a local server.
+
 ### 2026-10-25: Phase 6b, CRM planning and selling
 - Visit plans (`/crm/visit-plans`):
   - submit, then approve or reject; approval needs `crm.plans.approve`, a different person, and visibility of every planned customer;

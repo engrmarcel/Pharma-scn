@@ -2,6 +2,7 @@
     $pages = [
         'catalogue' => ['beaker', 'Workspace', 'Search the shared product master: identifiers, ingredients and pack sizes.'],
         'pos.register' => ['building-storefront', 'Point of sale', null],
+        'field-force.dashboard' => ['map-pin', 'Field force', 'Visits, plans, targets and pipeline of the team you supervise.'],
         'account.security' => ['finger-print', 'Account', 'Your sign-in, email verification and two-factor settings.'],
         'admin.verifications' => ['shield-check', 'Administration', 'Review organization documents submitted for platform verification.'],
     ];
@@ -68,12 +69,16 @@
                         <x-heroicon-o-home class="size-4 opacity-70"/>Dashboard
                     </a>
 
-                    <x-nav.dropdown label="Operations" icon="squares-2x2" :active="request()->routeIs('catalogue', 'pos.*')">
+                    <x-nav.dropdown label="Operations" icon="squares-2x2" :active="request()->routeIs('catalogue', 'pos.*', 'field-force.*')">
                         <x-nav.item :href="route('catalogue')" icon="beaker" title="Product catalogue"
                                     description="Search the product master by name, SKU, GTIN or registration number." :active="request()->routeIs('catalogue')"/>
                         @if ($nav['pos'])
                             <x-nav.item :href="route('pos.register')" icon="building-storefront" title="POS register"
                                         description="Sell over the counter, take payment and print receipts." :active="request()->routeIs('pos.*')"/>
+                        @endif
+                        @if ($nav['field_dashboard'] ?? false)
+                            <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"
+                                        description="Team visits, plan approvals, targets and pipeline." :active="request()->routeIs('field-force.*')"/>
                         @endif
                         <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-3 text-xs text-slate-500">
                             Inventory, procurement, sales and finance are available through the API.
@@ -150,6 +155,9 @@
                     <x-nav.item :href="route('catalogue')" icon="beaker" title="Product catalogue"/>
                     @if ($nav['pos'])
                         <x-nav.item :href="route('pos.register')" icon="building-storefront" title="POS register"/>
+                    @endif
+                    @if ($nav['field_dashboard'] ?? false)
+                        <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"/>
                     @endif
                     @if ($nav['admin'])
                         <x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"/>

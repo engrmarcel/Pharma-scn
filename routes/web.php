@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\SessionController;
 use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Catalogue\ProductBrowser;
+use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Pos\Register;
 use Illuminate\Support\Facades\Route;
 
@@ -38,6 +39,10 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::middleware(['tenant', 'module:pos'])->group(function () {
         Route::get('pos', Register::class)->name('pos.register');
         Route::get('pos/receipts/{sale}', PosReceiptController::class)->whereUlid('sale')->name('pos.receipt');
+    });
+
+    Route::middleware(['tenant', 'module:field_force'])->group(function () {
+        Route::get('field-force/dashboard', SupervisorDashboard::class)->name('field-force.dashboard');
     });
 
     Route::get('admin/verifications', VerificationQueue::class)

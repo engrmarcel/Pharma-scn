@@ -7,6 +7,15 @@ use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Catalogue\Models\ProductCategory;
 use App\Domain\Catalogue\Services\ProductCatalogueService;
+use App\Domain\Crm\Models\CustomerSegment;
+use App\Domain\Crm\Services\ContactService;
+use App\Domain\Crm\Services\CrmAutomation;
+use App\Domain\Crm\Services\DetailingService;
+use App\Domain\Crm\Services\InteractionService;
+use App\Domain\Crm\Services\OpportunityService;
+use App\Domain\Crm\Services\SegmentService;
+use App\Domain\Crm\Services\TargetService;
+use App\Domain\Crm\Services\VisitPlanService;
 use App\Domain\FieldForce\Models\FieldVisit;
 use App\Domain\FieldForce\Services\FieldOrderService;
 use App\Domain\FieldForce\Services\TerritoryService;
@@ -97,6 +106,7 @@ class DemoSeeder extends Seeder
         $this->purchasing();
         $this->pointOfSale();
         $this->fieldForce();
+        $this->crm();
         $this->marketplace();
         $this->integrations();
 
@@ -438,6 +448,68 @@ class DemoSeeder extends Seeder
                 'event_types' => ['inventory.stock_received', 'inventory.adjusted', 'sales.order_confirmed'], 'connector_id' => $connector->id], $membership->user);
             app(WebhookService::class)->setStatus(WebhookSubscription::query()->findOrFail($subscription->id), 'paused');
         }, $membership);
+    }
+
+    /**
+     * Synthetic CRM data for the distributor: account tiers and call frequencies, a rule
+     * segment, a professional contact with recorded consent, an approved key message and a
+     * detailing record, a submitted visit plan awaiting the supervisor, targets, an
+     * opportunity, feedback, and one automation run.
+     */
+    private function crm(): void
+    {
+        $org = Organization::query()->where('name', 'Demo National Distribution Ltd')->first();
+        if ($org === null || CustomerSegment::acrossTenants()->where('organization_id', $org->id)->exists()) {
+            return;
+        }
+        $member = fn (string $email) => $org->memberships()->whereHas('user', fn ($q) => $q->where('email', $email))->with('user')->firstOrFail();
+        $owner = $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->with('user')->firstOrFail();
+        [$manager, $rep1] = [$member('dist.sales@demo.test'), $member('dist.rep1@demo.test')];
+        $context = app(TenantContext::class);
+        $paracetamol = Product::query()->where('generic_name', 'Paracetamol')->value('id');
+
+        Auth::setUser($manager->user);
+        $message = $context->runAs($org, function () use ($manager, $rep1, $paracetamol) {
+            $customer1 = Customer::query()->where('code', 'DEMO-CUS-1')->firstOrFail();
+            $customer1->forceFill(['tier' => 'A', 'visit_frequency_days' => 14, 'potential_value' => '750000'])->save();
+            Customer::query()->where('code', 'DEMO-CUS-2')->update(['tier' => 'B', 'visit_frequency_days' => 30]);
+            app(SegmentService::class)->create(['code' => 'DEMO-TIER-A', 'name' => 'SYNTHETIC DEMO: tier A accounts', 'type' => 'rule', 'criteria' => ['tiers' => ['A']]], $manager->user);
+            app(ContactService::class)->create($customer1, ['name' => 'Pharm. Demo Contact (fictional)', 'professional_type' => 'pharmacist', 'specialty' => 'Community pharmacy',
+                'email' => 'demo.contact@example.invalid', 'contact_consent' => 'granted', 'consent_source' => 'SYNTHETIC DEMO consent form']);
+            $period = ['period_start' => today()->startOfMonth()->toDateString(), 'period_end' => today()->endOfMonth()->toDateString()];
+            app(TargetService::class)->create(['scope_type' => 'representative', 'representative_id' => $rep1->user_id, 'metric' => 'visits_completed', 'target_value' => '20',
+                'notes' => 'SYNTHETIC DEMO TARGET'] + $period, $manager->user);
+            app(TargetService::class)->create(['scope_type' => 'representative', 'representative_id' => $rep1->user_id, 'metric' => 'field_order_value', 'target_value' => '50000',
+                'notes' => 'SYNTHETIC DEMO TARGET'] + $period, $manager->user);
+
+            return app(DetailingService::class)->createMessage(['product_id' => $paracetamol, 'title' => 'SYNTHETIC DEMO: dosing reminder',
+                'key_message' => 'Fictional key message for demonstration only.', 'approval_reference' => 'DEMO-APPROVAL-001'], $manager->user);
+        }, $manager);
+
+        Auth::setUser($owner->user);
+        $context->runAs($org, fn () => app(DetailingService::class)->approve($message, $owner->user), $owner);
+
+        Auth::setUser($rep1->user);
+        $context->runAs($org, function () use ($message, $paracetamol) {
+            $customer = Customer::query()->where('code', 'DEMO-CUS-1')->firstOrFail();
+            $visit = FieldVisit::query()->where('client_reference', 'demo-visit-1')->first();
+            if ($visit !== null) {
+                // Recorded within the 24 hours after check-out that the rules allow.
+                app(DetailingService::class)->record($visit, ['client_reference' => 'demo-detailing-1', 'product_id' => $paracetamol, 'message_ids' => [$message->id],
+                    'reception' => 'positive', 'notes' => 'SYNTHETIC DEMO DETAILING']);
+            }
+            $plans = app(VisitPlanService::class);
+            $plan = $plans->create(['period_start' => today()->addDays(7)->toDateString(), 'period_end' => today()->addDays(11)->toDateString(),
+                'notes' => 'SYNTHETIC DEMO PLAN', 'items' => [['customer_id' => $customer->id, 'planned_date' => today()->addDays(7)->toDateString(), 'objective' => 'Review the 20-pack uptake']]]);
+            $plans->submit($plan);
+            app(OpportunityService::class)->create(['client_reference' => 'demo-opportunity-1', 'customer_id' => $customer->id, 'title' => 'SYNTHETIC DEMO: analgesics range extension',
+                'stage' => 'proposal', 'expected_value' => '250000', 'next_step' => 'Send the price proposal', 'next_step_date' => today()->addDays(3)->toDateString()]);
+            app(InteractionService::class)->recordFeedback(['client_reference' => 'demo-feedback-1', 'customer_id' => $customer->id, 'category' => 'delivery', 'rating' => 4,
+                'description' => 'SYNTHETIC DEMO FEEDBACK: deliveries arrive on time.']);
+        }, $rep1);
+
+        Auth::setUser($manager->user);
+        $context->runAs($org, fn () => app(CrmAutomation::class)->run(), $manager);
     }
 
     private function products(User $admin): void

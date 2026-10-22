@@ -173,6 +173,9 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · POST · GET `{id}` · PATCH `{id}` · POST `{id}/convert-customer {code, type, name?}` | `/crm/opportunities` (`stage`, `owner_id`, `customer_id`, `open`) | owner edits; won needs `field_order_id` or `sales_order_id`; lost needs `lost_reason`; list includes `pipeline` per stage; conversion needs `customers.manage` |
 | GET · PATCH · POST `run` | `/crm/automation/settings` · `/crm/automation/run` | `crm.automation.manage` |
 | POST | `/crm/handover {from_user_id, to_user_id, territory_id?}` | `field_force.territories.manage` |
+| GET | `/crm/my-day?date` | `field_force.visits.capture`; own planned calls (route order), open follow-ups due, approved key messages |
+| GET | `/crm/dashboard/supervisor?date` | `field_force.team.view`, `field_force.view_all` or `crm.plans.approve`; within the activity scope |
+| GET | `/crm/analytics?from&to&territory_id` | `field_force.reports.view`; viewer's customers only |
 
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |

@@ -51,6 +51,8 @@ class SyncService {
     'order_resubmit': 'field.order.resubmit',
     'follow_up_complete': 'field.follow_up.complete',
     'pos_sale': 'pos.sale',
+    'detailing_record': 'crm.detailing.record',
+    'feedback_record': 'crm.feedback.record',
   };
 
   /// Exponential backoff with jitter: 2 s doubling up to 15 minutes.
@@ -190,6 +192,9 @@ class SyncService {
         await repo.applyFollowUp(item.entityRef, result);
       case 'pos_sale':
         await pos?.applySale(item.entityRef, result, warnings);
+      case 'detailing_record':
+      case 'feedback_record':
+        await repo.applyCrmRecord(item.operation, item.entityRef, result);
     }
   }
 }

@@ -270,6 +270,7 @@ class AppState extends ChangeNotifier {
             await repository!.refreshCustomers();
             await repository!.refreshOrders();
             await repository!.refreshFollowUps();
+            await _refreshMyDay();
           }
           lastSyncAt = DateTime.now();
           await _db!.setMeta('last_sync_at', lastSyncAt!.toUtc().toIso8601String());
@@ -316,6 +317,16 @@ class AppState extends ChangeNotifier {
         : 'This device was deauthorized by your administrator. Unsent work is kept on this device; sign in again to continue.';
     syncing = false;
     notifyListeners();
+  }
+
+  /// My day needs the visit-capture permission; supervisors without it simply have no planned calls.
+  Future<void> _refreshMyDay() async {
+    if (!(session?.can('field_force.visits.capture') ?? false)) return;
+    try {
+      await repository!.refreshMyDay();
+    } on ApiException catch (e) {
+      if (e.statusCode != 403 && e.statusCode != 404) rethrow;
+    }
   }
 
   Future<void> _refreshCounts() async {

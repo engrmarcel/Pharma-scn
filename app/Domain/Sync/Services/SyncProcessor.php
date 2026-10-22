@@ -2,6 +2,7 @@
 
 namespace App\Domain\Sync\Services;
 
+use App\Domain\Sync\Handlers\CrmSyncHandler;
 use App\Domain\Sync\Handlers\FieldForceSyncHandler;
 use App\Domain\Sync\Handlers\PosSaleSyncHandler;
 use App\Domain\Sync\Models\Device;
@@ -35,6 +36,7 @@ class SyncProcessor
     public function __construct(
         private readonly FieldForceSyncHandler $field,
         private readonly PosSaleSyncHandler $pos,
+        private readonly CrmSyncHandler $crm,
     ) {}
 
     /** @return list<array> acknowledgements in request order */
@@ -117,7 +119,11 @@ class SyncProcessor
 
     private function dispatch(SyncInboxItem $item): array
     {
-        return str_starts_with($item->type, 'field.') ? $this->field->handle($item) : $this->pos->handle($item);
+        return match (true) {
+            str_starts_with($item->type, 'field.') => $this->field->handle($item),
+            str_starts_with($item->type, 'crm.') => $this->crm->handle($item),
+            default => $this->pos->handle($item),
+        };
     }
 
     private function finish(SyncInboxItem $item, string $status, string $code, string $message, ?array $details = null): void

@@ -40,12 +40,16 @@ class NavigationComposer
         $canPos = $org !== null && $org->isActive() && $org->hasModule('pos') && $this->entitlements->allows($org, 'module.pos')
             && $this->tenant->runAs($org, fn () => Gate::forUser($user)->allows('pos.sell'), $current);
 
+        $canFieldDashboard = $org !== null && $org->isActive() && $org->hasModule('field_force') && $this->entitlements->allows($org, 'module.field_force')
+            && $this->tenant->runAs($org, fn () => Gate::forUser($user)->any(['field_force.team.view', 'field_force.view_all', 'crm.plans.approve']), $current);
+
         return [
             'brand' => $this->branding->forOrganization($org),
             'nav' => [
                 'memberships' => $memberships,
                 'current' => $current,
                 'pos' => $canPos,
+                'field_dashboard' => $canFieldDashboard,
                 'admin' => Gate::forUser($user)->allows('platform.organizations.view'),
                 'initials' => collect(preg_split('/\s+/', trim($user->name)))->take(2)->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode(''),
             ],

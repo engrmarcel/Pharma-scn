@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../core/api.dart';
 import '../location/location_capture.dart';
+import 'crm_models.dart';
 import 'local_db.dart';
 import 'models.dart';
 import 'outbox.dart';
@@ -404,6 +405,144 @@ class FieldRepository {
   Future<void> applyFollowUp(String id, Map<String, dynamic> data) => db.update('follow_ups', {'status': data['status'], 'local_status': null, 'sync_state': 'synced', 'last_error': null},
       where: 'id = ?', whereArgs: [id]);
 
+  // ---- My day, detailing and feedback (Phase 6) ----------------------------------------------------
+
+  /// Caches the day's planned calls and the approved key messages (for detailing offline).
+  Future<void> refreshMyDay([DateTime? day]) async {
+    final date = _date(day ?? DateTime.now());
+    final res = Map<String, dynamic>.from((await api.get('crm/my-day', query: {'date': date}))['data'] as Map);
+    await db.transaction((txn) async {
+      await txn.delete('plan_calls', where: 'planned_date = ?', whereArgs: [date]);
+      for (final raw in res['calls'] as List) {
+        final c = Map<String, dynamic>.from(raw as Map);
+        await txn.insert(
+            'plan_calls',
+            {
+              'id': c['id'],
+              'planned_date': date,
+              'customer_id': c['customer_id'],
+              'customer_name': c['customer_name'],
+              'city': c['city'],
+              'sequence': c['sequence'] ?? 0,
+              'objective': c['objective'],
+              'status': c['status'],
+              'plan_status': c['plan_status'],
+              'cached_at': _now(),
+            },
+            conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await txn.delete('detailing_messages');
+      for (final raw in res['detailing_messages'] as List) {
+        final m = Map<String, dynamic>.from(raw as Map);
+        await txn.insert('detailing_messages', {
+          'id': m['id'],
+          'product_id': m['product_id'],
+          'title': m['title'],
+          'key_message': m['key_message'],
+          'valid_until': m['valid_until'],
+          'cached_at': _now(),
+        });
+      }
+    });
+  }
+
+  Future<List<PlanCall>> myDay([DateTime? day]) async =>
+      (await db.query('plan_calls', where: 'planned_date = ?', whereArgs: [_date(day ?? DateTime.now())], orderBy: 'sequence, customer_name')).map(PlanCall.fromRow).toList();
+
+  Future<List<DetailingMessage>> detailingMessages({String? productId}) async => (await db.query('detailing_messages',
+          where: productId == null ? null : 'product_id = ?', whereArgs: productId == null ? null : [productId], orderBy: 'title'))
+      .map(DetailingMessage.fromRow)
+      .toList();
+
+  /// Records detailing for one product during the representative's own visit on this device.
+  /// Only cached (approved) messages can be chosen; the server checks them again.
+  Future<LocalDetailing> recordDetailing(String visitReference,
+      {required String productId,
+      String? productName,
+      required List<String> messageIds,
+      String reception = 'not_assessed',
+      String? samplesQuantity,
+      String? sampleBatchNumber,
+      String? notes}) async {
+    final current = await visit(visitReference);
+    if (current == null || current.status == 'cancelled' || current.syncState == 'failed') throw StateError('Detailing is recorded during a visit.');
+    if (messageIds.isEmpty) throw StateError('Choose at least one approved key message.');
+    final known = (await detailingMessages(productId: productId)).map((m) => m.id).toSet();
+    if (!known.containsAll(messageIds)) throw StateError('Only approved key messages for this product can be recorded.');
+    if ((samplesQuantity ?? '').isNotEmpty && (sampleBatchNumber ?? '').isEmpty) throw StateError('Enter the batch number of the samples.');
+
+    final ref = newReference();
+    await db.transaction((txn) async {
+      await txn.insert('detailing', {
+        'client_reference': ref,
+        'visit_reference': visitReference,
+        'customer_id': current.customerId,
+        'product_id': productId,
+        'product_name': productName,
+        'message_ids': jsonEncode(messageIds),
+        'reception': reception,
+        'samples_quantity': samplesQuantity,
+        'sample_batch_number': sampleBatchNumber,
+        'notes': notes,
+        'sync_state': 'pending',
+        'created_at': _now(),
+      });
+      await Outbox(txn).enqueue('detailing_record', ref, {
+        'client_reference': ref,
+        'visit_client_reference': visitReference,
+        'product_id': productId,
+        'message_ids': messageIds,
+        'reception': reception,
+        if ((samplesQuantity ?? '').isNotEmpty) 'samples_quantity': samplesQuantity,
+        if ((sampleBatchNumber ?? '').isNotEmpty) 'sample_batch_number': sampleBatchNumber,
+        if ((notes ?? '').isNotEmpty) 'notes': notes,
+      });
+    });
+    return LocalDetailing.fromRow((await db.query('detailing', where: 'client_reference = ?', whereArgs: [ref])).first);
+  }
+
+  Future<List<LocalDetailing>> detailingFor(String visitReference) async =>
+      (await db.query('detailing', where: 'visit_reference = ?', whereArgs: [visitReference], orderBy: 'created_at')).map(LocalDetailing.fromRow).toList();
+
+  Future<LocalFeedback> recordFeedback(String customerId,
+      {required String category, required String description, int? rating, String? productId, String? visitReference, bool possibleAdverseEvent = false}) async {
+    if (description.trim().isEmpty) throw StateError('Describe the feedback.');
+    final ref = newReference();
+    await db.transaction((txn) async {
+      await txn.insert('feedback', {
+        'client_reference': ref,
+        'customer_id': customerId,
+        'visit_reference': visitReference,
+        'product_id': productId,
+        'category': category,
+        'rating': rating,
+        'description': description.trim(),
+        'possible_adverse_event': possibleAdverseEvent ? 1 : 0,
+        'sync_state': 'pending',
+        'created_at': _now(),
+      });
+      await Outbox(txn).enqueue('feedback_record', ref, {
+        'client_reference': ref,
+        'customer_id': customerId,
+        'visit_client_reference': ?visitReference,
+        'product_id': ?productId,
+        'category': category,
+        'rating': ?rating,
+        'description': description.trim(),
+        'possible_adverse_event': possibleAdverseEvent,
+      });
+    });
+    return LocalFeedback.fromRow((await db.query('feedback', where: 'client_reference = ?', whereArgs: [ref])).first);
+  }
+
+  Future<List<LocalFeedback>> feedbackFor(String customerId) async =>
+      (await db.query('feedback', where: 'customer_id = ?', whereArgs: [customerId], orderBy: 'created_at DESC')).map(LocalFeedback.fromRow).toList();
+
+  Future<void> applyCrmRecord(String operation, String ref, Map<String, dynamic> data) =>
+      db.update(operation == 'detailing_record' ? 'detailing' : 'feedback', {'server_id': data['id'], 'last_error': null}, where: 'client_reference = ?', whereArgs: [ref]);
+
+  static String _date(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   // ---- Sync bookkeeping ------------------------------------------------------------------------
 
   static const _tables = {
@@ -414,6 +553,8 @@ class FieldRepository {
     'order_resubmit': ('orders', 'client_reference'),
     'follow_up_complete': ('follow_ups', 'id'),
     'pos_sale': ('pos_sales', 'client_reference'),
+    'detailing_record': ('detailing', 'client_reference'),
+    'feedback_record': ('feedback', 'client_reference'),
   };
 
   /// After an item is sent: the record is "synced" once nothing else is waiting for it.

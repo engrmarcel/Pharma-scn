@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../data/models.dart';
 import '../data/status_text.dart';
 import '../state/app_state.dart';
+import 'crm_widgets.dart';
 import 'order_screen.dart';
 import 'theme.dart';
 import 'visit_screen.dart';
@@ -72,6 +73,14 @@ class CustomerScreen extends StatelessWidget {
                   ),
                 ),
               ]),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextButton.icon(
+                onPressed: () => showFeedbackDialog(context, customerId: customer.id),
+                icon: const Icon(Icons.feedback_outlined),
+                label: const Text('Record feedback'),
+              ),
             ),
             const _Header('Visits on this device'),
             if (visits.isEmpty) const Padding(padding: EdgeInsets.all(16), child: Text('None yet.')),

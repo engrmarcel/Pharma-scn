@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../data/models.dart';
 import '../data/status_text.dart';
 import '../state/app_state.dart';
+import 'crm_widgets.dart';
 import 'customer_screen.dart';
 import 'order_screen.dart';
 import 'widgets.dart';
@@ -153,6 +154,18 @@ class _VisitScreenState extends State<VisitScreen> {
                       : null,
                   icon: const Icon(Icons.add_shopping_cart),
                   label: const Text('Capture an order'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () => showDetailingSheet(context, visitReference: v.clientReference, customerId: v.customerId),
+                  icon: const Icon(Icons.campaign_outlined),
+                  label: const Text('Detail a product'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => showFeedbackDialog(context, customerId: v.customerId, visitReference: v.clientReference),
+                  icon: const Icon(Icons.feedback_outlined),
+                  label: const Text('Record feedback'),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(

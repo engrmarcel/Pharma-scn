@@ -47,6 +47,8 @@ States: `LOCAL_DRAFT → PENDING_SYNC → SYNCING → SYNCED | RETRY_REQUIRED | 
 
 The server endpoint `POST /api/v1/sync/batches` accepts up to 50 envelopes `{client_txn_id, type, schema_version, client_created_at, attempt, payload}`, stores each durably in `sync_inbox`, and acknowledges each one with `{client_txn_id, status: synced|conflict|rejected|retry_required, result?, warnings?, error?, duplicate?}`. Processing is idempotent on `client_txn_id`. The device and user come from the device-bound token, and the tenant comes from the device's organization (built in 3a).
 
+Sync types: `field.visit.check_in|check_out|cancel`, `field.order.capture|resubmit`, `field.follow_up.complete`, `pos.sale`, and (Phase 6) `crm.detailing.record`, `crm.feedback.record` and `crm.interaction.log`. CRM records reference their visit by `visit_client_reference`; capture order guarantees the check-in is processed first.
+
 Retry uses exponential backoff with jitter (2 s doubling to 15 min), runs when connectivity returns, and uses WorkManager on Android for background runs. The app shows pending counts, the last successful sync time and failed items.
 
 ## Inventory conflicts

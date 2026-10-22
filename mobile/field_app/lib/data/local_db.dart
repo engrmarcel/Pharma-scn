@@ -12,7 +12,7 @@ class LocalDb {
 
   final cipher.Database db;
 
-  static const schemaVersion = 2;
+  static const schemaVersion = 3;
 
   static const _v1 = <String>[
     '''CREATE TABLE customers (
@@ -71,9 +71,26 @@ class LocalDb {
       warnings TEXT, sync_state TEXT NOT NULL, last_error TEXT, completed_at TEXT NOT NULL, updated_at TEXT NOT NULL)''',
   ];
 
+  /// v3 (Phase 6): the day's planned calls, approved key messages, detailing and feedback captured offline.
+  static const _v3 = <String>[
+    '''CREATE TABLE plan_calls (
+      id TEXT PRIMARY KEY, planned_date TEXT NOT NULL, customer_id TEXT NOT NULL, customer_name TEXT NOT NULL, city TEXT,
+      sequence INTEGER NOT NULL DEFAULT 0, objective TEXT, status TEXT NOT NULL, plan_status TEXT, cached_at TEXT NOT NULL)''',
+    '''CREATE TABLE detailing_messages (
+      id TEXT PRIMARY KEY, product_id TEXT NOT NULL, title TEXT NOT NULL, key_message TEXT NOT NULL, valid_until TEXT, cached_at TEXT NOT NULL)''',
+    '''CREATE TABLE detailing (
+      client_reference TEXT PRIMARY KEY, visit_reference TEXT NOT NULL, customer_id TEXT NOT NULL, product_id TEXT NOT NULL, product_name TEXT,
+      message_ids TEXT NOT NULL, reception TEXT NOT NULL, samples_quantity TEXT, sample_batch_number TEXT, notes TEXT,
+      server_id TEXT, sync_state TEXT NOT NULL, last_error TEXT, created_at TEXT NOT NULL)''',
+    '''CREATE TABLE feedback (
+      client_reference TEXT PRIMARY KEY, customer_id TEXT NOT NULL, visit_reference TEXT, product_id TEXT, category TEXT NOT NULL,
+      rating INTEGER, description TEXT NOT NULL, possible_adverse_event INTEGER NOT NULL DEFAULT 0,
+      server_id TEXT, sync_state TEXT NOT NULL, last_error TEXT, created_at TEXT NOT NULL)''',
+  ];
+
   static Future<LocalDb> open(String path, {cipher.DatabaseFactory? factory, String? password}) async {
     Future<void> create(cipher.Database db, int version) async {
-      for (final s in [..._v1, ..._v2]) {
+      for (final s in [..._v1, ..._v2, ..._v3]) {
         await db.execute(s);
       }
     }
@@ -81,6 +98,11 @@ class LocalDb {
     Future<void> upgrade(cipher.Database db, int from, int to) async {
       if (from < 2) {
         for (final s in _v2) {
+          await db.execute(s);
+        }
+      }
+      if (from < 3) {
+        for (final s in _v3) {
           await db.execute(s);
         }
       }

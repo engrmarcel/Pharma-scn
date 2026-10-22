@@ -19,6 +19,11 @@ This is the Android-first offline app for field representatives and POS tills (s
   - Whether the visit is verified is decided by the server and shown after sync.
 - Orders show their status, from **draft on this device**, through **waiting to sync** and **submitted**, to **accepted by ERP** (sales order number, and whether stock is reserved or awaiting approval) or **rejected** with the reason; a rejected order can be edited and resubmitted.
 - Follow-ups and the activity report.
+- **My day** (first tab): the planned calls of the representative's submitted or approved visit plan, in route order, marked as done once checked in.
+- **During a visit:**
+  - **Detail a product** records which approved key messages were delivered, the reception and any samples (quantity and batch). Only messages downloaded at the last sync can be chosen, and the server checks them again.
+  - **Record feedback** is also available on the customer screen. Ticking *possible adverse event* shows the pharmacovigilance notice at once, and patient details are never asked for.
+  - Both work offline and are sent after the visit's check-in.
 
 ## Till mode
 

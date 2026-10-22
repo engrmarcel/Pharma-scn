@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../data/models.dart';
 import '../data/status_text.dart';
 import '../state/app_state.dart';
+import 'crm_widgets.dart';
 import 'customer_screen.dart';
 import 'order_screen.dart';
 import 'report_screen.dart';
@@ -62,13 +63,14 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialBanner(content: Text(app.syncMessage!), actions: [TextButton(onPressed: app.syncNow, child: const Text('Retry'))]),
         const _OpenVisitBanner(),
         Expanded(
-          child: IndexedStack(index: _tab, children: const [_CustomersTab(), _VisitsTab(), _OrdersTab(), _FollowUpsTab()]),
+          child: IndexedStack(index: _tab, children: const [MyDayTab(), _CustomersTab(), _VisitsTab(), _OrdersTab(), _FollowUpsTab()]),
         ),
       ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
+          NavigationDestination(icon: Icon(Icons.route_outlined), label: 'My day'),
           NavigationDestination(icon: Icon(Icons.storefront_outlined), label: 'Customers'),
           NavigationDestination(icon: Icon(Icons.pin_drop_outlined), label: 'Visits'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Orders'),
