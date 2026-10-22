@@ -5,6 +5,7 @@ namespace App\Http\View\Composers;
 use App\Domain\Billing\Services\EntitlementService;
 use App\Domain\Platform\Services\BrandingService;
 use App\Support\Tenancy\TenantContext;
+use App\Support\Web\Navigation;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
@@ -18,6 +19,7 @@ class NavigationComposer
         private readonly BrandingService $branding,
         private readonly TenantContext $tenant,
         private readonly EntitlementService $entitlements,
+        private readonly Navigation $navigation,
     ) {}
 
     public function compose(View $view): void
@@ -46,9 +48,14 @@ class NavigationComposer
         $canAnalytics = $org !== null && $org->isActive() && $org->hasModule('analytics') && $this->entitlements->allows($org, 'module.analytics')
             && $this->tenant->runAs($org, fn () => Gate::forUser($user)->allows('analytics.view'), $current);
 
+        $sections = $this->navigation->visible($user, $org, $current);
+        $here = Navigation::find(request()->route()?->getName());
+
         return [
             'brand' => $this->branding->forOrganization($org),
             'nav' => [
+                'sections' => $sections,
+                'section' => $here !== null && isset($sections[$here[0]]) ? $here[0] : null,
                 'memberships' => $memberships,
                 'current' => $current,
                 'pos' => $canPos,

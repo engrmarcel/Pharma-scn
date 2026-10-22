@@ -1,16 +1,17 @@
 @php
+    // Pages outside the navigation registry.
     $pages = [
-        'catalogue' => ['beaker', 'Workspace', 'Search the shared product master: identifiers, ingredients and pack sizes.'],
-        'pos.register' => ['building-storefront', 'Point of sale', null],
-        'field-force.dashboard' => ['map-pin', 'Field force', 'Visits, plans, targets and pipeline of the team you supervise.'],
-        'analytics.executive' => ['chart-bar', 'Analytics', 'Headline figures across sales, stock, expiry risk and operations.'],
         'account.security' => ['finger-print', 'Account', 'Your sign-in, email verification and two-factor settings.'],
-        'admin.verifications' => ['shield-check', 'Administration', 'Review organization documents submitted for platform verification.'],
-        'admin.documentation' => ['book-open', 'Administration', 'Setup, administration, user guide, flows, API and integration: read or download as PDF.'],
-        'admin.landing-page' => ['globe-alt', 'Administration', 'Edit the public landing page: hero, network infographic, features and app screens.'],
     ];
-    $page = $pages[request()->route()?->getName()] ?? ['squares-2x2', 'Workspace', null];
+    $routeName = request()->route()?->getName();
+    $found = \App\Support\Web\Navigation::find($routeName);
+    $page = $found
+        ? [$found[1][2], \App\Support\Web\Navigation::SECTIONS[$found[0]][0], $found[1][4]]
+        : ($pages[$routeName] ?? ['squares-2x2', 'Workspace', null]);
     $current = $nav['current'] ?? null;
+    $sections = $nav['sections'] ?? [];
+    $workspace = collect($sections)->except(['organization', 'admin'])->groupBy('group', preserveKeys: true);
+    $tabs = ($nav['section'] ?? null) ? $sections[$nav['section']]['pages'] : [];
     $year = now()->year;
 @endphp
 <!DOCTYPE html>
@@ -72,25 +73,31 @@
                         <x-heroicon-o-home class="size-4 opacity-70"/>Dashboard
                     </a>
 
-                    <x-nav.dropdown label="Operations" icon="squares-2x2" :active="request()->routeIs('catalogue', 'pos.*', 'field-force.*', 'analytics.*')">
-                        <x-nav.item :href="route('catalogue')" icon="beaker" title="Product catalogue"
-                                    description="Search the product master by name, SKU, GTIN or registration number." :active="request()->routeIs('catalogue')"/>
-                        @if ($nav['pos'])
-                            <x-nav.item :href="route('pos.register')" icon="building-storefront" title="POS register"
-                                        description="Sell over the counter, take payment and print receipts." :active="request()->routeIs('pos.*')"/>
-                        @endif
-                        @if ($nav['field_dashboard'] ?? false)
-                            <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"
-                                        description="Team visits, plan approvals, targets and pipeline." :active="request()->routeIs('field-force.*')"/>
-                        @endif
-                        @if ($nav['analytics'] ?? false)
-                            <x-nav.item :href="route('analytics.executive')" icon="chart-bar" title="Executive dashboard"
-                                        description="Sales, stock, expiry risk and operations at a glance." :active="request()->routeIs('analytics.*')"/>
-                        @endif
-                        <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-3 text-xs text-slate-500">
-                            Inventory, procurement, sales and finance are available through the API.
-                        </div>
-                    </x-nav.dropdown>
+                    @if ($workspace->isNotEmpty())
+                        <x-nav.dropdown label="Workspace" icon="squares-2x2" align="center" width="w-[min(72rem,calc(100vw-2rem))]" :active="($nav['section'] ?? null) && ! in_array($nav['section'], ['organization', 'admin'], true)">
+                            <div class="grid max-h-[75vh] gap-x-6 gap-y-4 overflow-y-auto p-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                                @foreach (\App\Support\Web\Navigation::GROUPS as $group)
+                                    @continue(! $workspace->has($group))
+                                    <div>
+                                        <p class="mb-2 px-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold-600">{{ $group }}</p>
+                                        @foreach ($workspace[$group] as $key => $section)
+                                            <div class="mb-3">
+                                                <p class="flex items-center gap-1.5 px-2 text-sm font-semibold text-navy-950">
+                                                    <x-dynamic-component :component="'heroicon-o-'.$section['icon']" class="size-4 text-[var(--brand-primary)]"/>{{ $section['label'] }}
+                                                </p>
+                                                <ul class="mt-1">
+                                                    @foreach ($section['pages'] as $p)
+                                                        <li><a href="{{ route($p['route']) }}" role="menuitem" title="{{ $p['description'] }}"
+                                                               class="block rounded-md px-2 py-1 pl-7 text-sm text-slate-600 hover:bg-navy-50 hover:text-[var(--brand-primary)] {{ $routeName === $p['route'] ? 'bg-navy-50 font-medium text-[var(--brand-primary)]' : '' }}">{{ $p['label'] }}</a></li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endforeach
+                            </div>
+                        </x-nav.dropdown>
+                    @endif
 
                     @if ($nav['memberships']->isNotEmpty())
                         <x-nav.dropdown label="Organization" icon="building-office-2" width="w-96">
@@ -113,23 +120,22 @@
                                     </form>
                                 @endforeach
                             </div>
+                            @if (isset($sections['organization']))
+                                <p class="mt-2 border-t border-slate-100 px-3 pb-1 pt-3 text-xs font-semibold uppercase tracking-wider text-slate-400">{{ $current?->organization->name }}</p>
+                                @foreach ($sections['organization']['pages'] as $p)
+                                    <x-nav.item :href="route($p['route'])" :icon="$p['icon']" :title="$p['label']" :active="$routeName === $p['route']"/>
+                                @endforeach
+                            @endif
                         </x-nav.dropdown>
                     @endif
 
-                    @if ($nav['admin'])
-                        <x-nav.dropdown label="Administration" icon="cog-6-tooth" :active="request()->routeIs('admin.*')">
-                            @if ($nav['admin_verifications'] ?? true)
-                                <x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"
-                                            description="Review documents and decide platform verification." :active="request()->routeIs('admin.verifications')"/>
-                            @endif
-                            @if ($nav['admin_docs'] ?? false)
-                                <x-nav.item :href="route('admin.documentation')" icon="book-open" title="Documentation"
-                                            description="Manuals and API guide; download all as PDF." :active="request()->routeIs('admin.documentation')"/>
-                            @endif
-                            @if ($nav['admin_landing'] ?? false)
-                                <x-nav.item :href="route('admin.landing-page')" icon="globe-alt" title="Landing page"
-                                            description="Edit the public page: hero, network, features and app screens." :active="request()->routeIs('admin.landing-page')"/>
-                            @endif
+                    @if (isset($sections['admin']))
+                        <x-nav.dropdown label="Administration" icon="cog-6-tooth" width="w-[min(40rem,calc(100vw-2rem))]" align="right" :active="request()->routeIs('admin.*')">
+                            <div class="grid max-h-[75vh] gap-1 overflow-y-auto sm:grid-cols-2">
+                                @foreach ($sections['admin']['pages'] as $p)
+                                    <x-nav.item :href="route($p['route'])" :icon="$p['icon']" :title="$p['label']" :active="$routeName === $p['route']"/>
+                                @endforeach
+                            </div>
                         </x-nav.dropdown>
                     @endif
                 </nav>
@@ -166,21 +172,23 @@
 
         @auth
             {{-- Mobile menu --}}
-            <nav x-cloak x-show="mobile" x-transition class="border-t border-slate-200 bg-white lg:hidden" aria-label="Mobile">
+            <nav x-cloak x-show="mobile" x-transition class="max-h-[80vh] overflow-y-auto border-t border-slate-200 bg-white lg:hidden" aria-label="Mobile">
                 <div class="mx-auto max-w-7xl space-y-1 px-4 py-3">
                     <x-nav.item :href="route('dashboard')" icon="home" title="Dashboard"/>
-                    <x-nav.item :href="route('catalogue')" icon="beaker" title="Product catalogue"/>
-                    @if ($nav['pos'])
-                        <x-nav.item :href="route('pos.register')" icon="building-storefront" title="POS register"/>
-                    @endif
-                    @if ($nav['field_dashboard'] ?? false)
-                        <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"/>
-                    @endif
-                    @if ($nav['admin'])
-                        @if ($nav['admin_verifications'] ?? true)<x-nav.item :href="route('admin.verifications')" icon="shield-check" title="Verification queue"/>@endif
-                        @if ($nav['admin_docs'] ?? false)<x-nav.item :href="route('admin.documentation')" icon="book-open" title="Documentation"/>@endif
-                        @if ($nav['admin_landing'] ?? false)<x-nav.item :href="route('admin.landing-page')" icon="globe-alt" title="Landing page"/>@endif
-                    @endif
+                    @foreach ($sections as $key => $section)
+                        <details class="group/m rounded-lg" @if (($nav['section'] ?? null) === $key) open @endif>
+                            <summary class="flex cursor-pointer list-none items-center gap-3 rounded-lg p-3 text-sm font-semibold text-navy-900 hover:bg-navy-50">
+                                <x-dynamic-component :component="'heroicon-o-'.$section['icon']" class="size-5 text-[var(--brand-primary)]"/>
+                                <span class="flex-1">{{ $section['label'] }}</span>
+                                <x-heroicon-m-chevron-down class="size-4 opacity-60 transition group-open/m:rotate-180"/>
+                            </summary>
+                            <ul class="pb-2 pl-11">
+                                @foreach ($section['pages'] as $p)
+                                    <li><a href="{{ route($p['route']) }}" class="block rounded-md px-2 py-1.5 text-sm text-slate-600 hover:bg-navy-50 {{ $routeName === $p['route'] ? 'font-medium text-[var(--brand-primary)]' : '' }}">{{ $p['label'] }}</a></li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @endforeach
                     <x-nav.item :href="route('account.security')" icon="finger-print" title="Account security"/>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -218,7 +226,22 @@
                 </div>
                 <div class="h-1 bg-gradient-to-r from-gold-500 via-gold-300 to-transparent"></div>
             </section>
+            @if (count($tabs) > 1)
+                {{-- Section tabs: the other pages of this area --}}
+                <nav class="no-print border-b border-slate-200 bg-white" aria-label="{{ $sections[$nav['section']]['label'] }}">
+                    <div class="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4">
+                        @foreach ($tabs as $t)
+                            <a href="{{ route($t['route']) }}" @if ($routeName === $t['route']) aria-current="page" @endif
+                               class="section-tab {{ $routeName === $t['route'] ? 'is-active' : '' }}">
+                                <x-dynamic-component :component="'heroicon-o-'.$t['icon']" class="size-4 opacity-70"/>{{ $t['label'] }}
+                            </a>
+                        @endforeach
+                    </div>
+                </nav>
+            @endif
         @endif
+
+        <x-ui.toasts/>
 
         <div class="mx-auto max-w-7xl px-4 py-8">
             @if (session('status'))

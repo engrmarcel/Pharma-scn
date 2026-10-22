@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 1: foundation, organization, catalogue, customers and suppliers, inventory
+- Web screens are in-process clients of the API (ADR-0024). `InternalApi` runs each call through the same middleware, validation, permissions and business rules as any API client. Field errors appear on the form, and other refusals appear as a message with a reference.
+- One navigation registry drives a Workspace menu grouped by area (supply chain, commerce, field and CRM, finance and insight, connect), the Organization menu, the Administration menu, page banners and section tabs. A page shows only when its module is on and the member has a permission for it.
+- Shared UI kit: toasts, modals, badges, fields, cards, pager, tabs, a product picker (the organization's catalogue first, then the product master) and the product master form.
+- Organization: profile and verification checklist, licences, document upload and download, submission for verification, two-factor requirement; branches, warehouses and bins; members (invite, roles, locations, suspend or remove); subscription limits and usage; audit log; devices (revoke, wipe).
+- Catalogue: our catalogue (SKU, prices, reorder levels, preferred supplier) and proposals for new products or corrections.
+- Customers and suppliers: accounts, contacts, customer statements, supplier price lists and delivery performance.
+- Inventory: stock on hand (by product, low stock, expiring, valuation, batch drill-down), batches (quarantine, release, reject), movements, receiving stock, adjustments, stock counts (count sheet with variances, posting), transfers (dispatch, receive, cancel) and settings.
+
 ### 2026-10-22: Platform documentation with PDF download
 - Six manuals in `docs/manual/`: setup and installation, administration, user guide, application flows (eight diagrams: architecture, request lifecycle, onboarding, order to cash, procure to pay, offline sync, traceability and recall, external integration), API guide, and connecting an external system (gateway connectors, message formats, request signing, webhooks with verification code in PHP and Node.js, go-live checklist, troubleshooting).
 - Diagrams are generated SVG (`php docs/manual/diagrams/build.php`) and embedded in both the web pages and the PDFs.

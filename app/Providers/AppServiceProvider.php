@@ -235,7 +235,10 @@ class AppServiceProvider extends ServiceProvider
         // Livewire component updates re-run the page's tenant and module checks.
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnsureAccountSecurity::class, ResolveTenant::class, EnsureModuleEnabled::class]);
 
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+        // Web screens call the API in-process (ADR-0024); one page view can make several calls.
+        RateLimiter::for('api', fn (Request $request) => $request->attributes->get('web_client')
+            ? Limit::perMinute(600)->by('web:'.$request->user()?->id)
+            : Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
         RateLimiter::for('auth', fn (Request $request) => [
             Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip()),
             Limit::perMinute(30)->by($request->ip()),

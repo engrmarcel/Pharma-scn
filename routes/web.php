@@ -12,8 +12,12 @@ use App\Livewire\Admin\DocumentationCenter;
 use App\Livewire\Admin\LandingPageEditor;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Analytics\ExecutiveDashboard;
+use App\Livewire\Catalogue;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Livewire\FieldForce\SupervisorDashboard;
+use App\Livewire\Inventory;
+use App\Livewire\Organization;
+use App\Livewire\Parties;
 use App\Livewire\Pos\Register;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +51,34 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::get('catalogue', ProductBrowser::class)->name('catalogue');
 
     // Tenant pages: the organization chosen in the switcher, re-validated on every request (and on Livewire updates).
+    // Organization settings (every organization, no module needed).
+    Route::middleware('tenant')->prefix('organization')->name('organization.')->group(function () {
+        Route::get('profile', Organization\Profile::class)->name('profile');
+        Route::get('locations', Organization\Locations::class)->name('locations');
+        Route::get('members', Organization\Members::class)->name('members');
+        Route::get('subscription', Organization\Subscription::class)->name('subscription');
+        Route::get('audit-log', Organization\AuditTrail::class)->name('audit');
+        Route::get('devices', Organization\Devices::class)->name('devices');
+    });
+
+    Route::middleware('tenant')->group(function () {
+        Route::get('catalogue/items', Catalogue\Items::class)->middleware('module:catalogue')->name('catalogue.items');
+        Route::get('catalogue/change-requests', Catalogue\ChangeRequests::class)->name('catalogue.change-requests');
+        Route::get('customers', Parties\Customers::class)->middleware('module:sales|pos|field_force')->name('parties.customers');
+        Route::get('suppliers', Parties\Suppliers::class)->middleware('module:procurement|inventory')->name('parties.suppliers');
+    });
+
+    Route::middleware(['tenant', 'module:inventory|pos'])->prefix('inventory')->name('inventory.')->group(function () {
+        Route::get('stock', Inventory\Stock::class)->name('stock');
+        Route::get('batches', Inventory\Batches::class)->name('batches');
+        Route::get('movements', Inventory\Movements::class)->name('movements');
+        Route::get('receive', Inventory\Receipts::class)->name('receipts');
+        Route::get('adjustments', Inventory\Adjustments::class)->name('adjustments');
+        Route::get('counts', Inventory\Counts::class)->name('counts');
+        Route::get('transfers', Inventory\Transfers::class)->name('transfers');
+        Route::get('settings', Inventory\Settings::class)->name('settings');
+    });
+
     Route::middleware(['tenant', 'module:pos'])->group(function () {
         Route::get('pos', Register::class)->name('pos.register');
         Route::get('pos/receipts/{sale}', PosReceiptController::class)->whereUlid('sale')->name('pos.receipt');
