@@ -116,9 +116,12 @@ class ProcurementTest extends FeatureTestCase
         $this->actingAsApi($owner, $org)->api('POST', 'purchase-orders', ['supplier_id' => $supplier->id, 'warehouse_id' => $main->id, 'lines' => [
             ['product_id' => $product->id, 'quantity' => '3', 'unit_price' => '1234.5678', 'tax_rate' => '7.5'],
         ]])->assertCreated()
-            ->assertJsonPath('data.subtotal', '3703.7034')
-            ->assertJsonPath('data.tax_total', '277.7778') // 277.777755 rounded half-up
-            ->assertJsonPath('data.total', '3981.4812');
+            // Line amounts are rounded to the currency's smallest unit (kobo): 3 × 1234.5678 = 3703.7034 → 3703.70,
+            // VAT 7.5% of 3703.70 = 277.7775 → 277.78 (half-up). Unit prices keep four places.
+            ->assertJsonPath('data.subtotal', '3703.7000')
+            ->assertJsonPath('data.tax_total', '277.7800')
+            ->assertJsonPath('data.total', '3981.4800')
+            ->assertJsonPath('data.lines.0.unit_price', '1234.5678');
 
         $this->assertSame('0.0001', Money::round('0.00005'));
         $this->assertSame('-0.0001', Money::round('-0.00005'));

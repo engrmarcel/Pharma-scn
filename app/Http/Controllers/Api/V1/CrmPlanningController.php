@@ -137,7 +137,7 @@ class CrmPlanningController extends Controller
     public function myDay(Request $request): JsonResponse
     {
         Gate::authorize('field_force.visits.capture');
-        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? today()->toDateString();
+        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? business_today()->toDateString();
 
         $calls = VisitPlanItem::query()->join('visit_plans as p', 'p.id', '=', 'visit_plan_items.visit_plan_id')
             ->join('customers as c', 'c.id', '=', 'visit_plan_items.customer_id')

@@ -50,7 +50,7 @@ class Batch extends Model
 
     public function isExpired(?Carbon $on = null): bool
     {
-        return $this->expiry_date !== null && $this->expiry_date->lt(($on ?? today())->startOfDay());
+        return $this->expiry_date !== null && $this->expiry_date->lt(($on ?? business_today())->startOfDay());
     }
 
     /**

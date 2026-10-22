@@ -31,8 +31,8 @@ class ExecutiveDashboard extends Component
     public function mount(): void
     {
         Gate::authorize('analytics.view');
-        $this->from = today()->subDays(29)->toDateString();
-        $this->to = today()->toDateString();
+        $this->from = business_today()->subDays(29)->toDateString();
+        $this->to = business_today()->toDateString();
     }
 
     public function ask(AssistantService $assistant): void

@@ -75,7 +75,7 @@ class FulfilmentService
                 $soLine->forceFill(['delivered_base_quantity' => bcadd((string) $soLine->delivered_base_quantity, $base, 4)])->save();
             }
 
-            $journal = $this->accounting->deliveryCost('delivery', $delivery->id, "Delivery {$delivery->number} (cost of goods sold)", $deltas, today()->toDateString());
+            $journal = $this->accounting->deliveryCost('delivery', $delivery->id, "Delivery {$delivery->number} (cost of goods sold)", $deltas, business_today()->toDateString());
             $complete = $so->lines()->get()->every(fn ($l) => bccomp((string) $l->delivered_base_quantity, (string) $l->base_quantity, 4) >= 0);
             $so->forceFill(['status' => $complete ? 'delivered' : 'partially_delivered'])->save();
             $delivery->forceFill(['posting_id' => $postings[0] ?? null, 'journal_entry_id' => $journal?->id])->save();
@@ -98,15 +98,16 @@ class FulfilmentService
 
             $invoice = SalesInvoice::query()->create([
                 'number' => $this->numbers->next('INV'), 'customer_id' => $so->customer_id, 'warehouse_id' => $so->warehouse_id, 'sales_order_id' => $so->id,
-                'source' => 'sales_order', 'status' => 'issued', 'currency_code' => $so->currency_code, 'invoice_date' => today(),
-                'due_date' => today()->addDays($so->payment_terms_days), 'created_by' => Auth::id(),
+                'source' => 'sales_order', 'status' => 'issued', 'currency_code' => $so->currency_code, 'invoice_date' => business_today(),
+                'due_date' => business_today()->addDays($so->payment_terms_days), 'created_by' => Auth::id(),
             ]);
 
             $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
             foreach ($billable as $soLine) {
                 $base = bcsub((string) $soLine->delivered_base_quantity, (string) $soLine->invoiced_base_quantity, 4);
                 $qty = bcdiv($base, bcdiv((string) $soLine->base_quantity, (string) $soLine->quantity, 8), 4);
-                $amounts = SalesPricing::amounts($qty, (string) $soLine->unit_price, (string) $soLine->discount_percent, (string) $soLine->tax_rate);
+                $amounts = SalesPricing::amounts($qty, (string) $soLine->unit_price, (string) $soLine->discount_percent, (string) $soLine->tax_rate,
+                    $so->currency_code, app(SalesPricing::class)->pricesIncludeTax());
 
                 $invoice->lines()->create([
                     'sales_order_line_id' => $soLine->id, 'product_id' => $soLine->product_id, 'package_level_code' => $soLine->package_level_code,
@@ -142,7 +143,7 @@ class FulfilmentService
         return DB::transaction(function () use ($customerId, $warehouseId, $source, $currency, $lines) {
             $invoice = SalesInvoice::query()->create([
                 'number' => $this->numbers->next('INV'), 'customer_id' => $customerId, 'warehouse_id' => $warehouseId, 'source' => $source,
-                'status' => 'issued', 'currency_code' => $currency, 'invoice_date' => today(), 'due_date' => today(), 'created_by' => Auth::id(),
+                'status' => 'issued', 'currency_code' => $currency, 'invoice_date' => business_today(), 'due_date' => business_today(), 'created_by' => Auth::id(),
             ]);
 
             $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
@@ -183,7 +184,7 @@ class FulfilmentService
 
             $note = CreditNote::query()->create([
                 'number' => $this->numbers->next('CN'), 'sales_invoice_id' => $inv->id, 'customer_id' => $inv->customer_id, 'reason_code' => $reasonCode,
-                'notes' => $notes, 'credit_date' => today(), 'currency_code' => $inv->currency_code, 'subtotal' => 0, 'tax_total' => 0, 'total' => 0,
+                'notes' => $notes, 'credit_date' => business_today(), 'currency_code' => $inv->currency_code, 'subtotal' => 0, 'tax_total' => 0, 'total' => 0,
                 'return_warehouse_id' => $returnWarehouseId, 'created_by' => Auth::id(),
             ]);
 
@@ -203,8 +204,8 @@ class FulfilmentService
 
                 // Net (after discount) and tax, pro rata to the credited share of the invoice line.
                 $share = bcdiv($base, (string) $invLine->base_quantity, 10);
-                $lineNet = Money::round(bcmul(bcsub((string) $invLine->line_subtotal, (string) $invLine->line_discount, 4), $share, 10));
-                $lineTax = Money::round(bcmul((string) $invLine->line_tax, $share, 10));
+                $lineNet = Money::forCurrency(bcmul(bcsub((string) $invLine->line_subtotal, (string) $invLine->line_discount, 4), $share, 10), $inv->currency_code);
+                $lineTax = Money::forCurrency(bcmul((string) $invLine->line_tax, $share, 10), $inv->currency_code);
 
                 $batchId = $line['batch_id'] ?? null;
                 $state = $line['restock_state'] ?? ($batchId ? 'quarantined' : null);

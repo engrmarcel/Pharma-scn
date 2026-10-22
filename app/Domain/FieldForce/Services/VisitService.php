@@ -141,7 +141,7 @@ class VisitService
                 FieldFollowUp::query()->firstOrCreate(['automation_key' => "visit_outcome:{$locked->id}"], [
                     'customer_id' => $locked->customer_id, 'field_visit_id' => $locked->id, 'assigned_to' => Auth::id(), 'created_by' => null,
                     'title' => $locked->outcome === 'rescheduled' ? "Rescheduled visit {$locked->number}: arrange a new date" : "Customer unavailable at visit {$locked->number}: visit again",
-                    'due_on' => today()->addWeekday()->toDateString(), 'source' => 'automation',
+                    'due_on' => business_today()->addWeekday()->toDateString(), 'source' => 'automation',
                 ]);
             }
 

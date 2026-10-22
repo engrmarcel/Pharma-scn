@@ -176,12 +176,12 @@ class FinanceController extends Controller
     public function report(Request $request, string $report, FinanceReports $reports): JsonResponse
     {
         Gate::authorize('finance.view');
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $d = $request->validate([
             'as_of' => ['nullable', 'date'], 'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
             'account_id' => [$report === 'account-ledger' ? 'required' : 'nullable', 'ulid', Rule::exists('accounts', 'id')->where('organization_id', $this->tenant->id())],
         ]);
-        $from = $d['from'] ?? today()->startOfMonth()->toDateString();
+        $from = $d['from'] ?? business_today()->startOfMonth()->toDateString();
         $to = $d['to'] ?? $today;
 
         return response()->json(['data' => match ($report) {

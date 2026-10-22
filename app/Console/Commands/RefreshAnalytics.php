@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Domain\Analytics\Services\DemandFacts;
 use App\Domain\Organizations\Models\Organization;
+use App\Support\Tenancy\TenantContext;
 use Illuminate\Console\Command;
 
 /**
@@ -17,7 +18,7 @@ class RefreshAnalytics extends Command
 
     protected $description = 'Rebuild the daily demand facts used by analytics and forecasting';
 
-    public function handle(DemandFacts $facts): int
+    public function handle(DemandFacts $facts, TenantContext $tenant): int
     {
         $days = $this->option('full') ? config('analytics.demand_history_days') : (int) ($this->option('days') ?: config('analytics.refresh_recent_days'));
         $organizations = Organization::query()->where('status', 'active')
@@ -27,7 +28,8 @@ class RefreshAnalytics extends Command
             if (! $organization->hasModule('inventory') && ! $organization->hasModule('pos')) {
                 continue;
             }
-            $result = $facts->refresh($organization->id, today()->subDays($days - 1), today());
+            // In the organization's context, so the days are its local business days.
+            $result = $tenant->runAs($organization, fn () => $facts->refresh($organization->id, business_today()->subDays($days - 1), business_today()));
             $this->line("{$organization->id}: {$result['rows']} rows, {$result['from']} to {$result['to']}");
         }
 

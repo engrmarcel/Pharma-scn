@@ -40,7 +40,7 @@ class InventoryController extends Controller
             'per_page' => ['nullable', 'integer', 'between:1,200'],
         ]);
 
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $sellable = "b.stock_state = 'available' AND bt.quality_status = 'released' AND bt.recall_status = 'none' AND (bt.expiry_date IS NULL OR bt.expiry_date >= '{$today}')";
 
         $query = DB::table('inventory_balances as b')
@@ -130,9 +130,9 @@ class InventoryController extends Controller
             ->where('b.organization_id', $this->tenant->id())
             ->where('b.quantity', '>', 0)
             ->whereNotNull('bt.expiry_date')
-            ->where('bt.expiry_date', '<=', today()->addDays($days)->toDateString())
+            ->where('bt.expiry_date', '<=', business_today()->addDays($days)->toDateString())
             ->select(['b.warehouse_id', 'b.product_id', 'p.display_name as product_name', 'b.batch_id', 'bt.batch_number', 'bt.expiry_date', 'b.stock_state', 'b.quantity'])
-            ->selectRaw('bt.expiry_date < ? as expired', [today()->toDateString()])
+            ->selectRaw('bt.expiry_date < ? as expired', [business_today()->toDateString()])
             ->orderBy('bt.expiry_date');
         $this->locations->scope($query, 'b.warehouse_id');
 

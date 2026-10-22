@@ -85,6 +85,13 @@ class ResolveTenant
             throw new BusinessRuleViolation('organization_suspended', 'This organization is suspended. Contact platform support.', 403);
         }
 
+        // Regional deployments: an organization's data lives in one region; a deployment serves only its own.
+        $region = $membership->organization->data_region;
+        if (config('platform.regions.enforce') && $region !== config('platform.regions.current')) {
+            throw new BusinessRuleViolation('organization_in_other_region', 'This organization is hosted in another region.', 421,
+                array_filter(['region' => $region, 'url' => config("platform.regions.urls.{$region}")]));
+        }
+
         // Organization-level two-factor requirement (only effective when the platform policy allows two-factor).
         if ($this->policy->mfaRequiredFor($user, $membership->organization) && ! $this->twoFactor->isEnabled($user)) {
             throw new BusinessRuleViolation('mfa_enrollment_required', 'This organization requires two-factor authentication. Set it up to continue.', 403);

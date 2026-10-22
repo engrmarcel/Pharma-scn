@@ -59,7 +59,7 @@ class DemandFacts
      */
     public function averageDaily(string $organizationId, ?array $warehouses, int $days, ?Carbon $until = null): Collection
     {
-        $until ??= today();
+        $until ??= business_today();
         $from = $until->copy()->subDays($days - 1)->toDateString();
 
         return AnalyticsDb::table('analytics_daily_demand')->where('organization_id', $organizationId)

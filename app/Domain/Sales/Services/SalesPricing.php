@@ -5,6 +5,7 @@ namespace App\Domain\Sales\Services;
 use App\Domain\Catalogue\Services\UnitConverter;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Parties\Models\Customer;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Domain\Sales\Models\PriceList;
 use App\Domain\Sales\Models\PriceListItem;
 use App\Domain\Sales\Models\TaxRate;
@@ -78,18 +79,41 @@ class SalesPricing
         return ['category' => $category, 'rate' => (string) $rate];
     }
 
+    /** Whether shelf prices include tax in the organization's country (tax.prices_include_tax). */
+    public function pricesIncludeTax(): bool
+    {
+        return (bool) CountryProfile::of($this->tenant->organization()->country)->get('tax.prices_include_tax');
+    }
+
     /**
-     * Discount applies before tax; tax applies to the discounted amount.
+     * Line amounts. Discount applies before tax; tax applies to the discounted amount.
+     * With a currency, each amount is rounded to its smallest unit (line-level rounding).
+     *
+     * Tax-inclusive prices (countries where shelf prices include tax): the unit price and
+     * discount include tax; the stored subtotal and discount are the ex-tax shares, so that
+     * subtotal − discount + tax = total = the price paid, and revenue and tax post correctly.
      *
      * @return array{subtotal: string, discount: string, tax: string, total: string}
      */
-    public static function amounts(string $quantity, string $unitPrice, string $discountPercent, string $taxRate): array
+    public static function amounts(string $quantity, string $unitPrice, string $discountPercent, string $taxRate, ?string $currency = null, bool $taxInclusive = false): array
     {
-        $subtotal = Money::mul($quantity, $unitPrice);
-        $discount = Money::round(bcdiv(bcmul($subtotal, $discountPercent, 10), '100', 10));
-        $net = bcsub($subtotal, $discount, 4);
-        $tax = Money::round(bcdiv(bcmul($net, $taxRate, 10), '100', 10));
+        $round = fn (string $v) => $currency ? Money::forCurrency($v, $currency) : Money::round($v);
+        $gross = $round(bcmul($quantity, $unitPrice, 10));
+        $discount = $round(bcdiv(bcmul($gross, $discountPercent, 10), '100', 10));
 
-        return ['subtotal' => $subtotal, 'discount' => $discount, 'tax' => $tax, 'total' => Money::add($net, $tax)];
+        if (! $taxInclusive) {
+            $net = bcsub($gross, $discount, 4);
+            $tax = $round(bcdiv(bcmul($net, $taxRate, 10), '100', 10));
+
+            return ['subtotal' => $gross, 'discount' => $discount, 'tax' => $tax, 'total' => bcadd($net, $tax, 4)];
+        }
+
+        $total = bcsub($gross, $discount, 4);
+        $divisor = bcadd('1', bcdiv($taxRate, '100', 10), 10);
+        $subtotal = $round(bcdiv($gross, $divisor, 10));
+        $discountExTax = $round(bcdiv($discount, $divisor, 10));
+        $tax = bcsub($total, bcsub($subtotal, $discountExTax, 4), 4);
+
+        return ['subtotal' => $subtotal, 'discount' => $discountExTax, 'tax' => $tax, 'total' => $total];
     }
 }

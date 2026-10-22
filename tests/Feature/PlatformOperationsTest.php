@@ -20,7 +20,7 @@ class PlatformOperationsTest extends FeatureTestCase
     {
         $this->getJson('/api/v1/health')
             ->assertOk()
-            ->assertExactJson(['status' => 'ok', 'checks' => ['database' => 'ok', 'cache' => 'ok', 'storage' => 'ok']]);
+            ->assertExactJson(['status' => 'ok', 'region' => 'default', 'checks' => ['database' => 'ok', 'cache' => 'ok', 'storage' => 'ok']]);
     }
 
     public function test_operations_status_and_failed_jobs_are_staff_only_and_hide_payloads(): void

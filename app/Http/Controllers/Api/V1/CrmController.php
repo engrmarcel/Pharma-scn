@@ -267,7 +267,7 @@ class CrmController extends Controller
 
         $query = DetailingMessage::query()->when($f['product_id'] ?? null, fn ($q, $v) => $q->where('product_id', $v));
         if (! Gate::allows('crm.detailing.manage')) {
-            $query->where('status', 'approved')->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', today()->toDateString()));
+            $query->where('status', 'approved')->where(fn ($q) => $q->whereNull('valid_until')->orWhere('valid_until', '>=', business_today()->toDateString()));
         } elseif ($f['status'] ?? null) {
             $query->where('status', $f['status']);
         }
@@ -357,11 +357,11 @@ class CrmController extends Controller
     {
         $last = $c->getAttribute('last_completed_visit_at');
         // Never visited: due now. Otherwise the last completed visit plus the call frequency.
-        $due = $c->visit_frequency_days ? ($last ? now()->parse($last)->startOfDay()->addDays($c->visit_frequency_days) : today()) : null;
+        $due = $c->visit_frequency_days ? ($last ? now()->parse($last)->startOfDay()->addDays($c->visit_frequency_days) : business_today()) : null;
 
         return $c->only(['id', 'code', 'name', 'type', 'status', 'city', 'territory_id', 'assigned_representative_id', 'tier', 'visit_frequency_days', 'potential_value'])
             + ['last_completed_visit_at' => $last ? now()->parse($last)->toIso8601String() : null, 'next_visit_due' => $due?->toDateString(),
-                'visit_overdue' => $due !== null && $due->lte(today())];
+                'visit_overdue' => $due !== null && $due->lte(business_today())];
     }
 
     private function contact(PartyContact $c): array

@@ -128,7 +128,7 @@ class SegmentService
         }
         if (isset($criteria['min_revenue_12m']) || isset($criteria['max_revenue_12m'])) {
             $revenue = DB::table('sales_invoices')->where('organization_id', $this->tenant->id())->where('status', 'issued')
-                ->where('invoice_date', '>=', today()->subDays(365)->toDateString())
+                ->where('invoice_date', '>=', business_today()->subDays(365)->toDateString())
                 ->groupBy('customer_id')->selectRaw('customer_id, SUM(total - amount_credited) as revenue');
             $q->leftJoinSub($revenue, 'r', 'r.customer_id', '=', 'c.id');
             if (isset($criteria['min_revenue_12m'])) {

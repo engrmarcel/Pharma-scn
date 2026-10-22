@@ -19,6 +19,18 @@ final class Money
         return bcadd($rounded, '0', $scale);
     }
 
+    /** Decimal places of the currency's smallest unit (config/currencies.php; 2 when unknown). */
+    public static function minorUnits(string $currency): int
+    {
+        return (int) config("currencies.{$currency}.minor_units", 2);
+    }
+
+    /** Rounded to the currency's smallest unit (half-up), kept in the 4-place storage format. */
+    public static function forCurrency(string $value, string $currency): string
+    {
+        return bcadd(self::round($value, self::minorUnits($currency)), '0', self::SCALE);
+    }
+
     public static function mul(string $a, string $b): string
     {
         return self::round(bcmul($a, $b, 10));
@@ -34,11 +46,12 @@ final class Money
         return self::round($sum);
     }
 
-    /** @return array{0: string, 1: string} [subtotal, tax] for quantity × unit price at a percent tax rate */
-    public static function line(string $quantity, string $unitPrice, string $taxRatePercent = '0'): array
+    /** @return array{0: string, 1: string} [subtotal, tax] for quantity × unit price at a percent tax rate, rounded to the currency when given */
+    public static function line(string $quantity, string $unitPrice, string $taxRatePercent = '0', ?string $currency = null): array
     {
-        $subtotal = self::mul($quantity, $unitPrice);
-        $tax = self::round(bcdiv(bcmul($subtotal, $taxRatePercent, 10), '100', 10));
+        $round = fn (string $v) => $currency ? self::forCurrency($v, $currency) : self::round($v);
+        $subtotal = $round(bcmul($quantity, $unitPrice, 10));
+        $tax = $round(bcdiv(bcmul($subtotal, $taxRatePercent, 10), '100', 10));
 
         return [$subtotal, $tax];
     }

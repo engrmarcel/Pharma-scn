@@ -111,7 +111,7 @@ class PosRefundService
                 $this->sessions->cash($shift, 'refund', bcmul((string) $note->total, '-1', 4), "Refund {$locked->number}", $sale->id);
                 $locked->pos_shift_id = $shift->id;
             }
-            $this->payments->refundCustomer($customer, (string) $note->total, $locked->refund_method === 'cash' ? 'cash' : 'bank_transfer', today()->toDateString(), $locked->number, "POS refund for {$sale->number}");
+            $this->payments->refundCustomer($customer, (string) $note->total, $locked->refund_method === 'cash' ? 'cash' : 'bank_transfer', business_today()->toDateString(), $locked->number, "POS refund for {$sale->number}");
 
             $locked->forceFill(['status' => 'approved', 'amount' => $note->total, 'credit_note_id' => $note->id, 'decided_by' => $approver->id, 'decided_at' => now(), 'decision_notes' => $notes])->save();
             $this->audit->record('pos_refund.approved', $locked, new: ['credit_note' => $note->number, 'amount' => (string) $note->total]);

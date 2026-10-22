@@ -32,6 +32,19 @@ return [
     // Keys an organization may override for its own documents/receipts.
     'tenant_brandable_keys' => ['display_name', 'logo_url', 'primary_color', 'secondary_color', 'support_email', 'support_phone'],
 
+    // Forces one time zone for business dates (BusinessCalendar); unset in production. The test suite sets UTC.
+    'business_timezone' => env('BUSINESS_TIMEZONE'),
+
+    // Regional deployment (spec §20, ADR-0023). Each deployment serves the organizations whose data_region is
+    // its own; organizations get their region from their country's residency setting at registration.
+    'regions' => [
+        'current' => env('PLATFORM_REGION', 'default'),
+        'enforce' => (bool) env('PLATFORM_REGION_ENFORCE', false),
+        // Where clients find each region, e.g. PLATFORM_REGION_URLS="africa-west=https://ng.example.com,africa-east=https://ke.example.com"
+        'urls' => collect(explode(',', (string) env('PLATFORM_REGION_URLS', '')))->filter()
+            ->mapWithKeys(fn ($pair) => [trim(strstr($pair, '=', true)) => trim(substr(strstr($pair, '='), 1))])->all(),
+    ],
+
     'tenancy' => [
         // API clients select the acting organization with this header.
         'header' => 'X-Organization-Id',

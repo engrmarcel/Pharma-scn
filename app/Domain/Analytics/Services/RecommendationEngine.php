@@ -244,7 +244,7 @@ class RecommendationEngine
     private function receivingWarehouse(string $org, string $productId): ?string
     {
         return AnalyticsDb::table('analytics_daily_demand')->where('organization_id', $org)->where('product_id', $productId)
-            ->where('day', '>=', today()->subDays(config('analytics.demand_window_days'))->toDateString())
+            ->where('day', '>=', business_today()->subDays(config('analytics.demand_window_days'))->toDateString())
             ->groupBy('warehouse_id')->orderByRaw('SUM(quantity_out) DESC')->value('warehouse_id')
             ?? AnalyticsDb::table('inventory_balances')->where('organization_id', $org)->where('product_id', $productId)
                 ->groupBy('warehouse_id')->orderByRaw('SUM(quantity) DESC')->value('warehouse_id')

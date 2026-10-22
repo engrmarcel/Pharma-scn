@@ -12,6 +12,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 /**
  * Dashboards (spec §19.1). Every figure is computed for the current organization and,
@@ -53,8 +54,9 @@ class AnalyticsController extends Controller
     public function platform(Request $request, PlatformAnalytics $platform): JsonResponse
     {
         [$from, $to] = $this->period($request);
+        $currency = $request->validate(['reporting_currency' => ['nullable', Rule::in(array_keys(config('currencies')))]])['reporting_currency'] ?? null;
 
-        return response()->json(['data' => $platform->build($from, $to)]);
+        return response()->json(['data' => $platform->build($from, $to, $currency)]);
     }
 
     private function fieldForce(Request $request, string $from, string $to): array
@@ -69,6 +71,6 @@ class AnalyticsController extends Controller
     {
         $data = $request->validate(['from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from']]);
 
-        return [$data['from'] ?? today()->startOfMonth()->toDateString(), $data['to'] ?? today()->toDateString()];
+        return [$data['from'] ?? business_today()->startOfMonth()->toDateString(), $data['to'] ?? business_today()->toDateString()];
     }
 }

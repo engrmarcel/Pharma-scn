@@ -88,7 +88,7 @@ class SyncIssueService
             $data['batch_number'] = $existing->batch_number;
             $data['expiry_date'] = $existing->expiry_date?->toDateString();
         }
-        $expired = filled($data['expiry_date'] ?? null) && Carbon::parse($data['expiry_date'])->lt(today());
+        $expired = filled($data['expiry_date'] ?? null) && Carbon::parse($data['expiry_date'])->lt(business_today());
 
         // 1. Record the stock that was physically there (Dr Inventory, Cr Inventory adjustment), in base units.
         $received = $this->receipts->receive(Warehouse::query()->findOrFail($sale->warehouse_id), [array_filter([
@@ -103,7 +103,7 @@ class SyncIssueService
         $state = $batch->quality_status === 'released' && $batch->recall_status === 'none' ? 'available' : 'quarantined';
         $this->ledger->post([new StockLine($sale->warehouse_id, $batch->id, $state, bcmul($quantity, '-1', 4), 'sale')], 'sale', 'pos_sale_line', $line->id);
         PosSaleAllocation::query()->create(['pos_sale_line_id' => $line->id, 'batch_id' => $batch->id, 'base_quantity' => $quantity, 'unit_cost' => $batch->unit_cost]);
-        $this->accounting->deliveryCost('pos_sale', $sale->id, "POS sale {$sale->number}: offline shortfall issued", [['batch_id' => $batch->id, 'quantity' => $quantity]], today()->toDateString());
+        $this->accounting->deliveryCost('pos_sale', $sale->id, "POS sale {$sale->number}: offline shortfall issued", [['batch_id' => $batch->id, 'quantity' => $quantity]], business_today()->toDateString());
         $line->forceFill(['unallocated_base_quantity' => 0])->save();
 
         return 'found_stock_recorded';

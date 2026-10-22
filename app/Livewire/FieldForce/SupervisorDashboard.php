@@ -31,7 +31,7 @@ class SupervisorDashboard extends Component
     public function mount(): void
     {
         $this->authorizeView();
-        $this->date = today()->toDateString();
+        $this->date = business_today()->toDateString();
     }
 
     public function approve(string $planId, VisitPlanService $plans, FieldForceScope $scope): void
@@ -60,7 +60,7 @@ class SupervisorDashboard extends Component
 
         return view('livewire.field-force.supervisor-dashboard', [
             'board' => $dashboard->build($this->date),
-            'analytics' => Gate::allows('field_force.reports.view') ? $analytics->build(today()->subDays(29)->toDateString(), today()->toDateString()) : null,
+            'analytics' => Gate::allows('field_force.reports.view') ? $analytics->build(business_today()->subDays(29)->toDateString(), business_today()->toDateString()) : null,
         ]);
     }
 

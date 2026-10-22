@@ -59,7 +59,7 @@ class MarketplaceAccess
 
     public function classification(string $productId, string $countryCode): ?string
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         return DB::table('product_classifications')->where('product_id', $productId)->where('country_code', $countryCode)
             ->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', $today))

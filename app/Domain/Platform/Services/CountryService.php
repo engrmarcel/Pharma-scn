@@ -82,8 +82,8 @@ class CountryService
             "Locale {$country->default_locale} for dates and numbers.");
 
         $category = $p->get('tax.default_category');
-        $categories = TaxRate::query()->where('country_code', $country->code)->where('effective_from', '<=', today())
-            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', today()))->pluck('category_code')->unique();
+        $categories = TaxRate::query()->where('country_code', $country->code)->where('effective_from', '<=', business_today())
+            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', business_today()))->pluck('category_code')->unique();
         $add('tax_rates', $categories->isNotEmpty(), $categories->isNotEmpty() ? 'Tax categories in force: '.$categories->implode(', ').'.' : 'No tax rates in force.');
         $add('tax_default_category', $category === null || $categories->contains($category),
             $category === null ? 'No default tax category: every catalogue item needs its own.' : "Default category {$category}".($categories->contains($category) ? ' has a rate in force.' : ' has no rate in force.'));

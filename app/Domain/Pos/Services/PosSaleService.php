@@ -102,7 +102,7 @@ class PosSaleService
     {
         return DB::transaction(function () use ($sale, $lines) {
             $locked = $this->lock($sale, ['open', 'held']);
-            $this->writeLines($locked, $lines, today()->toDateString());
+            $this->writeLines($locked, $lines, business_today()->toDateString());
             $locked->forceFill(['status' => 'open'])->save();
 
             return $locked->load('lines', 'payments');
@@ -160,7 +160,7 @@ class PosSaleService
                 $issues[] = ['type' => 'prescription_control', 'severity' => 'high', 'line' => $i, 'product_id' => $line['product_id'], 'details' => ['code' => $e->errorCode, 'message' => $e->getMessage()]];
             }
             $tax = $this->pricing->tax($line['product_id'], $date);
-            $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate']);
+            $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate'], $locked->currency_code, $this->pricing->pricesIncludeTax());
 
             $locked->lines()->create([
                 'product_id' => $line['product_id'], 'package_level_code' => $level->code, 'quantity' => $qty,
@@ -507,14 +507,14 @@ class PosSaleService
                 'tax_category_code', 'tax_rate', 'line_subtotal', 'line_discount', 'line_tax', 'line_total']);
         }
 
-        $this->accounting->deliveryCost('pos_sale', $sale->id, "POS sale {$sale->number} (cost of goods sold)", $deltas, today()->toDateString());
+        $this->accounting->deliveryCost('pos_sale', $sale->id, "POS sale {$sale->number} (cost of goods sold)", $deltas, business_today()->toDateString());
         $invoice = $this->fulfilment->issueDirectInvoice($customer->id, $sale->warehouse_id, 'pos', $sale->currency_code, $invoiceLines);
         foreach ($sale->lines()->orderBy('id')->get()->values() as $i => $line) {
             $line->forceFill(['sales_invoice_line_id' => $invoice->lines[$i]->id])->save();
         }
 
         foreach ($sale->payments()->where('status', 'confirmed')->get() as $payment) {
-            $receipt = $this->payments->receiveFromCustomer($customer, (string) $payment->amount, $payment->method, today()->toDateString(),
+            $receipt = $this->payments->receiveFromCustomer($customer, (string) $payment->amount, $payment->method, business_today()->toDateString(),
                 [$invoice->id => (string) $payment->amount], $payment->provider_reference ?? $payment->external_approval_code, null, "POS sale {$sale->number}");
             $payment->forceFill(['finance_payment_id' => $receipt->id])->save();
         }

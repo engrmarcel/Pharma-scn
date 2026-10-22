@@ -95,6 +95,7 @@ use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\View\Composers\NavigationComposer;
 use App\Models\User;
+use App\Support\BusinessCalendar;
 use App\Support\Events\EventRecorder;
 use App\Support\Events\RecorderChain;
 use App\Support\Tenancy\TenantContext;
@@ -124,6 +125,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(UnitConverter::class);
         $this->app->scoped(ChartOfAccounts::class);
         $this->app->scoped(FieldForceScope::class);
+        $this->app->scoped(BusinessCalendar::class);
         // Demand forecasting model (spec §19.2): the local statistical one unless configured otherwise.
         $this->app->bind(ForecastProvider::class, fn ($app) => $app->make(config('analytics.forecast.provider')));
         // Reporting assistant's external planner (used only with platform configuration and organization consent).

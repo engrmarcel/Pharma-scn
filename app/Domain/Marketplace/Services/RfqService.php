@@ -170,7 +170,7 @@ class RfqService
     {
         return DB::transaction(function () use ($quote, $deliveryWarehouseId) {
             $locked = $this->decideQuote($quote, 'buyer', ['submitted'], 'accepted', null);
-            if ($locked->valid_until->lt(today())) {
+            if ($locked->valid_until->lt(business_today())) {
                 throw new BusinessRuleViolation('quote_expired', 'This quotation has expired.', 409);
             }
             $rfq = $locked->rfq_id ? Rfq::query()->lockForUpdate()->find($locked->rfq_id) : null;

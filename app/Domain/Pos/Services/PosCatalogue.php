@@ -19,7 +19,7 @@ class PosCatalogue
     public function lookup(PosTerminal $terminal, string $query, int $limit = 25): Collection
     {
         $q = trim($query);
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $like = '%'.addcslashes($q, '%_').'%';
         $orgId = $this->tenant->id();
 

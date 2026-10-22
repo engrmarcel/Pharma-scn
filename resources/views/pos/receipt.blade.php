@@ -16,15 +16,15 @@
 <body onload="window.print()">
     <h1>{{ $r['header']['organization'] }}</h1>
     <div class="c muted">{{ $r['header']['address'] }}@if ($r['header']['phone']) · {{ $r['header']['phone'] }}@endif</div>
-    @if ($r['header']['tax_identification_number'])<div class="c muted">TIN {{ $r['header']['tax_identification_number'] }}</div>@endif
+    @if ($r['header']['tax_identification_number'])<div class="c muted">{{ $r['display']['tax_identification_label'] }}: {{ $r['header']['tax_identification_number'] }}</div>@endif
     <hr>
     <div>Sale {{ $r['sale_number'] }} · Invoice {{ $r['invoice_number'] }}</div>
-    <div class="muted">{{ \Illuminate\Support\Carbon::parse($r['completed_at'])->format('Y-m-d H:i') }} · {{ $r['terminal'] }} · {{ $r['cashier'] }}</div>
+    <div class="muted">{{ $r['display']['completed_at'] }} · {{ $r['terminal'] }} · {{ $r['cashier'] }}</div>
     <hr>
     <table>
-        @foreach ($r['lines'] as $l)
+        @foreach ($r['lines'] as $li => $l)
             <tr><td colspan="2">{{ $l['product'] }}</td></tr>
-            <tr><td class="muted">{{ rtrim(rtrim($l['quantity'], '0'), '.') }} {{ $l['package_level'] }} × {{ $l['unit_price'] }}@if ((float) $l['discount'] > 0) (−{{ $l['discount'] }})@endif</td><td class="r">{{ $l['total'] }}</td></tr>
+            <tr><td class="muted">{{ rtrim(rtrim($l['quantity'], '0'), '.') }} {{ $l['package_level'] }} × {{ $r['display']['lines'][$li]['unit_price'] }}@if ((float) $l['discount'] > 0) (−{{ $r['display']['lines'][$li]['discount'] }})@endif</td><td class="r">{{ $r['display']['lines'][$li]['total'] }}</td></tr>
             @foreach ($l['batches'] as $b)
                 <tr><td class="muted" colspan="2">&nbsp;Batch {{ $b['batch_number'] }}@if ($b['expiry_date']) exp {{ $b['expiry_date'] }}@endif</td></tr>
             @endforeach
@@ -33,14 +33,14 @@
     </table>
     <hr>
     <table>
-        <tr><td>Subtotal</td><td class="r">{{ $r['totals']['subtotal'] }}</td></tr>
-        <tr><td>Discount</td><td class="r">{{ $r['totals']['discount'] }}</td></tr>
-        <tr><td>Tax</td><td class="r">{{ $r['totals']['tax'] }}</td></tr>
-        <tr><td><strong>Total {{ $r['currency_code'] }}</strong></td><td class="r"><strong>{{ $r['totals']['total'] }}</strong></td></tr>
-        @foreach ($r['payments'] as $p)
-            <tr><td>Paid ({{ str_replace('_', ' ', $p['method']) }})</td><td class="r">{{ $p['tendered'] ?? $p['amount'] }}</td></tr>
+        <tr><td>Subtotal</td><td class="r">{{ $r['display']['money']['subtotal'] }}</td></tr>
+        <tr><td>Discount</td><td class="r">{{ $r['display']['money']['discount'] }}</td></tr>
+        <tr><td>Tax</td><td class="r">{{ $r['display']['money']['tax'] }}</td></tr>
+        <tr><td><strong>Total</strong></td><td class="r"><strong>{{ $r['display']['money']['total'] }}</strong></td></tr>
+        @foreach ($r['payments'] as $pi => $p)
+            <tr><td>Paid ({{ str_replace('_', ' ', $p['method']) }})</td><td class="r">{{ $r['display']['payments'][$pi] }}</td></tr>
         @endforeach
-        <tr><td>Change</td><td class="r">{{ $r['totals']['change'] }}</td></tr>
+        <tr><td>Change</td><td class="r">{{ $r['display']['money']['change'] }}</td></tr>
     </table>
     <hr>
     <div class="c muted">{{ $r['footer'] }}</div>

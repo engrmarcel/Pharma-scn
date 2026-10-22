@@ -49,7 +49,7 @@ class SalesOrderService
             $this->assertCustomerActive($customer);
             $quote = Quotation::query()->create([
                 'number' => $this->numbers->next('QT'), 'customer_id' => $customer->id, 'warehouse_id' => $warehouse->id,
-                'status' => 'draft', 'currency_code' => $customer->currency_code, 'valid_until' => $validUntil ?? today()->addDays(14)->toDateString(),
+                'status' => 'draft', 'currency_code' => $customer->currency_code, 'valid_until' => $validUntil ?? business_today()->addDays(14)->toDateString(),
                 'notes' => $notes, 'created_by' => Auth::id(),
             ]);
             $this->writeLines($quote, $customer, $warehouse, $lines);
@@ -91,7 +91,7 @@ class SalesOrderService
             $this->assertCustomerActive($customer);
             $order = SalesOrder::query()->create([
                 'number' => $this->numbers->next('SO'), 'customer_id' => $customer->id, 'warehouse_id' => $warehouse->id, 'quotation_id' => $quotationId,
-                'status' => 'draft', 'currency_code' => $customer->currency_code, 'order_date' => today(), 'requested_date' => $requestedDate,
+                'status' => 'draft', 'currency_code' => $customer->currency_code, 'order_date' => business_today(), 'requested_date' => $requestedDate,
                 'payment_terms_days' => $customer->payment_terms_days, 'notes' => $notes, 'created_by' => Auth::id(),
             ]);
             $this->writeLines($order, $customer, $warehouse, $lines);
@@ -216,7 +216,7 @@ class SalesOrderService
         }
 
         $document->lines()->delete();
-        $date = today()->toDateString();
+        $date = business_today()->toDateString();
         $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
 
         foreach ($lines as $i => $line) {
@@ -232,7 +232,7 @@ class SalesOrderService
 
             $tax = $this->pricing->tax($line['product_id'], $date);
             $discount = (string) ($line['discount_percent'] ?? '0');
-            $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate']);
+            $amounts = SalesPricing::amounts($qty, $price, $discount, $tax['rate'], $document->currency_code, $this->pricing->pricesIncludeTax());
 
             $document->lines()->create([
                 'product_id' => $line['product_id'],

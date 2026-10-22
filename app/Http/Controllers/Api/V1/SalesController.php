@@ -263,7 +263,7 @@ class SalesController extends Controller
         $customer = $this->visibility->visibleCustomer($customerId);
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from']]);
 
-        return response()->json(['data' => $reports->customerStatement($customer->id, $d['from'] ?? today()->subMonths(3)->toDateString(), $d['to'] ?? today()->toDateString())]);
+        return response()->json(['data' => $reports->customerStatement($customer->id, $d['from'] ?? business_today()->subMonths(3)->toDateString(), $d['to'] ?? business_today()->toDateString())]);
     }
 
     public function receivablesAging(Request $request, FinanceReports $reports): JsonResponse
@@ -272,7 +272,7 @@ class SalesController extends Controller
         // Organization-wide figures: not for members restricted to assigned customers.
         abort_unless($this->visibility->seesAllCustomers(), 403);
 
-        return response()->json(['data' => $reports->receivablesAging($request->validate(['as_of' => ['nullable', 'date']])['as_of'] ?? today()->toDateString())]);
+        return response()->json(['data' => $reports->receivablesAging($request->validate(['as_of' => ['nullable', 'date']])['as_of'] ?? business_today()->toDateString())]);
     }
 
     public function settings(SalesPolicy $policy): JsonResponse

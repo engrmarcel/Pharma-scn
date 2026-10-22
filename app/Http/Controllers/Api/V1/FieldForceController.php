@@ -343,7 +343,7 @@ class FieldForceController extends Controller
         Gate::authorize('field_force.reports.view');
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from']]);
 
-        return response()->json(['data' => $reports->activity($d['from'] ?? today()->startOfMonth()->toDateString(), $d['to'] ?? today()->toDateString())]);
+        return response()->json(['data' => $reports->activity($d['from'] ?? business_today()->startOfMonth()->toDateString(), $d['to'] ?? business_today()->toDateString())]);
     }
 
     // ---- Helpers ------------------------------------------------------------------------

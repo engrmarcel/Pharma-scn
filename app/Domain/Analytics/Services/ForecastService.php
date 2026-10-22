@@ -26,7 +26,7 @@ class ForecastService
     /** Without permission checks: for the recommendation engine, which runs as the organization. */
     public function build(string $org, string $productId, ?array $warehouses, int $horizonWeeks, int $historyWeeks = 52): array
     {
-        $thisWeek = today()->startOfWeek();
+        $thisWeek = business_today()->startOfWeek();
         $series = $this->demand->series($org, $productId, $warehouses, $thisWeek->copy()->subWeeks($historyWeeks), $thisWeek->copy()->subDay(), 'week');
         // Weeks before the first recorded sale are not demand history.
         while ($series !== [] && bccomp($series[0]['quantity'], '0', 4) === 0) {

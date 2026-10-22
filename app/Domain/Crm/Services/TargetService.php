@@ -108,7 +108,7 @@ class TargetService
 
         $actual = bcadd((string) ($actual ?? '0'), '0', 4);
         $days = $target->period_start->diffInDays($target->period_end) + 1;
-        $elapsed = max(0, min($days, (int) $target->period_start->diffInDays(today(), false) + 1));
+        $elapsed = max(0, min($days, (int) $target->period_start->diffInDays(business_today(), false) + 1));
         $expected = bcmul((string) $target->target_value, (string) round($elapsed / $days, 6), 4);
         $percent = bccomp((string) $target->target_value, '0', 4) > 0 ? round((float) $actual / (float) $target->target_value * 100, 1) : null;
 

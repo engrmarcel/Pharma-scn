@@ -50,7 +50,7 @@ class FieldForceReports
                 COUNT(*) as follow_ups_due,
                 SUM(status = 'done' AND DATE(completed_at) <= due_on) as follow_ups_done_on_time,
                 SUM(status = 'done' AND DATE(completed_at) > due_on) as follow_ups_done_late,
-                SUM(status = 'open' AND due_on < ?) as follow_ups_overdue", [today()->toDateString()])
+                SUM(status = 'open' AND due_on < ?) as follow_ups_overdue", [business_today()->toDateString()])
             ->get()->keyBy('representative_id');
 
         $ids = $visits->keys()->merge($orders->keys())->merge($followUps->keys())->unique()->values();

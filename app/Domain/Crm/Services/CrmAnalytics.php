@@ -11,6 +11,7 @@ use App\Domain\FieldForce\Models\FieldOrder;
 use App\Domain\FieldForce\Models\FieldVisit;
 use App\Domain\FieldForce\Services\FieldForceScope;
 use App\Domain\Parties\Models\Customer;
+use App\Support\BusinessCalendar;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,7 @@ class CrmAnalytics
 
     public function build(string $from, string $to, ?string $territoryId = null): array
     {
-        $range = [Carbon::parse($from)->startOfDay(), Carbon::parse($to)->endOfDay()];
+        $range = [app(BusinessCalendar::class)->dayStart($from), app(BusinessCalendar::class)->dayEnd($to)];
         $customers = $this->scope->scopeCustomers(Customer::query(), 'id')->where('status', 'active')
             ->when($territoryId, fn ($q, $v) => $q->where('territory_id', $v))->get(['id', 'tier', 'visit_frequency_days']);
         $ids = $customers->pluck('id');

@@ -43,6 +43,7 @@ class OperationsController extends Controller
 
         return response()->json([
             'status' => $healthy ? 'ok' : 'degraded',
+            'region' => config('platform.regions.current'),
             'checks' => array_map(fn ($ok) => $ok ? 'ok' : 'fail', $checks),
         ], $healthy ? 200 : 503);
     }

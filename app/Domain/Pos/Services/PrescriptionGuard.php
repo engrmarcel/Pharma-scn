@@ -23,7 +23,7 @@ class PrescriptionGuard
     public function classification(string $productId): ?string
     {
         $organization = $this->tenant->organization();
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         return ProductClassification::query()->where('product_id', $productId)->where('country_code', $organization->country_code)
             ->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', $today))

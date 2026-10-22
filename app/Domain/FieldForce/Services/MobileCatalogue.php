@@ -29,7 +29,7 @@ class MobileCatalogue
     {
         $warehouseId ??= $customer->territory_id ? Territory::query()->whereKey($customer->territory_id)->value('warehouse_id') : null;
         $warehouse = $warehouseId ? Warehouse::query()->findOrFail($warehouseId) : null;
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $orgId = $this->tenant->id();
 
         $paginator = DB::table('organization_products as op')

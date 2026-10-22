@@ -83,7 +83,7 @@ class AccountingBridge
         $gain = bccomp($value, '0', 4) > 0;
         $abs = $gain ? $value : bcmul($value, '-1', 4);
 
-        return $this->ledger->post(today()->toDateString(), $sourceType, $sourceId, $description, $gain
+        return $this->ledger->post(business_today()->toDateString(), $sourceType, $sourceId, $description, $gain
             ? [['account' => 'inventory', 'debit' => $abs], ['account' => 'inventory_adjustment', 'credit' => $abs]]
             : [['account' => 'inventory_adjustment', 'debit' => $abs], ['account' => 'inventory', 'credit' => $abs]]);
     }
@@ -101,7 +101,7 @@ class AccountingBridge
             return null;
         }
 
-        return $this->ledger->post(today()->toDateString(), 'stock_receipt', $postingId, "Stock receipt ({$reasonCode})", [
+        return $this->ledger->post(business_today()->toDateString(), 'stock_receipt', $postingId, "Stock receipt ({$reasonCode})", [
             ['account' => 'inventory', 'debit' => $value],
             ['account' => $reasonCode === 'opening_balance' ? 'equity' : 'inventory_adjustment', 'credit' => $value],
         ]);
@@ -161,7 +161,7 @@ class AccountingBridge
             return null;
         }
 
-        return $this->ledger->post(today()->toDateString(), 'supplier_return', $return->id, "Supplier return {$return->number}", [
+        return $this->ledger->post(business_today()->toDateString(), 'supplier_return', $return->id, "Supplier return {$return->number}", [
             ['account' => 'returns_pending_credit', 'debit' => $value, 'party_type' => 'supplier', 'party_id' => $return->supplier_id],
             ['account' => 'inventory', 'credit' => $value],
         ]);

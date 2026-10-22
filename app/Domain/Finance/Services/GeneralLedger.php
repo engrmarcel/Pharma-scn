@@ -93,7 +93,7 @@ class GeneralLedger
             throw new BusinessRuleViolation('journal_already_reversed', 'This entry has already been reversed.', 409);
         }
 
-        $reversal = $this->post($date ?? today()->toDateString(), $entry->source_type, $entry->source_id, "Reversal of {$entry->number}: {$reason}",
+        $reversal = $this->post($date ?? business_today()->toDateString(), $entry->source_type, $entry->source_id, "Reversal of {$entry->number}: {$reason}",
             $entry->lines()->get()->map(fn ($l) => [
                 'account_id' => $l->account_id, 'debit' => (string) $l->credit, 'credit' => (string) $l->debit,
                 'party_type' => $l->party_type, 'party_id' => $l->party_id, 'memo' => $l->memo,

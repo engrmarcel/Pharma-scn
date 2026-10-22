@@ -136,7 +136,7 @@ class PurchaseOrderService
                 'purchase_requisition_id' => $requisitionId,
                 'status' => 'draft',
                 'currency_code' => $supplier->currency_code,
-                'expected_date' => $expectedDate ?? ($supplier->lead_time_days !== null ? today()->addDays($supplier->lead_time_days)->toDateString() : null),
+                'expected_date' => $expectedDate ?? ($supplier->lead_time_days !== null ? business_today()->addDays($supplier->lead_time_days)->toDateString() : null),
                 'payment_terms_days' => $supplier->payment_terms_days,
                 'notes' => $notes,
                 'created_by' => Auth::id(),
@@ -236,7 +236,7 @@ class PurchaseOrderService
 
     private function approve(PurchaseOrder $order, User $approver, bool $auto = false): void
     {
-        $order->forceFill(['status' => 'approved', 'approved_by' => $approver->id, 'approved_at' => now(), 'order_date' => $order->order_date ?? today()])->save();
+        $order->forceFill(['status' => 'approved', 'approved_by' => $approver->id, 'approved_at' => now(), 'order_date' => $order->order_date ?? business_today()])->save();
         $this->audit->record('purchase_order.approved', $order, new: ['auto_approved_below_threshold' => $auto, 'total' => (string) $order->total]);
         DomainEvents::raise(new PurchaseOrderApproved($order->id, $order->organization_id));
     }
@@ -255,7 +255,7 @@ class PurchaseOrderService
             $level = $this->units->level($line['product_id'], $line['package_level_code'] ?? null);
             $qty = (string) $line['quantity'];
             $price = isset($line['unit_price']) ? (string) $line['unit_price'] : $this->priceFromList($order, $line['product_id'], $level->code, $qty, $i);
-            [$lineSubtotal, $lineTax] = Money::line($qty, $price, (string) ($line['tax_rate'] ?? '0'));
+            [$lineSubtotal, $lineTax] = Money::line($qty, $price, (string) ($line['tax_rate'] ?? '0'), $order->currency_code);
 
             $order->lines()->create([
                 'product_id' => $line['product_id'],
@@ -276,7 +276,7 @@ class PurchaseOrderService
 
     private function priceFromList(PurchaseOrder $order, string $productId, string $levelCode, string $qty, int $line): string
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $price = SupplierPriceListItem::query()
             ->where('supplier_id', $order->supplier_id)->where('product_id', $productId)->where('package_level_code', $levelCode)
             ->where('currency_code', $order->currency_code)->where('minimum_quantity', '<=', $qty)

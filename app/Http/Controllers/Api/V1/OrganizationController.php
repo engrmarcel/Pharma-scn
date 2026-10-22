@@ -17,6 +17,7 @@ use App\Domain\Platform\Models\RegulatoryAuthority;
 use App\Domain\Platform\Services\AttachmentService;
 use App\Domain\Platform\Services\AuditLogger;
 use App\Domain\Platform\Support\CountryProfile;
+use App\Domain\Pos\Payments\PaymentProviderRegistry;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrganizationResource;
 use App\Http\Resources\RegulatoryIdentifierResource;
@@ -62,8 +63,20 @@ class OrganizationController extends Controller
 
         $organization = $this->tenant->organization();
         $original = $organization->getAttributes();
-        $organization->fill($request->validate(array_merge_recursive($this->profileRules() + ['name' => ['sometimes', 'string', 'max:255']],
-            CountryProfile::of($organization->country)->partyRules())))->save();
+        $data = $request->validate(array_merge_recursive($this->profileRules() + ['name' => ['sometimes', 'string', 'max:255'],
+            // Where the organization operates differs from its country's defaults (e.g. a country with several time zones).
+            'timezone' => ['sometimes', 'nullable', 'timezone:all'],
+            'locale' => ['sometimes', 'nullable', 'string', 'max:10', fn ($a, $v, $fail) => $v === null || in_array(\Locale::canonicalize($v), array_map([\Locale::class, 'canonicalize'], \ResourceBundle::getLocales('') ?: []), true) || $fail('Unknown locale.')],
+        ], CountryProfile::of($organization->country)->partyRules()));
+        foreach (['timezone', 'locale'] as $key) {
+            if (array_key_exists($key, $data)) {
+                $settings = $organization->settings ?? [];
+                data_set($settings, "locale.{$key}", $data[$key]);
+                $organization->settings = $settings;
+                unset($data[$key]);
+            }
+        }
+        $organization->fill($data)->save();
 
         [$old, $new] = $audit->diff($organization, $original);
         if ($new !== []) {
@@ -121,6 +134,21 @@ class OrganizationController extends Controller
         Gate::authorize('organization.view');
 
         return response()->json(['data' => $requirements->for($this->tenant->organization())]);
+    }
+
+    /** How customers can pay this organization: cash, a standalone terminal, and the electronic providers enabled in its country and currency. */
+    public function paymentMethods(PaymentProviderRegistry $providers): JsonResponse
+    {
+        Gate::authorize('organization.view');
+        $org = $this->tenant->organization();
+        $electronic = collect($providers->availableFor($org->country_code, $org->country->currency_code))
+            ->map(fn ($p, $code) => ['channel' => $code, 'name' => $p['name'], 'kind' => $p['kind'], 'confirmation' => 'provider_callback'])->values();
+
+        return response()->json(['data' => [
+            ['channel' => 'cash', 'name' => 'Cash', 'kind' => 'cash', 'confirmation' => 'immediate'],
+            ['channel' => 'manual_terminal', 'name' => 'Standalone card or transfer terminal', 'kind' => 'card', 'confirmation' => 'settlement_check'],
+            ...$electronic,
+        ], 'meta' => ['country_code' => $org->country_code, 'currency_code' => $org->country->currency_code]]);
     }
 
     /** The organization's own regulatory identifiers (licences, registrations). */

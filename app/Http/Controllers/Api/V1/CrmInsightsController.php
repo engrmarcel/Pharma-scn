@@ -17,7 +17,7 @@ class CrmInsightsController extends Controller
     public function dashboard(Request $request, SupervisorDashboard $dashboard): JsonResponse
     {
         abort_unless(Gate::any(['field_force.team.view', 'field_force.view_all', 'crm.plans.approve']), 403);
-        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? today()->toDateString();
+        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? business_today()->toDateString();
 
         return response()->json(['data' => $dashboard->build($date)]);
     }
@@ -28,6 +28,6 @@ class CrmInsightsController extends Controller
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from'],
             'territory_id' => ['nullable', 'ulid', Rule::exists('territories', 'id')->where('organization_id', $tenant->id())]]);
 
-        return response()->json(['data' => $analytics->build($d['from'] ?? today()->subDays(29)->toDateString(), $d['to'] ?? today()->toDateString(), $d['territory_id'] ?? null)]);
+        return response()->json(['data' => $analytics->build($d['from'] ?? business_today()->subDays(29)->toDateString(), $d['to'] ?? business_today()->toDateString(), $d['territory_id'] ?? null)]);
     }
 }

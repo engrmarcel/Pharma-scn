@@ -8,6 +8,7 @@ use App\Domain\Inventory\Services\StockQueries;
 use App\Domain\Organizations\Models\Organization;
 use App\Domain\Platform\Models\Country;
 use App\Models\User;
+use App\Support\BusinessCalendar;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -50,7 +51,7 @@ class DashboardMetrics
     private function organizationCards(Organization $org, ?string $currency): array
     {
         $cards = [];
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         if ($this->usable($org, 'inventory', 'pos') && Gate::allows('inventory.view')) {
             $balances = fn () => $this->locations->scope(DB::table('inventory_balances as b')
@@ -59,7 +60,7 @@ class DashboardMetrics
 
             $cards[] = $this->card('Products in stock', $balances()->where('b.stock_state', 'available')->distinct()->count('b.product_id'),
                 'cube', 'blue', 'Products with available stock');
-            $cards[] = $this->card('Expiring in '.self::EXPIRY_WINDOW_DAYS.' days', $balances()->whereBetween('bt.expiry_date', [$today, today()->addDays(self::EXPIRY_WINDOW_DAYS)->toDateString()])->distinct()->count('b.batch_id'),
+            $cards[] = $this->card('Expiring in '.self::EXPIRY_WINDOW_DAYS.' days', $balances()->whereBetween('bt.expiry_date', [$today, business_today()->addDays(self::EXPIRY_WINDOW_DAYS)->toDateString()])->distinct()->count('b.batch_id'),
                 'clock', 'amber', 'Batches to sell first or return');
             $cards[] = $this->card('Expired on hand', $balances()->where('bt.expiry_date', '<', $today)->distinct()->count('b.batch_id'),
                 'exclamation-triangle', 'rose', 'Batches to quarantine and write off');
@@ -93,7 +94,7 @@ class DashboardMetrics
         if ($this->usable($org, 'pos') && (Gate::allows('pos.reports.view') || Gate::allows('pos.sell'))) {
             $mine = ! Gate::allows('pos.reports.view');
             $sales = DB::table('pos_sales')->where('organization_id', $org->id)->where('status', 'completed')
-                ->whereBetween('completed_at', [today()->startOfDay(), today()->endOfDay()])
+                ->whereBetween('completed_at', [app(BusinessCalendar::class)->dayStart(business_today()), app(BusinessCalendar::class)->dayEnd(business_today())])
                 ->when($mine, fn ($q) => $q->where('cashier_id', auth()->id()));
             $cards[] = $this->card($mine ? 'My POS sales today' : 'POS sales today', (clone $sales)->sum('total'),
                 'shopping-cart', 'emerald', $sales->count().' completed sales', $currency, 2);
@@ -126,7 +127,7 @@ class DashboardMetrics
             ->join('products as p', 'p.id', '=', 'b.product_id')
             ->where('b.organization_id', $this->tenant->id())
             ->where('b.quantity', '>', 0)
-            ->whereBetween('bt.expiry_date', [today()->toDateString(), today()->addDays(self::EXPIRY_WINDOW_DAYS)->toDateString()])
+            ->whereBetween('bt.expiry_date', [business_today()->toDateString(), business_today()->addDays(self::EXPIRY_WINDOW_DAYS)->toDateString()])
             ->groupBy('b.batch_id', 'bt.batch_number', 'bt.expiry_date', 'p.display_name')
             ->selectRaw('p.display_name as product_name, bt.batch_number, bt.expiry_date, SUM(b.quantity) as quantity')
             ->orderBy('bt.expiry_date')->limit(5);
@@ -144,7 +145,7 @@ class DashboardMetrics
             return null;
         }
 
-        $from = today()->subDays(6);
+        $from = business_today()->subDays(6);
         $totals = DB::table('sales_invoices')->where('organization_id', $org->id)->where('status', 'issued')
             ->where('currency_code', $currency)->where('invoice_date', '>=', $from->toDateString())
             ->when(! $backOffice, fn ($q) => $q->where('source', 'pos'))
@@ -152,7 +153,7 @@ class DashboardMetrics
             ->pluck('total', 'invoice_date')->mapWithKeys(fn ($v, $k) => [substr((string) $k, 0, 10) => (float) $v]);
 
         $days = [];
-        for ($d = $from->copy(); $d->lte(today()); $d->addDay()) {
+        for ($d = $from->copy(); $d->lte(business_today()); $d->addDay()) {
             $days[] = ['label' => $d->format('D'), 'date' => $d->toDateString(), 'total' => $totals[$d->toDateString()] ?? 0.0];
         }
         $max = max(array_column($days, 'total')) ?: 1;

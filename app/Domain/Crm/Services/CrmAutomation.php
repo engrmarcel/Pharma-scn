@@ -65,7 +65,7 @@ class CrmAutomation
 
     private function missedPlanItems(): int
     {
-        $items = VisitPlanItem::query()->where('status', 'planned')->where('planned_date', '<', today()->toDateString())
+        $items = VisitPlanItem::query()->where('status', 'planned')->where('planned_date', '<', business_today()->toDateString())
             ->whereIn('visit_plan_id', VisitPlan::query()->whereIn('status', ['submitted', 'approved'])->select('id'))->with('plan')->get();
         foreach ($items as $item) {
             $item->forceFill(['status' => 'missed'])->save();
@@ -82,7 +82,7 @@ class CrmAutomation
         $created = 0;
         foreach (Customer::query()->where('status', 'active')->whereNotNull('visit_frequency_days')->whereNotNull('assigned_representative_id')->get() as $c) {
             $due = isset($last[$c->id]) ? Carbon::parse($last[$c->id])->startOfDay()->addDays($c->visit_frequency_days) : null;
-            if ($due !== null && $due->gt(today())) {
+            if ($due !== null && $due->gt(business_today())) {
                 continue;
             }
             $cycle = $due?->toDateString() ?? 'never';
@@ -109,7 +109,7 @@ class CrmAutomation
     private function escalate(int $days): int
     {
         $escalated = 0;
-        $overdue = FieldFollowUp::query()->where('status', 'open')->whereNull('escalated_at')->where('due_on', '<', today()->subDays($days)->toDateString())
+        $overdue = FieldFollowUp::query()->where('status', 'open')->whereNull('escalated_at')->where('due_on', '<', business_today()->subDays($days)->toDateString())
             ->where(fn ($q) => $q->whereNull('automation_key')->orWhere('automation_key', 'not like', 'escalation:%'))->get();
         foreach ($overdue as $f) {
             $territory = Customer::query()->whereKey($f->customer_id)->value('territory_id');
@@ -130,7 +130,7 @@ class CrmAutomation
     private function followUp(string $key, string $customerId, int $assignee, string $title): int
     {
         $followUp = FieldFollowUp::query()->firstOrCreate(['automation_key' => $key], ['customer_id' => $customerId, 'assigned_to' => $assignee,
-            'created_by' => null, 'source' => 'automation', 'title' => mb_strimwidth($title, 0, 255), 'due_on' => today()->toDateString()]);
+            'created_by' => null, 'source' => 'automation', 'title' => mb_strimwidth($title, 0, 255), 'due_on' => business_today()->toDateString()]);
 
         return $followUp->wasRecentlyCreated ? 1 : 0;
     }

@@ -44,7 +44,7 @@ class HandoverService
                 'opportunities' => Opportunity::query()->where('owner_id', $fromUserId)->whereIn('stage', Opportunity::OPEN_STAGES)
                     ->when($territoryId, fn ($q, $t) => $q->where(fn ($w) => $w->whereIn('customer_id', $customers)->orWhere(fn ($l) => $l->whereNull('customer_id')->where('territory_id', $t))))
                     ->update(['owner_id' => $toUserId, 'last_activity_at' => now()]),
-                'planned_visits_cancelled' => VisitPlanItem::query()->where('status', 'planned')->where('planned_date', '>=', today()->toDateString())
+                'planned_visits_cancelled' => VisitPlanItem::query()->where('status', 'planned')->where('planned_date', '>=', business_today()->toDateString())
                     ->whereIn('customer_id', $customers)
                     ->whereIn('visit_plan_id', VisitPlan::query()->where('representative_id', $fromUserId)->select('id'))
                     ->update(['status' => 'cancelled', 'cancel_reason' => 'Handed over to another representative']),

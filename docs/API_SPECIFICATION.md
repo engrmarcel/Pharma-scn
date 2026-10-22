@@ -203,8 +203,12 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · GET `{code}` · PATCH `{code} {name?, currency_code?, timezone?, default_locale?, phone_code?, settings: {formats, phone, address, tax, business_registration, verification, regulatory, payments, data, reviews}}` | `/admin/countries` | `platform.countries.manage`; `{code}` includes profile, tax rates, regulators with identifier types and `readiness {ready, checks[] {check, status: pass\|fail\|warning, message}}`; `review_reference_required`, `country_currency_locked` (409) |
 | POST `{code}/activate` · POST `{code}/deactivate {reason}` · POST `{code}/tax-rates {category_code, name, rate, effective_from, source}` | `/admin/countries` | `platform.countries.manage`; `country_not_ready` (409, `details.failing`), `tax_rate_overlap` (409); a new rate closes the open one the day before |
 | POST `{authority}/identifier-types {identifier_type, name, subject_types[], format_pattern?, format_example?, source?, is_active?}` | `/admin/regulatory-authorities` | `platform.countries.manage`; `format_example_mismatch` |
+| GET | `/organization/payment-methods` | `organization.view`; cash, `manual_terminal` and electronic providers available in the organization's country and currency |
+| GET · POST `{base_currency, quote_currency, rate, effective_date, source}` | `/admin/exchange-rates` | `platform.billing.manage`; `exchange_rate_exists` (409) |
 | GET | `/organization/onboarding-requirements` | `organization.view`; documents, identifiers and profile fields required for the organization's country and type, with `ready` |
 | GET · POST `{authority_code, identifier_type, value, …}` | `/organization/regulatory-identifiers` | read `organization.view`, add `organization.manage`; own country's regulators (`authority_other_country`); `identifier_type_not_configured`, `identifier_type_not_applicable`, `identifier_format_invalid` |
+
+`GET /organization` includes `locale {locale, timezone, currency_code, currency_minor_units, date_format, prices_include_tax}`; `PATCH /organization` accepts `timezone` and `locale` overrides. Money amounts in documents are rounded to the currency's minor units (still returned as 4-place decimal strings).
 
 Verification submission returns `verification_documents_missing` (`missing_categories`) or `verification_requirements_missing` (`missing_identifiers`, `missing_fields`).
 
@@ -219,7 +223,7 @@ Verification submission returns `verification_documents_missing` (`missing_categ
 | POST `{id}/accept {notes?, warehouse_id?, quantity?, needed_by?}` · POST `{id}/dismiss {reason}` | `/analytics/recommendations` | accepting a reorder needs `procurement.requisition` and the warehouse, and creates a draft requisition (`decision.action_type` = `purchase_requisition`); `recommendation_not_open` (409) |
 | POST `{question}` (3–500 characters; 20 a minute) | `/analytics/assistant` | `analytics.view`; returns `kind: generated_explanation`, `answer`, `caveats`, `planner`, `steps[] {report, from, to, status: ok\|withheld\|unavailable, data}`, `declined_actions`, `rejected_reports` |
 | GET · PUT `{external_processing, acknowledge_external_processing}` | `/analytics/assistant/settings` | read `analytics.view`; change `organization.manage`; `acknowledgement_required`, `external_ai_unavailable` (409, platform not configured) |
-| GET | `/admin/analytics/platform` | `platform.billing.manage` |
+| GET (`reporting_currency?`) | `/admin/analytics/platform` | `platform.billing.manage`; `by_country[]`; with a reporting currency, `*_converted {currency_code, amount, rates[], unconverted[]}` and `conversion_basis` |
 
 Money is a list of `{currency_code, amount}`. Estimates carry `estimates.kind` (`estimate` or `prediction`), `basis` and `demand_data.refreshed_at`.
 

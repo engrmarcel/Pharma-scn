@@ -9,7 +9,9 @@ use App\Domain\Organizations\Enums\OrganizationType;
 use App\Domain\Organizations\Events\OrganizationRegistered;
 use App\Domain\Organizations\Models\Organization;
 use App\Domain\Organizations\Models\OrganizationModule;
+use App\Domain\Platform\Models\Country;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Models\User;
 use App\Support\Events\DomainEvents;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +30,10 @@ class OrganizationOnboardingService
     public function register(User $owner, array $data): Organization
     {
         return DB::transaction(function () use ($owner, $data) {
-            $organization = Organization::query()->create($data + ['created_by' => $owner->id]);
+            // Data residency: the country's region, else this deployment's.
+            $country = Country::query()->find($data['country_code'] ?? null);
+            $region = ($country ? CountryProfile::of($country)->get('data.residency_region') : null) ?? config('platform.regions.current');
+            $organization = Organization::query()->create($data + ['created_by' => $owner->id, 'data_region' => $region]);
             $organization->refresh();
 
             $membership = $organization->memberships()->create([

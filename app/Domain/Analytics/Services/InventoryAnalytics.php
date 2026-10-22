@@ -78,7 +78,7 @@ class InventoryAnalytics
         $showValue = $this->scope->can('inventory.valuation.view');
         $buckets = config('analytics.expiry_buckets');
         $horizon = end($buckets);
-        $today = today();
+        $today = business_today();
 
         $rows = $this->expiryRows($org, $warehouses, $horizon);
 
@@ -134,7 +134,7 @@ class InventoryAnalytics
             ->join('products as p', 'p.id', '=', 'b.product_id')
             ->leftJoin('organization_products as op', fn ($j) => $j->on('op.product_id', '=', 'b.product_id')->on('op.organization_id', '=', 'b.organization_id'))
             ->where('b.organization_id', $org)->where('b.quantity', '>', 0)->whereNotNull('bt.expiry_date')
-            ->where('bt.expiry_date', '<=', today()->addDays($horizon)->toDateString()), 'b.warehouse_id', $warehouses)
+            ->where('bt.expiry_date', '<=', business_today()->addDays($horizon)->toDateString()), 'b.warehouse_id', $warehouses)
             ->groupBy('b.product_id', 'op.sku', 'p.display_name', 'b.batch_id', 'bt.batch_number', 'bt.expiry_date', 'bt.unit_cost', 'bt.currency_code')
             ->selectRaw("b.product_id, op.sku, p.display_name as product_name, b.batch_id, bt.batch_number, bt.expiry_date, bt.unit_cost, bt.currency_code,
                 SUM(b.quantity) as quantity, SUM(CASE WHEN b.stock_state = 'available' THEN b.quantity ELSE 0 END) as available")
@@ -150,7 +150,7 @@ class InventoryAnalytics
     public function expiryAtRisk(string $org, ?array $warehouses, bool $showValue, ?Collection $rows = null): Collection
     {
         $rows ??= $this->expiryRows($org, $warehouses, (int) collect(config('analytics.expiry_buckets'))->last());
-        $today = today();
+        $today = business_today();
         $average = $this->demand->averageDaily($org, $warehouses, config('analytics.demand_window_days'));
 
         return $rows->filter(fn ($r) => Carbon::parse($r->expiry_date)->gte($today))->groupBy('product_id')
@@ -182,7 +182,7 @@ class InventoryAnalytics
      */
     public function cover(string $org, ?array $warehouses): Collection
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         // The location filter sits in the join, so products with no stock in scope still appear (with zero).
         $stock = AnalyticsDb::table('organization_products as op')->join('products as p', 'p.id', '=', 'op.product_id')
             ->leftJoin('inventory_balances as b', fn ($j) => $j->on('b.product_id', '=', 'op.product_id')->on('b.organization_id', '=', 'op.organization_id')

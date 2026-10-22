@@ -43,7 +43,7 @@ class ScanService
             $productId === null => ['unknown', 'This code does not match a product registered on the platform.'],
             $identifier?->status === 'revoked' || $identifier?->status === 'decommissioned' => ['revoked', 'This code has been withdrawn by the organization that issued it.'],
             $batch !== null && $this->recalled($productId, $batch) => ['recalled', 'This batch is subject to a recall. Do not sell, dispense or use it; quarantine it and contact your supplier.'],
-            $expiry !== null && Carbon::parse($expiry)->lt(today()) => ['expired', 'This batch is past its expiry date. Do not sell, dispense or use it.'],
+            $expiry !== null && Carbon::parse($expiry)->lt(business_today()) => ['expired', 'This batch is past its expiry date. Do not sell, dispense or use it.'],
             $identifier?->status === 'dispensed' => ['dispensed', 'This serial number has already been recorded as dispensed. A second pack with the same serial may be a counterfeit: report it.'],
             $serial !== null && $identifier === null => ['unregistered', 'This serial number has not been registered on the platform.'],
             default => ['ok', 'No recall, expiry or withdrawal is recorded for this pack.'],
@@ -84,7 +84,7 @@ class ScanService
             if ($locked->batch_number && $this->recalled($locked->product_id, $locked->batch_number)) {
                 throw new BusinessRuleViolation('batch_recalled', 'This batch is recalled and must not be dispensed.', 409);
             }
-            if ($locked->expiry_date !== null && $locked->expiry_date->lt(today())) {
+            if ($locked->expiry_date !== null && $locked->expiry_date->lt(business_today())) {
                 throw new BusinessRuleViolation('batch_expired', 'This pack is expired and must not be dispensed.', 409);
             }
             $tenant = app(TenantContext::class);

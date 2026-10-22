@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 9c, country-aware reports, payment methods and regional readiness
+- Platform view by country (organizations, verification, subscriptions, monthly recurring revenue, marketplace value by buyer country), with optional `reporting_currency` conversion at recorded, effective-dated exchange rates (`/admin/exchange-rates`). Rates used are listed; amounts without a rate are left unconverted.
+- `GET /organization/payment-methods`: cash, standalone terminal, and the electronic providers enabled for the organization's country and currency.
+- Regional readiness: organizations get a `data_region` from their country's residency setting; with `PLATFORM_REGION_ENFORCE` a deployment refuses organizations hosted in another region (`421 organization_in_other_region`, with that region's URL). Health reports the region. ADR-0023.
+- 274 tests passing.
+
+### 2026-10-22: Phase 9b, local dates, currency rounding, tax-inclusive prices and formatting
+- Business dates follow where the organization operates (`BusinessCalendar`, `business_today()` in place of `today()`): document dates, expiry, due dates and report periods. Report periods bound timestamps by the local day; POS hours are local. Timestamps stay UTC. Organizations can set their own `timezone` and `locale` (`PATCH /organization`); `GET /organization` returns a `locale` block.
+- Line amounts are rounded to the currency's smallest unit (`config/currencies.php`, `Money::forCurrency`) on sales orders, invoices, POS sales, credit notes, purchase orders and supplier invoices; unit prices keep four places.
+- Tax-inclusive countries (`tax.prices_include_tax`): prices and discounts include tax, and the stored ex-tax subtotal and discount plus tax add up to the price paid.
+- `Localizer` formats money, numbers, dates and local times for the locale; the POS receipt uses it with the country's tax-number label. ADR-0022.
+
 ### 2026-10-22: Phase 9a, country profiles, onboarding and activation
 - Country profile (`CountryProfile`, ADR-0021): formats, phone and address rules, tax identity, verification requirements per organization type, regulatory settings, payment providers, data residency and reviews. Business code reads countries only through it.
 - Hard-coded rules moved into the profile: incident reporting deadlines (none configured means no due date), the single-2D-code notice, the opportunity currency fallback, and the mapping-template authority (placeholder filled from the profile).

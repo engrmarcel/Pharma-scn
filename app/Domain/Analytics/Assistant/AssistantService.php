@@ -38,7 +38,7 @@ class AssistantService
     {
         Gate::authorize('analytics.view');
         $started = hrtime(true);
-        $today = today();
+        $today = business_today();
         $redacted = Redactor::redact($question);
 
         [$planner, $plan, $notice] = $this->plan($question, $redacted, $today->toDateString());

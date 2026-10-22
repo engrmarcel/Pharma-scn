@@ -16,7 +16,7 @@ class StockQueries
     /** Catalogue items whose organization-wide sellable stock is at or below their reorder level (base units). */
     public function lowStock(): Collection
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         return DB::table('organization_products as op')
             ->join('products as p', 'p.id', '=', 'op.product_id')

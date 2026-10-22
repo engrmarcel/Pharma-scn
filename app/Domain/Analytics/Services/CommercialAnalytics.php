@@ -4,6 +4,7 @@ namespace App\Domain\Analytics\Services;
 
 use App\Domain\Analytics\Support\AnalyticsDb;
 use App\Domain\Analytics\Support\Figures;
+use App\Support\BusinessCalendar;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,7 +28,7 @@ class CommercialAnalytics
         $warehouses = $this->scope->warehouses($warehouseId);
         $bucket = Figures::bucket($start, $end);
         $invoices = fn () => $this->scope->scope(AnalyticsDb::table('sales_invoices as i')->where('i.organization_id', $org)->where('i.status', 'issued')
-            ->whereBetween('i.invoice_date', [$start->toDateString(), $end->toDateString()]), 'i.warehouse_id', $warehouses);
+            ->whereBetween('i.invoice_date', [$from, $to]), 'i.warehouse_id', $warehouses);
 
         $totals = $invoices()->groupBy('i.currency_code')->selectRaw('i.currency_code, COUNT(*) as invoices, SUM(i.total) as amount, SUM(i.amount_credited) as credited, SUM(i.tax_total) as tax')->get();
         $bySource = $invoices()->groupBy('i.source', 'i.currency_code')->selectRaw('i.source, i.currency_code, COUNT(*) as invoices, SUM(i.total) as amount')->get()
@@ -52,17 +53,17 @@ class CommercialAnalytics
             'by_source' => $bySource,
             'trend' => $trend,
             'top_products' => $products,
-            'customers' => $this->customers($org, $warehouses, $start, $end),
+            'customers' => $this->customers($org, $warehouses, $from, $to),
         ];
     }
 
     /** Customer performance: revenue in the period, and what each still owes (all periods). */
-    private function customers(string $org, ?array $warehouses, Carbon $start, Carbon $end): array
+    private function customers(string $org, ?array $warehouses, string $from, string $to): array
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $base = fn () => $this->scope->scope(AnalyticsDb::table('sales_invoices as i')->where('i.organization_id', $org)->where('i.status', 'issued'), 'i.warehouse_id', $warehouses);
 
-        $top = $base()->whereBetween('i.invoice_date', [$start->toDateString(), $end->toDateString()])->whereNotNull('i.customer_id')
+        $top = $base()->whereBetween('i.invoice_date', [$from, $to])->whereNotNull('i.customer_id')
             ->join('customers as c', 'c.id', '=', 'i.customer_id')
             ->groupBy('i.customer_id', 'c.name', 'c.type', 'i.currency_code')
             ->selectRaw('i.customer_id, c.name, c.type, i.currency_code, COUNT(*) as invoices, SUM(i.total - i.amount_credited) as amount')
@@ -76,7 +77,7 @@ class CommercialAnalytics
 
         return ['top' => $top, 'receivables' => Figures::money($owed), 'overdue' => Figures::money($owed, 'overdue'),
             'customers_overdue' => (int) $owed->sum('overdue_customers'), 'active_customers' => (int) $base()
-                ->whereBetween('i.invoice_date', [$start->toDateString(), $end->toDateString()])->whereNotNull('i.customer_id')->distinct()->count('i.customer_id')];
+                ->whereBetween('i.invoice_date', [$from, $to])->whereNotNull('i.customer_id')->distinct()->count('i.customer_id')];
     }
 
     public function purchases(string $from, string $to, ?string $warehouseId = null): array
@@ -86,7 +87,7 @@ class CommercialAnalytics
         $org = $this->scope->organizationId();
         $warehouses = $this->scope->warehouses($warehouseId);
         $orders = fn () => $this->scope->scope(AnalyticsDb::table('purchase_orders as o')->where('o.organization_id', $org)
-            ->whereBetween('o.order_date', [$start->toDateString(), $end->toDateString()]), 'o.warehouse_id', $warehouses);
+            ->whereBetween('o.order_date', [$from, $to]), 'o.warehouse_id', $warehouses);
 
         $byStatus = $orders()->groupBy('o.status')->selectRaw('o.status, COUNT(*) as n')->pluck('n', 'status')->map(fn ($n) => (int) $n);
         $committed = $orders()->whereIn('o.status', self::COMMITTED_PO)->groupBy('o.currency_code')->selectRaw('o.currency_code, SUM(o.total) as amount')->get();
@@ -156,7 +157,10 @@ class CommercialAnalytics
             'by_cashier' => $sales()->join('users as u', 'u.id', '=', 's.cashier_id')->groupBy('s.cashier_id', 'u.name', 's.currency_code')
                 ->selectRaw('s.cashier_id, u.name, s.currency_code, COUNT(*) as sales, SUM(s.total) as amount')->orderByDesc('amount')->get()
                 ->map(fn ($r) => ['cashier_id' => (int) $r->cashier_id, 'name' => $r->name, 'currency_code' => $r->currency_code, 'sales' => (int) $r->sales, 'amount' => Figures::dec($r->amount)]),
-            'by_hour' => $sales()->groupByRaw('HOUR(s.completed_at)')->selectRaw('HOUR(s.completed_at) as hour, COUNT(*) as sales')->orderBy('hour')->pluck('sales', 'hour')
+            // Local hour of the day (timestamps are UTC; African time zones have no daylight saving).
+            // The offset is an integer computed here (not user input), inlined so SELECT and GROUP BY are the same expression.
+            'by_hour' => $sales()->groupByRaw($hour = 'HOUR(DATE_ADD(s.completed_at, INTERVAL '.(int) now(app(BusinessCalendar::class)->timezone())->utcOffset().' MINUTE))')
+                ->selectRaw("{$hour} as hour, COUNT(*) as sales")->orderBy('hour')->pluck('sales', 'hour')
                 ->map(fn ($n) => (int) $n),
         ];
     }

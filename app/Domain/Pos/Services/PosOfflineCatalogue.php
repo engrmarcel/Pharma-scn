@@ -33,7 +33,7 @@ class PosOfflineCatalogue
     {
         $org = $this->tenant->organization();
         $warehouse = Warehouse::query()->findOrFail($terminal->warehouse_id);
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         $products = DB::table('organization_products as op')->join('products as p', 'p.id', '=', 'op.product_id')
             ->where('op.organization_id', $org->id)->where('op.status', 'active')->where('p.status', 'active')

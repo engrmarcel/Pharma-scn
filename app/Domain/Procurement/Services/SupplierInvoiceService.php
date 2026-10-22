@@ -64,7 +64,7 @@ class SupplierInvoiceService
             $tax = '0';
             foreach ($lines as $i => $line) {
                 $poLine = isset($line['purchase_order_line_id']) ? ($poLines[$line['purchase_order_line_id']] ?? throw new BusinessRuleViolation('purchase_order_line_unknown', 'Line does not belong to the purchase order.', 422, ['line' => $i])) : null;
-                [$lineSubtotal, $lineTax] = Money::line((string) $line['quantity'], (string) $line['unit_price'], (string) ($line['tax_rate'] ?? '0'));
+                [$lineSubtotal, $lineTax] = Money::line((string) $line['quantity'], (string) $line['unit_price'], (string) ($line['tax_rate'] ?? '0'), $invoice->currency_code);
 
                 $invoice->lines()->create([
                     'purchase_order_line_id' => $poLine?->id,

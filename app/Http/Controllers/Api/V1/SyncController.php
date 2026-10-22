@@ -118,7 +118,7 @@ class SyncController extends Controller
     {
         abort_unless(Gate::allows('sync.reconcile') || Gate::allows('devices.manage'), 403);
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from']]);
-        $range = [($d['from'] ?? today()->subDays(7)->toDateString()).' 00:00:00', ($d['to'] ?? today()->toDateString()).' 23:59:59'];
+        $range = [($d['from'] ?? business_today()->subDays(7)->toDateString()).' 00:00:00', ($d['to'] ?? business_today()->toDateString()).' 23:59:59'];
         $org = $this->tenant->id();
 
         $inbox = DB::table('sync_inbox')->where('organization_id', $org)->whereBetween('received_at', $range)

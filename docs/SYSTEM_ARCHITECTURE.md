@@ -176,4 +176,4 @@ AssignCorrelationId → (web: session/CSRF) → auth:sanctum|auth → EnsureUser
 - **Event streaming (Kafka/Redpanda):** behind a domain-event outbox (Phase 5).
 - **Search (OpenSearch):** behind a catalogue search interface once `LIKE` search is measured as insufficient.
 - **Analytics store (ClickHouse or a warehouse):** fed from the outbox. Today analytics read through `AnalyticsDb` (optionally a read replica) plus a daily demand fact table (ADR-0018), which such a store can replace.
-- **Regional deployment:** per-country `TenantContext` connection routing.
+- **Regional deployment:** organizations carry a `data_region` and a deployment refuses other regions' organizations when enforced (ADR-0023); per-region databases and shared-data replication are still to build.

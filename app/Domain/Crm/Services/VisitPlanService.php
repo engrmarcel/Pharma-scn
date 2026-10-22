@@ -241,7 +241,7 @@ class VisitPlanService
         $items = $plan->items()->get(['status', 'planned_date']);
         $counts = ['planned' => $items->count(), 'visited' => 0, 'missed' => 0, 'cancelled' => 0, 'pending' => 0];
         foreach ($items as $i) {
-            $state = $i->status === 'planned' && $i->planned_date->lt(today()) ? 'missed' : $i->status;
+            $state = $i->status === 'planned' && $i->planned_date->lt(business_today()) ? 'missed' : $i->status;
             $counts[$state === 'planned' ? 'pending' : $state]++;
         }
         $due = $counts['visited'] + $counts['missed'];

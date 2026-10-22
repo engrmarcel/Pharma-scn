@@ -295,7 +295,7 @@ class PosController extends Controller
         Gate::authorize('pos.reports.view');
         $d = $request->validate(['from' => ['nullable', 'date'], 'to' => ['nullable', 'date', 'after_or_equal:from']]);
 
-        return response()->json(['data' => app(PosReports::class)->run($report, $d['from'] ?? today()->toDateString(), $d['to'] ?? today()->toDateString())]);
+        return response()->json(['data' => app(PosReports::class)->run($report, $d['from'] ?? business_today()->toDateString(), $d['to'] ?? business_today()->toDateString())]);
     }
 
     private function cancel(Request $request, PosSale $sale): PosSale

@@ -350,7 +350,7 @@ class ProcurementController extends Controller
     public function suggestions(StockQueries $queries): JsonResponse
     {
         Gate::authorize('procurement.view');
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
 
         $suggestions = $queries->lowStock()->map(fn ($row) => (array) $row)->map(function ($row) use ($today) {
             $target = bcmul((string) $row['reorder_level'], '2', 4);

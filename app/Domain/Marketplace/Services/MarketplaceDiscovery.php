@@ -22,7 +22,7 @@ class MarketplaceDiscovery
 
     public function search(Organization $buyer, array $f, int $page = 1, int $perPage = 25): array
     {
-        $today = today()->toDateString();
+        $today = business_today()->toDateString();
         $live = DB::table('inventory_balances as ib')->join('batches as bt', 'bt.id', '=', 'ib.batch_id')
             ->whereColumn('ib.organization_id', 'l.organization_id')->whereColumn('ib.product_id', 'l.product_id')
             ->where('ib.stock_state', 'available')->where('bt.quality_status', 'released')->where('bt.recall_status', 'none')

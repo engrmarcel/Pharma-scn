@@ -10,6 +10,7 @@ use App\Domain\FieldForce\Models\FieldFollowUp;
 use App\Domain\FieldForce\Models\FieldOrder;
 use App\Domain\FieldForce\Models\FieldVisit;
 use App\Domain\FieldForce\Services\FieldForceScope;
+use App\Support\BusinessCalendar;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -35,7 +36,7 @@ class SupervisorDashboard
     public function build(string $date): array
     {
         $day = Carbon::parse($date);
-        $range = [$day->copy()->startOfDay(), $day->copy()->endOfDay()];
+        $range = [app(BusinessCalendar::class)->dayStart($day), app(BusinessCalendar::class)->dayEnd($day)];
         $weekStart = $day->copy()->subDays(6)->toDateString();
 
         $visits = $this->scope->scopeActivity(FieldVisit::query())->whereBetween('check_in_at', $range)->get();
@@ -129,7 +130,7 @@ class SupervisorDashboard
 
         return ['open' => $open->count(), 'value' => bcadd((string) $open->sum('expected_value'), '0', 4),
             'weighted_value' => bcadd((string) $open->sum(fn ($o) => (float) $o->expected_value * $o->probability / 100), '0', 4),
-            'next_steps_overdue' => $open->filter(fn ($o) => $o->next_step_date !== null && $o->next_step_date->lt(today()))->count()];
+            'next_steps_overdue' => $open->filter(fn ($o) => $o->next_step_date !== null && $o->next_step_date->lt(business_today()))->count()];
     }
 
     private function teamIds(): array

@@ -92,6 +92,6 @@ class FefoAllocator
     {
         $days = (int) data_get($this->tenant->organization()?->settings, 'inventory.min_shelf_life_days', 0);
 
-        return today()->addDays($days)->toDateString();
+        return business_today()->addDays($days)->toDateString();
     }
 }

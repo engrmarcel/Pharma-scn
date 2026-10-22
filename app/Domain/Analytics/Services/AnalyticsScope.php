@@ -3,6 +3,7 @@
 namespace App\Domain\Analytics\Services;
 
 use App\Domain\Inventory\Services\LocationAccess;
+use App\Support\BusinessCalendar;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
@@ -83,8 +84,9 @@ class AnalyticsScope
     /** @return array{0: Carbon, 1: Carbon} */
     public function period(string $from, string $to): array
     {
-        $start = Carbon::parse($from)->startOfDay();
-        $end = Carbon::parse($to)->endOfDay();
+        // Local business days, as UTC instants for the timestamp columns.
+        $start = app(BusinessCalendar::class)->dayStart($from);
+        $end = app(BusinessCalendar::class)->dayEnd($to);
         if ($start->diffInDays($end) > config('analytics.max_period_days')) {
             throw new BusinessRuleViolation('analytics_period_too_long', 'Choose a period of at most two years.', 422);
         }

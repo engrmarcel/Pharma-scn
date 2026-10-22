@@ -5,10 +5,12 @@ namespace App\Domain\Pos\Services;
 use App\Domain\Catalogue\Models\Product;
 use App\Domain\Inventory\Models\Batch;
 use App\Domain\Platform\Services\BrandingService;
+use App\Domain\Platform\Support\CountryProfile;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosTerminal;
 use App\Domain\Sales\Models\SalesInvoice;
 use App\Models\User;
+use App\Support\Localizer;
 use App\Support\Tenancy\TenantContext;
 
 /**
@@ -21,6 +23,7 @@ class ReceiptPresenter
     public function __construct(
         private readonly BrandingService $branding,
         private readonly TenantContext $tenant,
+        private readonly Localizer $format,
     ) {}
 
     public function present(PosSale $sale): array
@@ -68,6 +71,17 @@ class ReceiptPresenter
                 'method' => $p->method, 'amount' => (string) $p->amount, 'tendered' => $p->tendered !== null ? (string) $p->tendered : null,
             ])->values(),
             'footer' => 'Thank you. Keep this receipt for returns. Support: '.$brand['support_email'],
+            // For people: the country's tax number label, local time, money in the currency's decimals and the locale's format.
+            'display' => [
+                'tax_identification_label' => CountryProfile::of($organization->country)->get('tax.registration_label'),
+                'completed_at' => $this->format->dateTime($sale->completed_at),
+                'money' => collect(['subtotal' => $sale->subtotal, 'discount' => $sale->discount_total, 'tax' => $sale->tax_total, 'total' => $sale->total, 'change' => $sale->change_due])
+                    ->map(fn ($v) => $this->format->money((string) $v, $sale->currency_code))->all(),
+                'lines' => $sale->lines->map(fn ($l) => ['unit_price' => $this->format->money((string) $l->unit_price, $sale->currency_code),
+                    'discount' => $this->format->money((string) $l->line_discount, $sale->currency_code), 'total' => $this->format->money((string) $l->line_total, $sale->currency_code)])->values()->all(),
+                'payments' => $sale->payments->where('status', 'confirmed')->map(fn ($p) => $this->format->money((string) ($p->tendered ?? $p->amount), $sale->currency_code))->values()->all(),
+                'expiry_dates' => $batches->map(fn ($b) => $b->expiry_date ? $this->format->date($b->expiry_date) : null)->all(),
+            ],
         ];
     }
 }
