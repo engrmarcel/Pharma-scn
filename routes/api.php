@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\V1\StockDocumentController;
 use App\Http\Controllers\Api\V1\SubscriptionController;
 use App\Http\Controllers\Api\V1\SupplierController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Controllers\Api\V1\TraceabilityController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -63,6 +64,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::get('messages/{messageId}', [IntegrationInboundController::class, 'message'])->where('messageId', '[A-Za-z0-9._:\/-]{1,128}')->name('messages.show');
         Route::get('runs/{runId}', [IntegrationInboundController::class, 'run'])->whereUlid('runId')->name('runs.show');
     });
+
+    // Public pack check: no authentication, rate-limited, no confidential data in the answer.
+    Route::get('trace/scan', [TraceabilityController::class, 'publicScan'])->middleware('throttle:'.config('traceability.public_scan_rate_per_minute').',1')->name('trace.scan.public');
 
     Route::post('payments/webhooks/{provider}', PaymentWebhookController::class)->where('provider', '[a-z0-9_]+')->middleware('throttle:300,1')->name('payments.webhook');
 
@@ -265,6 +269,25 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('orders/{id}/disputes', [MarketplaceFulfilmentController::class, 'raiseDispute'])->whereUlid('id')->name('disputes.store');
                 Route::get('disputes/{id}', [MarketplaceFulfilmentController::class, 'dispute'])->whereUlid('id')->name('disputes.show');
                 Route::post('disputes/{id}/{action}', [MarketplaceFulfilmentController::class, 'disputeAction'])->whereUlid('id')->whereIn('action', ['messages', 'escalate', 'resolve', 'return'])->name('disputes.action');
+            });
+
+            // Traceability (spec §16): a shared platform service, not gated by a module.
+            Route::prefix('trace')->name('trace.')->group(function () {
+                Route::get('lots', [TraceabilityController::class, 'lot'])->name('lots');
+                Route::get('events', [TraceabilityController::class, 'events'])->name('events.index');
+                Route::get('events/{id}', [TraceabilityController::class, 'event'])->whereUlid('id')->name('events.show');
+                Route::post('events/{id}/correct', [TraceabilityController::class, 'correct'])->whereUlid('id')->name('events.correct');
+                Route::post('events/{id}/reverse', [TraceabilityController::class, 'reverse'])->whereUlid('id')->name('events.reverse');
+                Route::get('integrity', [TraceabilityController::class, 'integrity'])->name('integrity');
+                Route::get('export/epcis', [TraceabilityController::class, 'exportEpcis'])->name('export.epcis');
+                Route::get('identifiers', [TraceabilityController::class, 'identifiers'])->name('identifiers.index');
+                Route::post('identifiers', [TraceabilityController::class, 'issueIdentifier'])->name('identifiers.store');
+                Route::post('serials', [TraceabilityController::class, 'commissionSerials'])->name('serials.store');
+                Route::post('identifiers/{id}/aggregate', [TraceabilityController::class, 'aggregate'])->whereUlid('id')->name('identifiers.aggregate');
+                Route::post('identifiers/{id}/{action}', [TraceabilityController::class, 'identifierStatus'])->whereUlid('id')->whereIn('action', ['revoke', 'decommission'])->name('identifiers.status');
+                Route::get('identifiers/{id}/qr', [TraceabilityController::class, 'qr'])->whereUlid('id')->name('identifiers.qr');
+                Route::post('scan', [TraceabilityController::class, 'scan'])->name('scan');
+                Route::post('dispense', [TraceabilityController::class, 'dispense'])->name('dispense');
             });
 
             // Enterprise integration gateway (spec §15).
@@ -530,6 +553,10 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::put('organizations/{organization}/entitlement-overrides', [SubscriptionController::class, 'overrideForOrganization'])->whereUlid('organization')->name('organizations.entitlement-overrides');
 
             Route::get('operations/status', [OperationsController::class, 'status'])->name('operations.status');
+            Route::get('trace/lots', [TraceabilityController::class, 'lot'])->name('trace.lots');
+            Route::get('trace/events/{id}', [TraceabilityController::class, 'event'])->whereUlid('id')->name('trace.events.show');
+            Route::post('trace/events/{id}/verifications', [TraceabilityController::class, 'verify'])->whereUlid('id')->name('trace.events.verify');
+            Route::get('trace/integrity/{organizationId}', [TraceabilityController::class, 'integrity'])->whereUlid('organizationId')->name('trace.integrity');
             Route::get('operations/failed-jobs', [OperationsController::class, 'failedJobs'])->name('operations.failed-jobs');
             Route::post('operations/failed-jobs/{uuid}/retry', [OperationsController::class, 'retryFailedJob'])->whereUuid('uuid')->name('operations.failed-jobs.retry');
             Route::get('users', [OperationsController::class, 'users'])->name('users.index');

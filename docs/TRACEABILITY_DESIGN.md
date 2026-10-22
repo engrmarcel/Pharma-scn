@@ -1,4 +1,9 @@
-# Traceability, QR and recall (Phase 5) — status: designed, not implemented
+# Traceability, QR and recall (Phase 7)
+
+**Status:** 7a built: event ledger, hash chain, corrections, verification levels, QR, serials and SSCC, scanning, GLNs, EPCIS export (ADR-0015). 7b (recalls) and 7c (logistics) are in progress. Regulatory review: `REGULATORY_TRACEABILITY_REVIEW.md`. Built differences from the design below:
+- **Events are recorded automatically from every stock posting**, not entered by hand.
+- **Verification is a separate, append-only record.**
+- **On packs in Nigeria, the GS1 DataMatrix is scanned rather than a platform QR code** (reg. 7(1)).
 
 Reference: NAFDAC traceability programme, https://nafdac.gov.ng/traceability/. It is a starting point only: current official NAFDAC guidance and the GS1 standards it adopts must be reviewed before any compliance claim is made.
 

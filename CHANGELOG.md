@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### 2026-10-26: Phase 7a, traceability ledger, QR and serialization
+- `trace_events`: an append-only, hash-chained ledger recorded inside every stock posting (`InventoryLedger` → `TraceRecorder`) and on batch creation.
+  - Events carry the counterparty organization from the document, locations, GLNs, and business and recording times.
+  - Integrity check: `GET /trace/integrity`.
+- Lot history and events (`/trace/lots`, `/trace/events`), shown to the organizations involved. Corrections and reversals are new events. Counterparty corroboration is automatic; independent verification and disputes are recorded by platform staff (`/admin/trace/…`).
+- Identifiers (`/trace/identifiers`, `/trace/serials`):
+  - opaque QR codes (SVG), shown with a regulatory notice for Nigerian organizations not to print them on packs;
+  - GS1 serials, unique per GTIN across the platform;
+  - SSCC aggregation and revocation.
+- Scanning: public `GET /trace/scan`, the page `/t/{token}`, member `POST /trace/scan` (with own stock of the lot) and `POST /trace/dispense`. It reads tokens, GS1 element strings, raw DataMatrix and Digital Link. Results report recalled, expired, revoked, dispensed or unregistered, with the authenticity disclaimer.
+- GLNs on organizations and warehouses. EPCIS 2.0 JSON-LD export (`GET /trace/export/epcis`).
+- Regulatory review of the NAFDAC Pharmaceutical Products (Traceability) Regulations 2024 (S.I. No. 49 of 2024): `docs/REGULATORY_TRACEABILITY_REVIEW.md`. ADR-0015.
+- Permissions `traceability.view`, `traceability.manage`, `traceability.view_all` and `traceability.verify`.
+
 ### 2026-10-25: Phase 6c, supervisor dashboards, CRM analytics and mobile workflows (Phase 6 complete)
 - Supervisor dashboard (`GET /crm/dashboard/supervisor`, plus the web page `/field-force/dashboard` under Operations):
   - the day's visits and calls in progress, planned calls done and unverified check-ins;

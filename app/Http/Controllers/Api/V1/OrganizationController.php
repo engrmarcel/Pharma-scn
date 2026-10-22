@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Billing\Services\EntitlementService;
+use App\Domain\Catalogue\Support\Gtin;
 use App\Domain\Organizations\Enums\OrganizationType;
 use App\Domain\Organizations\Services\OrganizationOnboardingService;
 use App\Domain\Organizations\Services\OrganizationVerificationService;
@@ -116,6 +117,7 @@ class OrganizationController extends Controller
             'city' => ['nullable', 'string', 'max:100'],
             'state_region' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
+            'gln' => [...['nullable', 'digits:13', fn ($attribute, $value, $fail) => Gtin::isValid((string) $value) || $fail('The GLN check digit is invalid.')], Rule::unique('organizations', 'gln')->ignore($this->tenant->id())],
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Billing\Services\EntitlementService;
+use App\Domain\Catalogue\Support\Gtin;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Platform\Services\AuditLogger;
@@ -117,6 +118,8 @@ class LocationController extends Controller
             'address_line1' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
             'status' => ['sometimes', Rule::in(['active', 'inactive'])],
+            // GS1 Global Location Number of this location (NAFDAC traceability regulations, reg. 11).
+            'gln' => ['nullable', 'digits:13', fn ($attribute, $value, $fail) => Gtin::isValid((string) $value) || $fail('The GLN check digit is invalid.')],
         ];
     }
 }

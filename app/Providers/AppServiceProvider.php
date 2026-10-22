@@ -74,6 +74,9 @@ use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesOrder;
 use App\Domain\Sync\Models\Device;
 use App\Domain\Sync\Models\SyncIssue;
+use App\Domain\Traceability\Models\TraceEvent;
+use App\Domain\Traceability\Models\TraceIdentifier;
+use App\Domain\Traceability\Services\TraceRecorder;
 use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -81,6 +84,7 @@ use App\Http\Middleware\ResolveTenant;
 use App\Http\View\Composers\NavigationComposer;
 use App\Models\User;
 use App\Support\Events\EventRecorder;
+use App\Support\Events\RecorderChain;
 use App\Support\Tenancy\TenantContext;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
@@ -101,7 +105,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Reset per request and per queued job.
         $this->app->scoped(TenantContext::class);
-        $this->app->bind(EventRecorder::class, OutboxRecorder::class);
+        // Transactional recorders of domain events: the integration outbox and the traceability ledger.
+        $this->app->bind(EventRecorder::class, fn ($app) => new RecorderChain([$app->make(OutboxRecorder::class), $app->make(TraceRecorder::class)]));
         $this->app->scoped(AccessControl::class);
         $this->app->scoped(LocationAccess::class);
         $this->app->scoped(UnitConverter::class);
@@ -144,6 +149,8 @@ class AppServiceProvider extends ServiceProvider
             'visit_plan' => VisitPlan::class,
             'sales_target' => SalesTarget::class,
             'opportunity' => Opportunity::class,
+            'trace_event' => TraceEvent::class,
+            'trace_identifier' => TraceIdentifier::class,
             'batch' => Batch::class,
             'bin_location' => BinLocation::class,
             'stock_adjustment' => StockAdjustment::class,

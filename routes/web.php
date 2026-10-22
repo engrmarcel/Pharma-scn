@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AccountSecurityController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
+use App\Http\Controllers\Web\TraceScanPageController;
 use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\VerificationQueue;
 use App\Livewire\Catalogue\ProductBrowser;
@@ -12,6 +13,9 @@ use App\Livewire\Pos\Register;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
+
+// QR codes point here: a public page showing what is recorded about the pack (spec §16.3).
+Route::get('t/{token}', TraceScanPageController::class)->where('token', '[A-Za-z0-9]{22}')->middleware('throttle:'.config('traceability.public_scan_rate_per_minute').',1')->name('trace.page');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [SessionController::class, 'create'])->name('login');

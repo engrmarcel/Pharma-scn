@@ -8,6 +8,7 @@ use App\Domain\Finance\Models\Payment;
 use App\Domain\Inventory\Models\InventoryBalance;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Payments\FakePaymentProvider;
+use App\Domain\Traceability\Models\TraceEvent;
 use Illuminate\Support\Str;
 use Tests\Concerns\InteractsWithInventory;
 use Tests\FeatureTestCase;
@@ -88,6 +89,12 @@ class PosTest extends FeatureTestCase
         $this->assertSame('6000.0000', $b['1000'], 'cash');
         $this->assertSame('0.0000', $b['1100'], 'receivable settled');
         $this->assertSame('1700.0000', $b['5000'], 'COGS 30×40 + 10×50');
+
+        // Traceability: each batch sold is a dispensing event, with no patient or customer data.
+        $dispensed = TraceEvent::query()->where('organization_id', $t['org']->id)->where('event_type', 'dispensing_or_sale')->orderBy('batch_number')->get();
+        $this->assertSame([['P-EARLY', '30.0000'], ['P-LATE', '10.0000']], $dispensed->map(fn ($e) => [$e->batch_number, (string) $e->quantity])->all());
+        $this->assertNull($dispensed->first()->destination_organization_id);
+        $this->assertNull($dispensed->first()->counterparty_name);
     }
 
     public function test_shift_close_variance_and_independent_review(): void

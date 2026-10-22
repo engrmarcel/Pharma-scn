@@ -84,6 +84,13 @@ Behaviour:
 - **Adverse events.** Possible adverse events are routed to pharmacovigilance; the CRM keeps no patient data.
 - **Detailing.** Only approved key messages are recorded, with four-eyes approval.
 
+## Traceability (Phase 7a, ADR-0015)
+
+- **Ledger integrity.** Events are append-only in the application and hash-chained per organization, so tampering at database level is detected by the integrity check.
+- **Visibility.** Events are visible only to the organizations involved. Another organization's counterparty names and document references are withheld. Platform-wide access needs `traceability.view_all`.
+- **Public scans** return no organization, price or patient data, and say that a scan does not prove authenticity. QR tokens are random and unguessable. Scan logs keep a keyed hash of the client address, never the address.
+- **Dispensing events** record no patient or customer data.
+
 ## Gaps and planned controls
 
 | Gap | Plan |

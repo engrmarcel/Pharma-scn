@@ -11,6 +11,7 @@ use App\Domain\Inventory\Models\InventoryMovement;
 use App\Domain\Inventory\Support\StockLine;
 use App\Domain\Organizations\Models\Warehouse;
 use App\Domain\Platform\Services\AuditLogger;
+use App\Domain\Traceability\Services\TraceRecorder;
 use App\Support\Events\DomainEvents;
 use App\Support\Exceptions\BusinessRuleViolation;
 use App\Support\Tenancy\TenantContext;
@@ -120,6 +121,8 @@ class InventoryLedger
             }
 
             InventoryMovement::query()->insert($movements);
+            // Chain-of-custody events for this posting, in the same transaction (spec §16).
+            app(TraceRecorder::class)->recordPosting($organization, $postingId, $movements, $reasonCode, $referenceType, $referenceId);
 
             $types = array_values(array_unique(array_column($movements, 'movement_type')));
             $this->audit->record('inventory.posted', null, metadata: [

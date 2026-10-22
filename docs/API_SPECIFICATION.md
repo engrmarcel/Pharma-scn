@@ -177,6 +177,17 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET | `/crm/dashboard/supervisor?date` | `field_force.team.view`, `field_force.view_all` or `crm.plans.approve`; within the activity scope |
 | GET | `/crm/analytics?from&to&territory_id` | `field_force.reports.view`; viewer's customers only |
 
+### Traceability (`/trace`, no module gate; `/admin/trace` for platform staff)
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/trace/lots?product_id&batch_number` · `/trace/events` (`event_type`, `product_id`, `from`, `to`) · `/trace/events/{id}` | `traceability.view`; events the organization recorded or is source or destination of; each event has `verification.state: recorded\|corroborated\|independently_verified\|disputed` and `superseded_by` |
+| POST | `/trace/events/{id}/correct {reason, changes{quantity?, batch_number?, serial?, event_time?, source_location?, destination_location?, counterparty_name?}}` · `/trace/events/{id}/reverse {reason}` | `traceability.manage`; own events only |
+| GET | `/trace/integrity` · `/trace/export/epcis?from&to&product_id&batch_number` | `traceability.view`; hash-chain check; EPCIS 2.0 JSON-LD of own events |
+| GET · POST `{kind: batch\|product\|sscc, product_id?, batch_number?, serial?}` · POST `{id}/aggregate {child_ids[]}` · POST `{id}/revoke\|decommission {reason}` · GET `{id}/qr` | `/trace/identifiers` | view / `traceability.manage`; `meta.regulatory_notice` where a second 2D code on packs is prohibited |
+| POST | `/trace/serials {product_id, batch_number, serials[], parent_id?}` | `traceability.manage`; product needs a GTIN; duplicates across the platform give `serial_duplicate` (409) |
+| GET (public, throttled) · POST · POST | `/trace/scan?code=` · `/trace/scan {code}` · `/trace/dispense {code}` | none / `inventory.view`, `pos.sell` or `traceability.view` (adds `your_stock`) / `pos.sell`, `pos.dispense.prescription` or `traceability.manage`; `result: ok\|expired\|recalled\|revoked\|dispensed\|unregistered\|unknown` |
+| GET · GET `{id}` · POST `{id}/verifications {level: independently_verified\|disputed, method, evidence}` · GET `/admin/trace/integrity/{organizationId}` | `/admin/trace/lots`, `/admin/trace/events` | `traceability.view_all` / `traceability.verify` |
+
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |
 |---|---|---|
