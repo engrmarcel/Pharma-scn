@@ -1,6 +1,6 @@
 # Traceability, QR and recall (Phase 7)
 
-**Status:** 7a built: event ledger, hash chain, corrections, verification levels, QR, serials and SSCC, scanning, GLNs, EPCIS export (ADR-0015). 7b (recalls) and 7c (logistics) are in progress. Regulatory review: `REGULATORY_TRACEABILITY_REVIEW.md`. Built differences from the design below:
+**Status:** 7a built: event ledger, hash chain, corrections, verification levels, QR, serials and SSCC, scanning, GLNs, EPCIS export (ADR-0015). 7b built: recalls, notices, recovery and exposure with coverage statement, regulatory incident log (ADR-0016). 7c (logistics) is in progress. Regulatory review: `REGULATORY_TRACEABILITY_REVIEW.md`. Built differences from the design below:
 - **Events are recorded automatically from every stock posting**, not entered by hand.
 - **Verification is a separate, append-only record.**
 - **On packs in Nigeria, the GS1 DataMatrix is scanned rather than a platform QR code** (reg. 7(1)).

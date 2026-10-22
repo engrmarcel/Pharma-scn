@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-26: Phase 7b, recalls and regulatory incidents
+- Recalls (`/recalls`, `/admin/recalls`), prepared by the brand owner (`recalls.initiate`) or platform compliance (`recalls.manage`); activation needs a second person.
+- Activation, in every organization holding the lots: batches are recalled, reservations released and available stock quarantined (`BatchQualityService::quarantineForRecall`, adjustment reason `recall`). Each holder gets a notice, an e-mail (`RecallNoticeNotification`) and the webhook event `recall.notice_issued`.
+- Notices (`/recall-notices`) are acknowledged and completed. Recovery is derived from the holder's own records after the notice (exact boundary: the trace-chain position at notice). The holder sees its own customers for the lots.
+- Exposure report: per holder, before the recall (to platform organizations, outside the platform, to patients) and recovery, with a coverage statement. Closure needs every notice acknowledged or an override reason. Cancellation is supported.
+- Regulatory incident log (`/regulatory-incidents`) with NAFDAC reporting deadlines (24 h stolen or lost; 48 h identifier errors, unscannable or missing identifiers), overdue and late-report flags.
+- Scans also report lots recalled on the platform that no organization here holds.
+- 249 tests passing.
+
 ### 2026-10-26: Phase 7a, traceability ledger, QR and serialization
 - `trace_events`: an append-only, hash-chained ledger recorded inside every stock posting (`InventoryLedger` → `TraceRecorder`) and on batch creation.
   - Events carry the counterparty organization from the document, locations, GLNs, and business and recording times.

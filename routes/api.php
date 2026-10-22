@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\V1\PosController;
 use App\Http\Controllers\Api\V1\ProcurementController;
 use App\Http\Controllers\Api\V1\ProductChangeRequestController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\RecallController;
 use App\Http\Controllers\Api\V1\ReferenceDataController;
 use App\Http\Controllers\Api\V1\SalesController;
 use App\Http\Controllers\Api\V1\StockDocumentController;
@@ -289,6 +290,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('scan', [TraceabilityController::class, 'scan'])->name('scan');
                 Route::post('dispense', [TraceabilityController::class, 'dispense'])->name('dispense');
             });
+
+            // Recalls (spec §16.5) and the regulatory incident log.
+            Route::get('recalls', [RecallController::class, 'index'])->name('recalls.index');
+            Route::post('recalls', [RecallController::class, 'store'])->name('recalls.store');
+            Route::get('recalls/{id}', [RecallController::class, 'show'])->whereUlid('id')->name('recalls.show');
+            Route::get('recalls/{id}/exposure', [RecallController::class, 'exposure'])->whereUlid('id')->name('recalls.exposure');
+            Route::post('recalls/{id}/{action}', [RecallController::class, 'action'])->whereUlid('id')->whereIn('action', ['activate', 'close', 'cancel'])->name('recalls.action');
+            Route::get('recall-notices', [RecallController::class, 'notices'])->name('recall-notices.index');
+            Route::get('recall-notices/{id}', [RecallController::class, 'showNotice'])->whereUlid('id')->name('recall-notices.show');
+            Route::post('recall-notices/{id}/{action}', [RecallController::class, 'noticeAction'])->whereUlid('id')->whereIn('action', ['acknowledge', 'complete'])->name('recall-notices.action');
+            Route::get('regulatory-incidents', [RecallController::class, 'incidents'])->name('regulatory-incidents.index');
+            Route::post('regulatory-incidents', [RecallController::class, 'storeIncident'])->name('regulatory-incidents.store');
+            Route::post('regulatory-incidents/{id}/{action}', [RecallController::class, 'incidentAction'])->whereUlid('id')->whereIn('action', ['report', 'close'])->name('regulatory-incidents.action');
 
             // Enterprise integration gateway (spec §15).
             Route::middleware('module:integrations')->prefix('integration')->name('integration.')->group(function () {
@@ -554,6 +568,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
             Route::get('operations/status', [OperationsController::class, 'status'])->name('operations.status');
             Route::get('trace/lots', [TraceabilityController::class, 'lot'])->name('trace.lots');
+            Route::get('recalls', [RecallController::class, 'index'])->name('recalls.index');
+            Route::post('recalls', [RecallController::class, 'store'])->name('recalls.store');
+            Route::get('recalls/{id}', [RecallController::class, 'show'])->whereUlid('id')->name('recalls.show');
+            Route::get('recalls/{id}/exposure', [RecallController::class, 'exposure'])->whereUlid('id')->name('recalls.exposure');
+            Route::post('recalls/{id}/{action}', [RecallController::class, 'action'])->whereUlid('id')->whereIn('action', ['activate', 'close', 'cancel'])->name('recalls.action');
             Route::get('trace/events/{id}', [TraceabilityController::class, 'event'])->whereUlid('id')->name('trace.events.show');
             Route::post('trace/events/{id}/verifications', [TraceabilityController::class, 'verify'])->whereUlid('id')->name('trace.events.verify');
             Route::get('trace/integrity/{organizationId}', [TraceabilityController::class, 'integrity'])->whereUlid('organizationId')->name('trace.integrity');

@@ -122,7 +122,9 @@ class ScanService
 
     private function recalled(string $productId, string $batchNumber): bool
     {
-        return DB::table('batches')->where('product_id', $productId)->where('batch_number', strtoupper($batchNumber))->where('recall_status', 'recalled')->exists();
+        return DB::table('batches')->where('product_id', $productId)->where('batch_number', strtoupper($batchNumber))->where('recall_status', 'recalled')->exists()
+            || DB::table('recall_batches as rb')->join('recalls as r', 'r.id', '=', 'rb.recall_id')->where('r.product_id', $productId)
+                ->where('rb.batch_number', strtoupper($batchNumber))->whereIn('r.status', ['active', 'closed'])->exists();
     }
 
     private function recordedExpiry(string $productId, string $batchNumber): ?string

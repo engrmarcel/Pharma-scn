@@ -13,6 +13,7 @@ use App\Domain\Procurement\Events\PurchaseOrderCreated;
 use App\Domain\Sales\Events\SaleCompleted;
 use App\Domain\Sales\Events\SalesOrderConfirmed;
 use App\Domain\Sales\Events\SalesOrderCreated;
+use App\Domain\Traceability\Events\RecallNoticeIssued;
 use App\Support\Events\DomainEvent;
 use Illuminate\Support\Facades\DB;
 
@@ -39,6 +40,7 @@ final class OutboundEvents
         SaleCompleted::class => 'sales.invoice_issued',
         PaymentConfirmed::class => 'finance.payment_confirmed',
         OrganizationVerificationChanged::class => 'organization.verification_changed',
+        RecallNoticeIssued::class => 'recall.notice_issued',
     ];
 
     public const DESCRIPTIONS = [
@@ -53,6 +55,7 @@ final class OutboundEvents
         'sales.invoice_issued' => 'A sales invoice was issued (from a sales order or POS). Data: invoice header.',
         'finance.payment_confirmed' => 'A payment was confirmed. Data: payment.',
         'organization.verification_changed' => 'The organization\'s platform verification status changed. Data: from and to status.',
+        'recall.notice_issued' => 'A recall reached the organization. Data: recall, product (SKU, GTIN), batches, classification, instructions, quantity held.',
         'webhook.test' => 'Sent on request to check a subscription. Data: a message.',
     ];
 
@@ -88,6 +91,7 @@ final class OutboundEvents
             $event instanceof SaleCompleted => ['sales_invoice', $event->salesInvoiceId, self::invoice($event->organizationId, $event->salesInvoiceId)],
             $event instanceof PaymentConfirmed => ['payment', $event->paymentId, self::payment($event->organizationId, $event->paymentId)],
             $event instanceof OrganizationVerificationChanged => ['organization', $event->organizationId, ['from' => $event->fromStatus, 'to' => $event->toStatus]],
+            $event instanceof RecallNoticeIssued => ['recall', $event->recallId, self::recallNotice($event->organizationId, $event->recallId, $event->noticeId)],
             default => [null, null, []],
         };
     }
@@ -155,6 +159,16 @@ final class OutboundEvents
             ->first(['id', 'number', 'direction', 'party_type', 'party_id', 'method', 'amount', 'currency_code', 'payment_date', 'reference', 'status']);
 
         return $p ? (array) $p : ['id' => $id];
+    }
+
+    private static function recallNotice(string $organizationId, string $recallId, string $noticeId): array
+    {
+        $r = DB::table('recalls')->where('id', $recallId)->first(['number', 'title', 'reason', 'classification', 'depth', 'authority', 'regulatory_reference', 'quarantine_instructions', 'product_id']);
+        $sku = DB::table('organization_products')->where('organization_id', $organizationId)->where('product_id', $r->product_id)->value('sku');
+
+        return (array) $r + ['sku' => $sku, 'gtin' => self::gtin($r->product_id), 'notice_id' => $noticeId,
+            'batch_numbers' => DB::table('recall_batches')->where('recall_id', $recallId)->orderBy('batch_number')->pluck('batch_number')->all(),
+            'held_at_notice' => DB::table('recall_notices')->where('id', $noticeId)->value('held_at_notice')];
     }
 
     private static function gtin(string $productId): ?string

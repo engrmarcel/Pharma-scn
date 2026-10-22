@@ -75,6 +75,36 @@ class BatchQualityService
         });
     }
 
+    /**
+     * A recall reached this batch: it is marked recalled, its open reservations are released
+     * and its available stock moves to quarantine in every warehouse (spec §16.5). Runs in the
+     * holding organization's context. Returns the base quantity moved to quarantine.
+     */
+    public function quarantineForRecall(Batch $batch, string $recallId, string $recallNumber): string
+    {
+        return DB::transaction(function () use ($batch, $recallId, $recallNumber) {
+            $locked = Batch::query()->lockForUpdate()->findOrFail($batch->id);
+            $before = $locked->recall_status;
+            $locked->forceFill(['recall_status' => 'recalled'])->save();
+            $released = $this->releaseReservations($locked);
+
+            $lines = [];
+            $moved = '0';
+            foreach (InventoryBalance::query()->where('batch_id', $locked->id)->where('stock_state', 'available')->where('quantity', '>', 0)->get() as $balance) {
+                $lines[] = new StockLine($balance->warehouse_id, $locked->id, 'available', bcmul((string) $balance->quantity, '-1', 4), 'state_change');
+                $lines[] = new StockLine($balance->warehouse_id, $locked->id, 'quarantined', (string) $balance->quantity, 'state_change');
+                $moved = bcadd($moved, (string) $balance->quantity, 4);
+            }
+            if ($lines !== []) {
+                $this->ledger->post($lines, 'recall_quarantine', 'recall', $recallId);
+            }
+            $this->audit->record('batch.recalled', $locked, ['recall_status' => $before], ['recall_status' => 'recalled'],
+                ['recall' => $recallNumber, 'quarantined' => $moved, 'reservations_released' => $released]);
+
+            return $moved;
+        });
+    }
+
     private function releaseReservations(Batch $batch): int
     {
         $reservations = StockReservation::query()->where('batch_id', $batch->id)->where('status', 'active')->lockForUpdate()->get();

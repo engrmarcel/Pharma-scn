@@ -91,6 +91,12 @@ Behaviour:
 - **Public scans** return no organization, price or patient data, and say that a scan does not prove authenticity. QR tokens are random and unguessable. Scan logs keep a keyed hash of the client address, never the address.
 - **Dispensing events** record no patient or customer data.
 
+## Recalls (Phase 7b, ADR-0016)
+
+- **Who acts.** Recalls are prepared by the brand owner or platform compliance and activated by a second person.
+- **Writes into other organizations.** Activation is the only write into other organizations' books: batches are marked recalled and available stock is quarantined, which only makes stock less available. It runs in each holder's context and appears in each holder's audit and trace chain. Cancelling never releases stock automatically.
+- **What each party sees.** The exposure report is for the issuer and platform compliance. The names of parties outside the platform are shown to platform staff only; the issuer sees counts. Holders see only their own customers.
+
 ## Gaps and planned controls
 
 | Gap | Plan |

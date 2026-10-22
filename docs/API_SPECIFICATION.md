@@ -188,6 +188,14 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET (public, throttled) · POST · POST | `/trace/scan?code=` · `/trace/scan {code}` · `/trace/dispense {code}` | none / `inventory.view`, `pos.sell` or `traceability.view` (adds `your_stock`) / `pos.sell`, `pos.dispense.prescription` or `traceability.manage`; `result: ok\|expired\|recalled\|revoked\|dispensed\|unregistered\|unknown` |
 | GET · GET `{id}` · POST `{id}/verifications {level: independently_verified\|disputed, method, evidence}` · GET `/admin/trace/integrity/{organizationId}` | `/admin/trace/lots`, `/admin/trace/events` | `traceability.view_all` / `traceability.verify` |
 
+### Recalls and regulatory incidents
+| Method | Path | Permission |
+|---|---|---|
+| GET · POST `{product_id, batch_numbers[], title, reason, classification: class_i\|class_ii\|class_iii, depth: wholesale\|retail\|patient, authority?, regulatory_reference?, quarantine_instructions}` · GET `{id}` | `/recalls` (tenant) · `/admin/recalls` (platform) | visible to the issuer, notified holders and platform compliance; create: `recalls.initiate` for the brand owner (the product's manufacturer record points to the organization) or `recalls.manage` |
+| POST `{id}/activate` · `{id}/close {notes, override_reason?}` · `{id}/cancel {reason}` · GET `{id}/exposure` | `/recalls/{id}` · `/admin/recalls/{id}` | issuer or platform; activation by someone other than the creator (`approval_segregation`); close without full acknowledgement needs `override_reason` (`recall_notices_unacknowledged`) |
+| GET · GET `{id}` · POST `{id}/acknowledge {notes?}` · POST `{id}/complete {notes}` | `/recall-notices` | `recalls.respond`; detail includes `recovery` and `your_customers` |
+| GET (`status`, `overdue`) · POST `{type, description, product_id?, batch_number?, serials[]?, quantity?, detected_at?}` · POST `{id}/report {authority_reference, reported_at?}` · POST `{id}/close {notes}` | `/regulatory-incidents` | `regulatory.incidents.manage`; `report_due_at` from the type (24 h or 48 h), `overdue`, `reported_late` |
+
 ### Integration gateway, tenant side (`/integration`, module integrations)
 | Method | Path | Permission |
 |---|---|---|

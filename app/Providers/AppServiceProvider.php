@@ -74,6 +74,9 @@ use App\Domain\Sales\Models\SalesInvoice;
 use App\Domain\Sales\Models\SalesOrder;
 use App\Domain\Sync\Models\Device;
 use App\Domain\Sync\Models\SyncIssue;
+use App\Domain\Traceability\Models\Recall;
+use App\Domain\Traceability\Models\RecallNotice;
+use App\Domain\Traceability\Models\RegulatoryIncident;
 use App\Domain\Traceability\Models\TraceEvent;
 use App\Domain\Traceability\Models\TraceIdentifier;
 use App\Domain\Traceability\Services\TraceRecorder;
@@ -151,6 +154,9 @@ class AppServiceProvider extends ServiceProvider
             'opportunity' => Opportunity::class,
             'trace_event' => TraceEvent::class,
             'trace_identifier' => TraceIdentifier::class,
+            'recall' => Recall::class,
+            'recall_notice' => RecallNotice::class,
+            'regulatory_incident' => RegulatoryIncident::class,
             'batch' => Batch::class,
             'bin_location' => BinLocation::class,
             'stock_adjustment' => StockAdjustment::class,

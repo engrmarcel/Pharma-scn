@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class StockDocumentService
 {
-    public const ADJUSTMENT_REASONS = ['damage', 'expiry', 'theft', 'found', 'count_correction', 'write_off', 'quality', 'opening_balance', 'other'];
+    public const ADJUSTMENT_REASONS = ['damage', 'expiry', 'theft', 'found', 'count_correction', 'write_off', 'quality', 'recall', 'opening_balance', 'other'];
 
     public function __construct(
         private readonly InventoryLedger $ledger,
