@@ -3,6 +3,7 @@
         'catalogue' => ['beaker', 'Workspace', 'Search the shared product master: identifiers, ingredients and pack sizes.'],
         'pos.register' => ['building-storefront', 'Point of sale', null],
         'field-force.dashboard' => ['map-pin', 'Field force', 'Visits, plans, targets and pipeline of the team you supervise.'],
+        'analytics.executive' => ['chart-bar', 'Analytics', 'Headline figures across sales, stock, expiry risk and operations.'],
         'account.security' => ['finger-print', 'Account', 'Your sign-in, email verification and two-factor settings.'],
         'admin.verifications' => ['shield-check', 'Administration', 'Review organization documents submitted for platform verification.'],
     ];
@@ -69,7 +70,7 @@
                         <x-heroicon-o-home class="size-4 opacity-70"/>Dashboard
                     </a>
 
-                    <x-nav.dropdown label="Operations" icon="squares-2x2" :active="request()->routeIs('catalogue', 'pos.*', 'field-force.*')">
+                    <x-nav.dropdown label="Operations" icon="squares-2x2" :active="request()->routeIs('catalogue', 'pos.*', 'field-force.*', 'analytics.*')">
                         <x-nav.item :href="route('catalogue')" icon="beaker" title="Product catalogue"
                                     description="Search the product master by name, SKU, GTIN or registration number." :active="request()->routeIs('catalogue')"/>
                         @if ($nav['pos'])
@@ -79,6 +80,10 @@
                         @if ($nav['field_dashboard'] ?? false)
                             <x-nav.item :href="route('field-force.dashboard')" icon="map-pin" title="Field force dashboard"
                                         description="Team visits, plan approvals, targets and pipeline." :active="request()->routeIs('field-force.*')"/>
+                        @endif
+                        @if ($nav['analytics'] ?? false)
+                            <x-nav.item :href="route('analytics.executive')" icon="chart-bar" title="Executive dashboard"
+                                        description="Sales, stock, expiry risk and operations at a glance." :active="request()->routeIs('analytics.*')"/>
                         @endif
                         <div class="mt-1 border-t border-slate-100 px-3 pb-1 pt-3 text-xs text-slate-500">
                             Inventory, procurement, sales and finance are available through the API.

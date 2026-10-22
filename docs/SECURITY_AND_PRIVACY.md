@@ -97,6 +97,12 @@ Behaviour:
 - **Writes into other organizations.** Activation is the only write into other organizations' books: batches are marked recalled and available stock is quarantined, which only makes stock less available. It runs in each holder's context and appears in each holder's audit and trace chain. Cancelling never releases stock automatically.
 - **What each party sees.** The exposure report is for the issuer and platform compliance. The names of parties outside the platform are shown to platform staff only; the issuer sees counts. Holders see only their own customers.
 
+## Analytics (Phase 8a, ADR-0018)
+
+- **Tenant boundary.** Analytical queries use the query builder on a separate connection, not tenant-scoped models, so each one filters on the current organization explicitly; tests check that another organization's figures never appear.
+- **Locations and permissions.** Location-restricted members see their warehouses only. Organization-wide dashboards need access to all locations. Each area needs its own view permission, and stock value needs the valuation permission. What a viewer may not see is listed as withheld, not shown as zero.
+- **Personal data.** Dashboards show customer and supplier names and cashier names to members who can already see those records; no patient data is used.
+
 ## Logistics (Phase 7c, ADR-0017)
 
 - **Shared shipments.** A shipment is visible to its shipper and its assigned carrier only. The carrier records execution (dispatch, tracking, temperatures, proof of delivery); planning, cancellation and excursion assessment stay with the shipper. Drivers must be active members of the shipper or the carrier.

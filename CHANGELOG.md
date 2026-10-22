@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Phase 8a, analytics dashboards
+- Dashboards (`/analytics/{sales|purchases|inventory|expiry-risk|pos|field-force|marketplace|integrations|sync|recalls}`) and the executive view (`/analytics/executive`, web page `/analytics`), module `analytics`.
+- Scope (ADR-0018): current organization only; location-restricted members see their warehouses only, and organization-wide dashboards need all locations. Each dashboard needs its area's view permission. The executive view lists sections the viewer may not see as withheld, never as zero. Stock value needs `inventory.valuation.view`. Money is per currency.
+- Separate read path: `AnalyticsDb` uses `ANALYTICS_DB_CONNECTION` (e.g. a read replica). The daily demand fact table `analytics_daily_demand` is rebuilt from the ledger by `analytics:refresh` (nightly at 01:30).
+- Customer performance (revenue, receivables, overdue), supplier performance (fill rate, on-time first receipt, lead time), POS (basket, refunds, offline share, terminals, cashiers, hours), stock movement, days of cover, slow movers, expiry buckets and an expiry-risk prediction (FEFO over recent demand), integration and webhook health, sync delays and issues, recall notices and overdue incidents.
+- Platform view (`/admin/analytics/platform`): subscriptions, monthly recurring revenue at list price, organizations, marketplace value and fees.
+- Permission `analytics.view` (organization admin, finance, inventory and sales managers, auditor).
+- 253 tests passing.
+
 ### 2026-10-22: Phase 7c, logistics, proof of delivery and cold chain
 - Shipments (`/logistics/shipments`) created from a sales delivery, a dispatched stock transfer, or manually, with items by batch. No stock or finance postings: the source document's own flow corrects the books, and each shipment lists the `next_steps`.
 - Carrier (a logistics provider on the platform, or by name), driver and vehicle (`/logistics/vehicles`). The carrier and its drivers see the shipment and record dispatch, tracking, temperatures, proof of delivery, failure and return. Planning, cancelling and excursion assessment stay with the shipper.

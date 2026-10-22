@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\MarketplaceAdminController;
 use App\Http\Controllers\Api\V1\Admin\OperationsController;
 use App\Http\Controllers\Api\V1\Admin\OrganizationAdminController;
 use App\Http\Controllers\Api\V1\Admin\PlatformAdminController;
+use App\Http\Controllers\Api\V1\AnalyticsController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BatchController;
@@ -305,6 +306,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('regulatory-incidents', [RecallController::class, 'storeIncident'])->name('regulatory-incidents.store');
             Route::post('regulatory-incidents/{id}/{action}', [RecallController::class, 'incidentAction'])->whereUlid('id')->whereIn('action', ['report', 'close'])->name('regulatory-incidents.action');
 
+            // Analytics (spec §19.1): dashboards under each area's own permissions and the member's locations.
+            Route::middleware('module:analytics')->prefix('analytics')->name('analytics.')->group(function () {
+                Route::get('executive', [AnalyticsController::class, 'executive'])->name('executive');
+                Route::get('{dashboard}', [AnalyticsController::class, 'dashboard'])->whereIn('dashboard', AnalyticsController::DASHBOARDS)->name('dashboard');
+            });
+
             // Logistics and delivery (spec §18): shipments over the stock documents, proof of delivery, cold chain.
             Route::middleware('module:logistics|inventory')->prefix('logistics')->name('logistics.')->group(function () {
                 Route::get('vehicles', [LogisticsController::class, 'vehicles'])->name('vehicles.index');
@@ -552,6 +559,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
         // Platform administration
         Route::prefix('admin')->name('admin.')->middleware('idempotent')->group(function () {
+            Route::get('analytics/platform', [AnalyticsController::class, 'platform'])->name('analytics.platform');
             Route::get('marketplace/fees', [MarketplaceAdminController::class, 'fees'])->name('marketplace.fees');
             Route::post('marketplace/fees/{id}/waive', [MarketplaceAdminController::class, 'waive'])->whereUlid('id')->name('marketplace.fees.waive');
             Route::get('marketplace/disputes', [MarketplaceAdminController::class, 'disputes'])->name('marketplace.disputes');

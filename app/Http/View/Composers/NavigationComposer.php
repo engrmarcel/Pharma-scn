@@ -43,6 +43,9 @@ class NavigationComposer
         $canFieldDashboard = $org !== null && $org->isActive() && $org->hasModule('field_force') && $this->entitlements->allows($org, 'module.field_force')
             && $this->tenant->runAs($org, fn () => Gate::forUser($user)->any(['field_force.team.view', 'field_force.view_all', 'crm.plans.approve']), $current);
 
+        $canAnalytics = $org !== null && $org->isActive() && $org->hasModule('analytics') && $this->entitlements->allows($org, 'module.analytics')
+            && $this->tenant->runAs($org, fn () => Gate::forUser($user)->allows('analytics.view'), $current);
+
         return [
             'brand' => $this->branding->forOrganization($org),
             'nav' => [
@@ -50,6 +53,7 @@ class NavigationComposer
                 'current' => $current,
                 'pos' => $canPos,
                 'field_dashboard' => $canFieldDashboard,
+                'analytics' => $canAnalytics,
                 'admin' => Gate::forUser($user)->allows('platform.organizations.view'),
                 'initials' => collect(preg_split('/\s+/', trim($user->name)))->take(2)->map(fn ($p) => mb_strtoupper(mb_substr($p, 0, 1)))->implode(''),
             ],

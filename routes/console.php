@@ -17,3 +17,6 @@ Schedule::command('integration:sftp-poll')->everyFiveMinutes()->withoutOverlappi
 Schedule::command('crm:automation')->dailyAt('05:30')->withoutOverlapping();
 
 Schedule::command('field-force:purge-locations')->dailyAt('02:30')->withoutOverlapping();
+
+// Analytical store: recompute recent daily demand facts (late and offline postings included).
+Schedule::command('analytics:refresh')->dailyAt('01:30')->withoutOverlapping();

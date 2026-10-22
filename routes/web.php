@@ -7,6 +7,7 @@ use App\Http\Controllers\Web\SessionController;
 use App\Http\Controllers\Web\TraceScanPageController;
 use App\Livewire\Account\SecuritySettings;
 use App\Livewire\Admin\VerificationQueue;
+use App\Livewire\Analytics\ExecutiveDashboard;
 use App\Livewire\Catalogue\ProductBrowser;
 use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Pos\Register;
@@ -47,6 +48,10 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
 
     Route::middleware(['tenant', 'module:field_force'])->group(function () {
         Route::get('field-force/dashboard', SupervisorDashboard::class)->name('field-force.dashboard');
+    });
+
+    Route::middleware(['tenant', 'module:analytics'])->group(function () {
+        Route::get('analytics', ExecutiveDashboard::class)->name('analytics.executive');
     });
 
     Route::get('admin/verifications', VerificationQueue::class)

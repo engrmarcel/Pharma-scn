@@ -196,6 +196,16 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 | GET · GET `{id}` · POST `{id}/acknowledge {notes?}` · POST `{id}/complete {notes}` | `/recall-notices` | `recalls.respond`; detail includes `recovery` and `your_customers` |
 | GET (`status`, `overdue`) · POST `{type, description, product_id?, batch_number?, serials[]?, quantity?, detected_at?}` · POST `{id}/report {authority_reference, reported_at?}` · POST `{id}/close {notes}` | `/regulatory-incidents` | `regulatory.incidents.manage`; `report_due_at` from the type (24 h or 48 h), `overdue`, `reported_late` |
 
+### Analytics (`/analytics`, module analytics; `from`, `to` as `Y-m-d`, default month to date, at most two years)
+| Method | Path | Permission |
+|---|---|---|
+| GET | `/analytics/executive` | `analytics.view`; `sections` the viewer may see, `withheld[] {section, reason: permission\|location_scope}` |
+| GET (`warehouse_id?`) | `/analytics/sales` · `/analytics/purchases` · `/analytics/inventory` · `/analytics/pos` · `/analytics/expiry-risk` | `sales.view` · `procurement.view` · `inventory.view` (value: `inventory.valuation.view`) · `pos.reports.view` · `inventory.view`; limited to the member's warehouses (`location_access_denied`) |
+| GET | `/analytics/field-force` (`territory_id?`) · `/analytics/marketplace` · `/analytics/integrations` · `/analytics/sync` · `/analytics/recalls` | `field_force.reports.view` · marketplace permissions · `integrations.view` · `sync.reconcile` · recall permissions; organization-wide ones need all locations (`analytics_requires_all_locations`) |
+| GET | `/admin/analytics/platform` | `platform.billing.manage` |
+
+Money is a list of `{currency_code, amount}`. Estimates carry `estimates.kind` (`estimate` or `prediction`), `basis` and `demand_data.refreshed_at`.
+
 ### Logistics (`/logistics`, module logistics or inventory)
 | Method | Path | Permission |
 |---|---|---|
