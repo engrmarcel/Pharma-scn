@@ -94,8 +94,8 @@ class Navigation
             ['marketplace.quotes', 'Quotes', 'document-duplicate', ['marketplace.rfq.manage', 'marketplace.quotes.respond'], 'Quotes sent and received.'],
             ['marketplace.listings', 'Listings', 'rectangle-stack', ['marketplace.listings.manage'], 'What you offer to buyers: prices, minimums, visibility.'],
             ['marketplace.relationships', 'Trading partners', 'link', ['marketplace.relationships.manage', 'marketplace.browse'], 'Requests to trade, approvals and credit terms.'],
-            ['marketplace.disputes', 'Disputes', 'scale', ['marketplace.disputes.manage', 'marketplace.browse'], 'Problems with orders: messages, escalation, resolution.'],
-            ['marketplace.fees', 'Fees', 'receipt-percent', ['marketplace.browse'], 'Marketplace fees charged on your orders.'],
+            ['marketplace.disputes', 'Disputes', 'scale', ['marketplace.disputes.manage'], 'Problems with orders: messages, escalation, resolution.'],
+            ['marketplace.fees', 'Fees', 'receipt-percent', ['marketplace.orders.fulfil'], 'Marketplace fees charged on your orders.'],
             ['marketplace.profile', 'Profile', 'identification', ['marketplace.listings.manage'], 'How your organization appears to buyers.'],
         ]],
         'field_force' => ['Field force', 'map-pin', 'Field & CRM', ['field_force'], 'tenant', [

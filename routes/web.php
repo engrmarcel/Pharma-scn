@@ -20,6 +20,8 @@ use App\Livewire\FieldForce;
 use App\Livewire\FieldForce\SupervisorDashboard;
 use App\Livewire\Finance;
 use App\Livewire\Inventory;
+use App\Livewire\Logistics;
+use App\Livewire\Marketplace;
 use App\Livewire\Organization;
 use App\Livewire\Parties;
 use App\Livewire\Pos;
@@ -113,6 +115,24 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
         Route::get('payments', Finance\SupplierPayments::class)->name('payments');
         Route::get('accounts', Finance\Accounts::class)->name('accounts');
         Route::get('periods', Finance\Periods::class)->name('periods');
+    });
+
+    Route::middleware(['tenant', 'module:marketplace'])->prefix('marketplace')->name('marketplace.')->group(function () {
+        Route::get('/', Marketplace\Discover::class)->name('discover');
+        Route::get('orders', Marketplace\Orders::class)->name('orders');
+        Route::get('rfqs', Marketplace\Rfqs::class)->name('rfqs');
+        Route::get('quotes', Marketplace\Quotes::class)->name('quotes');
+        Route::get('listings', Marketplace\Listings::class)->name('listings');
+        Route::get('partners', Marketplace\Relationships::class)->name('relationships');
+        Route::get('disputes', Marketplace\Disputes::class)->name('disputes');
+        Route::get('fees', Marketplace\Fees::class)->name('fees');
+        Route::get('profile', Marketplace\Profile::class)->name('profile');
+    });
+
+    Route::middleware(['tenant', 'module:logistics|inventory'])->prefix('logistics')->name('logistics.')->group(function () {
+        Route::get('shipments', Logistics\Shipments::class)->name('shipments');
+        Route::get('vehicles', Logistics\Vehicles::class)->name('vehicles');
+        Route::get('reconciliation', Logistics\Reconciliation::class)->name('reconciliation');
     });
 
     // Traceability and recalls are shared platform services: no module needed.
