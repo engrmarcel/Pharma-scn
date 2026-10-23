@@ -65,6 +65,8 @@ class OperationsMonitor
             'sync_issues_open_high' => DB::table('sync_issues')->where('status', 'open')->where('severity', 'high')->count(),
             'idempotency_keys' => DB::table('idempotency_keys')->count(),
             'open_alerts' => DB::table('operational_alerts')->where('status', 'open')->count(),
+            'backup_age_seconds' => $age($beats['backup'] ?? null),
+            'restore_drill_age_seconds' => $age($beats['restore_drill'] ?? null),
         ];
     }
 
@@ -107,6 +109,16 @@ class OperationsMonitor
         $add('integration_quarantined', '', $m['integration_quarantined'], "{$m['integration_quarantined']} integration messages are quarantined.");
         $add('sync_inbox_backlog', '', $m['sync_inbox_backlog'], "{$m['sync_inbox_backlog']} offline transactions are waiting to be processed.");
         $add('sync_issues_open_high', '', $m['sync_issues_open_high'], "{$m['sync_issues_open_high']} high-severity sync issues are open.");
+
+        // Backups and restore drills, when this deployment runs them (backup.enabled).
+        if (config('backup.enabled')) {
+            $hours = $m['backup_age_seconds'] === null ? PHP_INT_MAX : intdiv($m['backup_age_seconds'], 3600);
+            $days = $m['restore_drill_age_seconds'] === null ? PHP_INT_MAX : intdiv($m['restore_drill_age_seconds'], 86400);
+            $results[] = $this->level('backup_age', $hours, config('backup.backup_max_age_hours'),
+                $hours === PHP_INT_MAX ? 'No database backup has completed yet.' : "The last successful database backup is {$hours} h old.");
+            $results[] = $this->level('restore_drill_age', $days, config('backup.drill_max_age_days'),
+                $days === PHP_INT_MAX ? 'No restore drill has passed yet.' : "The last successful restore drill was {$days} days ago.");
+        }
 
         return $results;
     }
@@ -183,6 +195,14 @@ class OperationsMonitor
             ->join('permission_role', 'permission_role.role_id', '=', 'platform_role_user.role_id')
             ->join('permissions', 'permissions.id', '=', 'permission_role.permission_id')
             ->where('permissions.code', 'platform.operations.manage')->select('platform_role_user.user_id'))->get();
+    }
+
+    /** @param  array{warning: ?int, critical: ?int}  $t */
+    private function level(string $check, int $value, array $t, string $message): array
+    {
+        $severity = ($t['critical'] ?? null) !== null && $value >= $t['critical'] ? 'critical' : (($t['warning'] ?? null) !== null && $value >= $t['warning'] ? 'warning' : null);
+
+        return ['check' => $check, 'subject' => '', 'value' => $value, 'severity' => $severity, 'message' => $message];
     }
 
     private function duration(?int $seconds): string

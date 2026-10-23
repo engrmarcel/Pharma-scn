@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 10c: backups, restore drills and failure recovery
+- `php artisan ops:backup`: a consistent, compressed database dump with SHA-256 and a manifest (row counts, schema version) on its own disk, with retention. Runs nightly when `BACKUP_ENABLED=true`; a failure raises an alert.
+- `php artisan ops:restore-drill`: restores a backup into a throwaway `*_restore_drill` database (never the live one), verifies checksum, tables and row counts, schema compatibility with this release and the consistency invariants, records the measured recovery time and data age in `recovery_drills`, and raises an alert on failure. Runs monthly; the monitor alerts when the last good backup or drill is too old. Measured on the load-test data (133,633 rows): backup 8 s, restore and checks 167 s on the test machine.
+- Recovery is tested: CI takes a real backup and restores it (and a damaged one must fail the drill), and failure-injection tests show a webhook whose queue job was lost, one interrupted mid-send, and an integration message left behind by a crashed worker are all recovered by the per-minute sweeper.
+- The consistency checks are a service (`ConsistencyChecker`) shared by `ops:consistency` and the drill.
+- docs/DISASTER_RECOVERY.md: targets, what is protected, procedures for database loss, bad releases, stopped queues, region outages and accidental changes, measured figures and what is not yet drilled.
+- 335 tests passing.
+
 ### 2026-10-23: Phase 10b: operational monitoring and alerts
 - Heartbeats: `ops:heartbeat` (every minute) records that the scheduler ran and sends a heartbeat job through each watched queue, so stopped schedulers and stuck workers are visible instead of looking like an empty queue.
 - Alerts: `ops:monitor` (every minute) checks queue backlog and age, failed jobs in the last hour, scheduler and worker heartbeats, overdue and abandoned webhook deliveries, integration backlog and quarantine, offline-sync backlog and high-severity sync issues against `config/operations.php`. One alert per problem episode; platform operations staff are e-mailed when it opens, escalates or clears. `ops:consistency --alert` runs nightly and raises a critical alert when an invariant breaks.

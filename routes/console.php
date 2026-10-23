@@ -29,3 +29,7 @@ Schedule::command('analytics:purge-assistant-log')->dailyAt('02:45')->withoutOve
 Schedule::command('ops:heartbeat')->everyMinute();
 Schedule::command('ops:monitor')->everyMinute()->withoutOverlapping();
 Schedule::command('ops:consistency --alert')->dailyAt('03:30')->withoutOverlapping();
+
+// Logical backups and monthly restore drills (Phase 10c), when this deployment runs them.
+Schedule::command('ops:backup')->dailyAt('02:15')->withoutOverlapping()->when(fn () => config('backup.enabled'));
+Schedule::command('ops:restore-drill')->monthlyOn(1, '04:00')->withoutOverlapping()->when(fn () => config('backup.enabled'));

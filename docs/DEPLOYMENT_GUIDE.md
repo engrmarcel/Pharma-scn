@@ -58,7 +58,8 @@ The platform needs long-running queue workers and a scheduler, Redis, private ob
 ### Backups and restore
 - **Database:** use managed automated daily snapshots plus binlog/PITR, retained ≥ 35 days and encrypted. Run a logical dump weekly to a separate account.
 - **Object storage:** turn on versioning and cross-region replication for the attachments bucket.
-- **Restore drill (quarterly):** restore into a staging environment, run `php artisan migrate --pretend` (expecting no pending migrations), then `php artisan test --filter=SchemaSnapshot` against it, then spot-check the audit log and attachments. Record the measured RTO and RPO.
+- **Independent logical backup (Phase 10c):** set `BACKUP_ENABLED=true`, a private `BACKUP_DISK` in another account, and the client paths (`MYSQLDUMP_PATH`, `MYSQL_CLIENT_PATH`) if they are not on PATH. The scheduler then runs `ops:backup` nightly (consistent snapshot, compressed, SHA-256, manifest of row counts and schema version; kept `BACKUP_RETENTION_DAYS`, at least 3).
+- **Restore drill (monthly, automatic):** `ops:restore-drill` restores the newest backup into a throwaway `*_restore_drill` database, verifies checksum, tables and row counts, schema compatibility and the consistency invariants, records the measured recovery time and data age in `recovery_drills`, and raises an alert if it fails. The monitor alerts when the last good backup is over 26 hours old or the last passed drill over 100 days old. Once a quarter also drill the managed PITR restore and the attachments bucket on staging, and spot-check the audit log. Procedures and measured figures: DISASTER_RECOVERY.md.
 
 ### Rollback
 Deploys are immutable releases (symlinked release directories or images). To roll back, switch to the previous release and run `php artisan queue:restart`. Migrations are additive (see DATABASE_DESIGN), so the previous release can run against the newer schema. Destructive schema changes are split across releases.
