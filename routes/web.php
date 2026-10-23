@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AccountSecurityController;
+use App\Http\Controllers\Web\AccountPagesController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DocumentationDownloadController;
 use App\Http\Controllers\Web\LandingPageController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
 use App\Http\Controllers\Web\TraceScanPageController;
 use App\Livewire\Account\SecuritySettings;
+use App\Livewire\Admin;
 use App\Livewire\Admin\DocumentationCenter;
 use App\Livewire\Admin\LandingPageEditor;
 use App\Livewire\Admin\VerificationQueue;
@@ -24,6 +26,7 @@ use App\Livewire\Integration;
 use App\Livewire\Inventory;
 use App\Livewire\Logistics;
 use App\Livewire\Marketplace;
+use App\Livewire\Onboarding;
 use App\Livewire\Organization;
 use App\Livewire\Parties;
 use App\Livewire\Pos;
@@ -46,6 +49,13 @@ Route::middleware('guest')->group(function () {
     Route::post('login', [SessionController::class, 'store'])->middleware('throttle:auth')->name('login.store');
     Route::get('login/two-factor', [SessionController::class, 'showMfaChallenge'])->name('login.mfa');
     Route::post('login/two-factor', [SessionController::class, 'verifyMfaChallenge'])->middleware('throttle:10,1')->name('login.mfa.verify');
+
+    Route::get('register', [AccountPagesController::class, 'showRegister'])->name('register');
+    Route::post('register', [AccountPagesController::class, 'register'])->middleware('throttle:auth')->name('register.store');
+    Route::get('forgot-password', [AccountPagesController::class, 'showForgot'])->name('password.request');
+    Route::post('forgot-password', [AccountPagesController::class, 'forgot'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('reset-password/{token}', [AccountPagesController::class, 'showReset'])->name('password.reset');
+    Route::post('reset-password', [AccountPagesController::class, 'reset'])->middleware('throttle:6,1')->name('password.update');
 });
 
 // Signed link from the verification email; works without a session.
@@ -60,6 +70,8 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
 
     Route::get('dashboard', [DashboardController::class, 'show'])->middleware('tenant:optional')->name('dashboard');
     Route::post('organizations/switch', [DashboardController::class, 'switchOrganization'])->name('organizations.switch');
+    Route::get('onboarding/organization', Onboarding\CreateOrganization::class)->name('onboarding.organization');
+    Route::get('invitations/accept', Onboarding\AcceptInvitation::class)->name('invitations.accept');
 
     Route::get('catalogue', ProductBrowser::class)->name('catalogue');
 
@@ -210,4 +222,22 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     Route::get('admin/verifications', VerificationQueue::class)
         ->middleware('can:platform.organizations.view')
         ->name('admin.verifications');
+
+    // Platform administration: each screen checks its own platform permissions (App\Livewire\WebPage).
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('organizations', Admin\Organizations::class)->name('organizations');
+        Route::get('users', Admin\Users::class)->name('users');
+        Route::get('catalogue', Admin\Catalogue::class)->name('catalogue');
+        Route::get('recalls', Admin\Recalls::class)->name('recalls');
+        Route::get('traceability', Admin\Traceability::class)->name('trace');
+        Route::get('marketplace', Admin\Marketplace::class)->name('marketplace');
+        Route::get('countries', Admin\Countries::class)->name('countries');
+        Route::get('exchange-rates', Admin\ExchangeRates::class)->name('exchange-rates');
+        Route::get('plans', Admin\Plans::class)->name('plans');
+        Route::get('analytics', Admin\Analytics::class)->name('analytics');
+        Route::get('operations', Admin\Operations::class)->name('operations');
+        Route::get('security', Admin\Security::class)->name('security');
+        Route::get('branding', Admin\Branding::class)->name('branding');
+        Route::get('audit', Admin\AuditLog::class)->name('audit');
+    });
 });

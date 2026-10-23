@@ -162,6 +162,14 @@ class InternalApi
         $correlation = Context::get('correlation_id');
         [$route, $routeRequest] = (fn () => [$this->current, $this->currentRequest])->call($this->router);
 
+        // Livewire's test harness disables middleware for the page request; the API call
+        // still runs its own pipeline (bindings, tenant, module, idempotency) as in production.
+        $middlewareDisabled = app()->bound('middleware.disable') ? app('middleware.disable') : null;
+        unset(app()['middleware.disable']);
+        // The API acts as the page's user; replace any user the API guard cached from an earlier call in this process.
+        $pageUser = Auth::user();
+        $pageUser ? Auth::guard('sanctum')->setUser($pageUser) : Auth::guard('sanctum')->forgetUser();
+
         try {
             try {
                 return $this->kernel->handle($sub);
@@ -171,6 +179,9 @@ class InternalApi
                 return $this->render($e);
             }
         } finally {
+            if ($middlewareDisabled !== null) {
+                app()->instance('middleware.disable', $middlewareDisabled);
+            }
             app()->instance('request', $outer);
             Facade::clearResolvedInstance('request');
             Auth::shouldUse($guard);

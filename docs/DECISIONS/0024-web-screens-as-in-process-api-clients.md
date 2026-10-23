@@ -17,6 +17,8 @@ Validation rules, permission checks, location scopes, entitlement limits and ide
   - Any other refusal becomes an `ApiError` carrying the API's message, code, status and correlation id, shown as a toast.
   - When an exception handler rethrows instead of rendering (test harnesses do), the client renders the exception into the same JSON response itself.
 - **The page's state is restored after each call**: request, default guard, tenant context, current route and correlation id.
+- **The API's middleware always runs.** Livewire's test harness turns middleware off for the page request; the client turns it back on for the API call, so route-model binding, tenancy, modules and idempotency behave in tests as in production. Before each call it also gives the API guard the page's user, replacing any user cached from an earlier request in the same process.
+- **Guest pages** (sign-up, forgotten password, password reset) call the public auth endpoints the same way. Sign-up discards the API token the endpoint issues and starts a browser session instead.
 - **Base class.** `App\Livewire\WebPage` declares the page's route. The navigation registry (`App\Support\Web\Navigation`) supplies its permissions, which are checked on every Livewire request. The base class also provides `attempt`, `submit` and `read` helpers and display lookups (warehouse labels, product names, batch labels).
   - Display lookups may read models directly: tenant-scoped models stay fail-closed, and the shared product master is public within the platform. They never decide anything.
 - **One navigation registry.** Sections, pages, modules and permissions are listed once. The menus, page banners and section tabs are built from it, and pages whose routes do not exist yet stay hidden.

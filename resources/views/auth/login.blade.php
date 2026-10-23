@@ -14,6 +14,12 @@
     <form method="POST" action="{{ route('login.store') }}" class="space-y-5" x-data="{ busy: false, show: false }" @submit="busy = true">
         @csrf
 
+        @if (session('status'))
+            <div role="status" class="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+                <x-heroicon-o-check-circle class="size-5 shrink-0"/>{{ session('status') }}
+            </div>
+        @endif
+
         @error('email')
             <div role="alert" class="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
                 <x-heroicon-o-exclamation-circle class="size-5 shrink-0"/>{{ $message }}
@@ -43,9 +49,12 @@
             </div>
         </div>
 
-        <label class="flex items-center gap-2 text-sm text-slate-600">
-            <input type="checkbox" name="remember" class="size-4 rounded border-slate-300 accent-[var(--brand-primary)]"> Keep me signed in on this device
-        </label>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <label class="flex items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" name="remember" class="size-4 rounded border-slate-300 accent-[var(--brand-primary)]"> Keep me signed in on this device
+            </label>
+            <a href="{{ route('password.request') }}" class="link text-sm">Forgot your password?</a>
+        </div>
 
         <button class="btn-primary w-full py-3 text-base" :disabled="busy">
             <svg x-show="busy" x-cloak class="size-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -56,6 +65,8 @@
             <x-heroicon-m-arrow-right class="size-5" x-show="! busy"/>
         </button>
     </form>
+
+    <p class="mt-6 text-center text-sm text-slate-500">New to the network? <a href="{{ route('register') }}" class="link">Create an account</a></p>
 
     <div class="mt-8 flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500">
         <x-heroicon-o-shield-check class="size-5 shrink-0 text-emerald-600"/>

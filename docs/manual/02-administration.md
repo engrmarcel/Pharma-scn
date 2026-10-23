@@ -13,16 +13,16 @@ For platform staff who run the network, and for organization administrators who 
 
 Platform roles never give access to an organization's own data: staff see what the platform needs (verification documents, recall exposure, totals), not the organization's books.
 
-Administration screens on the web: **Administration → Verification queue**, **Landing page** and **Documentation**. Everything else is available through the administration API (`/api/v1/admin/...`, Section 10) and is audited.
+Platform staff work in the **Administration** menu; each person sees only the screens their role allows. Every screen calls the administration API (`/api/v1/admin/...`), which is also available to scripts, and every change is audited. Organization owners and administrators work in the **Organization** menu (Section 10).
 
 ## 2. Security policy
 
 | Setting | Where | Effect |
 |---|---|---|
-| Two-factor mode | `PUT /admin/security-settings {"mfa_mode": ...}` | `off`, `optional`, `required_for_platform_staff`, `required_for_all` |
-| Email verification | `PUT /admin/security-settings {"email_verification_required": true}` | New accounts must verify their e-mail |
-| Reset a user's two-factor | `POST /admin/users/{id}/mfa-reset` | When a phone is lost; audited |
-| Suspend / reactivate a user | `POST /admin/users/{id}/suspend` · `/reactivate` | Revokes access immediately |
+| Two-factor mode | **Administration → Security policy** (`PUT /admin/security-settings`) | Off, optional, required for platform staff, required for everyone |
+| Email verification | **Administration → Security policy** | New accounts must verify their e-mail |
+| Reset a user's two-factor | **Administration → Users**, **Reset two-factor** (`POST /admin/users/{id}/mfa-reset`) | When a phone is lost; a reason is required and audited |
+| Suspend / reactivate a user | **Administration → Users** (`POST /admin/users/{id}/suspend` · `/reactivate`) | Revokes access immediately; you cannot suspend yourself |
 
 Before requiring two-factor for staff, enrol your own account (web: **Account → Security**). Make sure e-mail delivery works before requiring verification.
 
@@ -35,52 +35,57 @@ Before requiring two-factor for staff, enrol your own account (web: **Account �
 
 Verified organizations can trade on the marketplace and propose catalogue changes.
 
-### Lifecycle (API)
-| Task | Request |
-|---|---|
-| List and inspect | `GET /admin/organizations` · `GET /admin/organizations/{id}` |
-| Suspend / reactivate | `POST /admin/organizations/{id}/suspend {reason}` · `/reactivate` (no data is deleted) |
-| Enable or disable modules | `PUT /admin/organizations/{id}/modules` |
-| Subscription | `GET`/`PUT /admin/organizations/{id}/subscription` |
-| Entitlement overrides | `PUT /admin/organizations/{id}/entitlement-overrides {key, enabled, limit, reason}` |
+### Lifecycle
+In **Administration → Organizations**, search or filter by verification status, state and type, then open an organization:
 
-A module works only when it is enabled **and** the organization's plan includes it. Plans and their entitlements: `GET /admin/subscription-plans`, `PATCH /admin/subscription-plans/{plan}`.
+| Tab | What you can do | API |
+|---|---|---|
+| Profile | Details, verification history, download documents | `GET /admin/organizations/{id}` |
+| Modules | Turn modules on or off | `PUT /admin/organizations/{id}/modules` |
+| Subscription | Change the plan or status; add an entitlement override with a reason | `PUT …/subscription` · `PUT …/entitlement-overrides` |
+| Status | Suspend with a reason, or reactivate (no data is deleted) | `POST …/suspend` · `/reactivate` |
+
+A module works only when it is enabled **and** the organization's plan includes it. Plans, prices, trial days and entitlements (modules, features and limits) are edited in **Administration → Subscription plans**; organizations on a plan get the change straight away.
 
 ## 4. Countries
 
 Each country is configuration: formats, phone and address rules, tax identity, verification documents and licences per organization type, regulatory deadlines, payment providers and data region.
 
-1. `GET /admin/countries/{code}` shows the profile, tax rates, regulators and the **readiness checklist**.
-2. Fill the gaps: `PATCH /admin/countries/{code}` (profile), `POST /admin/countries/{code}/tax-rates` (effective-dated), `POST /admin/regulatory-authorities/{code}/identifier-types`.
-3. Record the tax, regulatory and legal reviews with a reference (`settings.reviews`).
-4. `POST /admin/countries/{code}/activate`. Activation is refused while any blocking check fails. Deactivating only stops new registrations.
+In **Administration → Countries**, open a country:
 
-Exchange rates for platform reports: `POST /admin/exchange-rates` (with the source of the rate). They are never applied to an organization's books.
+1. **Readiness** lists every check (currency, time zone, locale, tax rates, regulators, required identifiers and documents, incident deadlines, payments) as pass, warning or fail.
+2. Fill the gaps: **Details** (name, currency, time zone, locale, phone code), **Profile** (the country settings as JSON; lists are replaced, not merged), **Tax rates** (effective-dated; an open rate for the same category ends the day before), **Regulators** (identifier types with an optional format pattern and example).
+3. **Reviews:** record the tax, regulatory and legal reviews; a completed review needs a reference.
+4. **Activate**. Activation is refused while any blocking check fails. **Deactivate** (with a reason) only stops new registrations.
+
+Exchange rates for platform reports: **Administration → Exchange rates** (with the source of the rate). They are never applied to an organization's books.
 
 ## 5. Product catalogue
 
-| Task | Request |
-|---|---|
-| Review changes proposed by organizations | `GET /admin/product-change-requests` · `POST …/{id}/approve` · `/reject` |
-| Create or edit a product | `POST /admin/products` · `PATCH /admin/products/{id}` |
-| Add a regulatory identifier | `POST /admin/products/{id}/regulatory-identifiers` |
-| Record a verification check | `POST /admin/regulatory-identifiers/{id}/verifications` |
+In **Administration → Product master**:
+
+| Task | Where | API |
+|---|---|---|
+| Review changes proposed by organizations | **Change requests** tab: approve or reject with notes | `POST /admin/product-change-requests/{id}/approve` · `/reject` |
+| Create or edit a product | **New product**, or open a product and **Edit** | `POST /admin/products` · `PATCH /admin/products/{id}` |
+| Add a regulatory identifier | Open the product, **Add regulatory identifier** | `POST /admin/products/{id}/regulatory-identifiers` |
+| Record a verification check | **Record a check** on the identifier | `POST /admin/regulatory-identifiers/{id}/verifications` |
 
 A verification record is the platform's own check; it is never presented as a statement by the regulator.
 
 ## 6. Traceability, recalls and incidents (compliance)
 
-- **Lots and integrity:** `GET /admin/trace/lots?...`, `GET /admin/trace/integrity/{organizationId}` (recomputes the organization's hash chain).
-- **Verify an event:** `POST /admin/trace/events/{id}/verifications` (corroborated, independently verified or disputed).
-- **Recall:** prepare with `POST /admin/recalls`; a **second** compliance officer activates it with `POST /admin/recalls/{id}/activate`. Activation quarantines the lots in every holder's stock and notifies them. Follow progress with `GET /admin/recalls/{id}/exposure`; close when every notice is acknowledged (or with an override reason).
+- **Lots and integrity** (**Administration → Traceability**): choose a product and batch to see its history across every organization; check an organization's hash chain.
+- **Verify an event:** **Verify** on an event in the lot history records an independent check (independently verified or disputed), the method and the evidence.
+- **Recall** (**Administration → Recalls**): prepare it; a **second** compliance officer activates it. Activation quarantines the lots in every holder's stock and notifies them. Follow progress in the exposure view; close when every notice is acknowledged (or with an override reason).
 
 ## 7. Marketplace
 
-Fees: `GET /admin/marketplace/fees`, waive with a reason `POST /admin/marketplace/fees/{id}/waive`. Escalated disputes: `GET /admin/marketplace/disputes`, add notes `POST …/{id}/notes`.
+**Administration → Marketplace**: escalated disputes (open one to read the messages and add a platform note both parties see; the supplier resolves it) and fees (totals by status; waive an accrued fee with a reason).
 
 ## 8. Branding, landing page and documentation
 
-- **Branding** (name, colours, logo, support contacts): `PUT /admin/branding`.
+- **Branding** (**Administration → Branding**): name, colours, logo, favicon, e-mail sender and support contacts, with a preview.
 - **Landing page** (web: **Administration → Landing page**): every text, link, figure, network link, feature, phone screen and the hero background (particles or video). Changes are published with **Publish** and recorded in the audit log; **Reset to defaults** restores the original content.
 - **Documentation** (web: **Administration → Documentation**): these manuals, with a PDF download per document and **Download all (PDF)**.
 
@@ -89,24 +94,25 @@ Fees: `GET /admin/marketplace/fees`, waive with a reason `POST /admin/marketplac
 | Check | Where |
 |---|---|
 | Readiness | `GET /api/v1/health` |
-| Queues, failed jobs, review queues | `GET /admin/operations/status` |
-| Failed jobs | `GET /admin/operations/failed-jobs` · `POST …/{uuid}/retry` |
-| Audit trail | `GET /admin/audit-logs` (platform), `GET /audit-logs` (organization) |
-| Platform figures by country | `GET /admin/analytics/platform?reporting_currency=USD` |
+| Queues, integration backlogs, review queues | **Administration → Operations** (refreshes every 30 seconds) |
+| Failed jobs | **Administration → Operations**: **Retry** sends a job back to the queue (payloads are not shown) |
+| Audit trail | **Administration → Audit log** (platform); **Organization → Audit log** (organization) |
+| Platform figures by country | **Administration → Platform analytics**, optionally in one reporting currency |
 
 ## 10. Organization administration (owners and administrators)
 
-| Task | How |
+| Task | Screen |
 |---|---|
-| Profile, address, tax number | `PATCH /organization` (country formats are validated) |
-| Verification | Upload documents (`POST /organization/documents`), add licences (`POST /organization/regulatory-identifiers`), check `GET /organization/onboarding-requirements`, then `POST /organization/verification/submit` |
-| Branches and warehouses | `POST /branches`, `POST /warehouses` |
-| Invite members | `POST /invitations {email, roles[]}`; the owner role can only be granted by an owner |
-| Roles and locations | `PUT /members/{id}/roles`; `PUT /members/{id}/locations` restricts a member to some branches or warehouses (they then see only those) |
-| Remove access | `PUT /members/{id}/status {"status": "suspended"}`; the last owner cannot be removed |
-| Devices | `GET /devices`, revoke a lost phone or till |
-| Integrations | See *Connecting an external system* |
-| External AI for the assistant | `PUT /analytics/assistant/settings` with an explicit acknowledgement (only if the platform offers it) |
+| Profile, address, tax number | **Organization → Profile & verification** (country formats are validated) |
+| Verification | Same screen: the checklist shows what your country requires; add licences, upload documents, then **Submit for verification** |
+| Branches and warehouses | **Organization → Branches & warehouses** (with bins) |
+| Invite members | **Organization → Members & roles**, invite by e-mail with roles; the owner role can only be granted by an owner |
+| Roles and locations | Open a member: roles, and the branches or warehouses they are restricted to (they then see only those) |
+| Remove access | Suspend or remove the member; the last owner cannot be removed |
+| Plan and usage | **Organization → Subscription** |
+| Devices | **Devices & sync → Devices**: revoke or wipe a lost phone or till |
+| Integrations | **Workspace → Integrations**; see *Connecting an external system* |
+| External AI for the assistant | **Analytics → Assistant** settings, with an explicit acknowledgement (only if the platform offers it) |
 
 ## 11. Organization roles
 

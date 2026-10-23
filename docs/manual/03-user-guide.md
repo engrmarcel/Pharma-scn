@@ -1,74 +1,69 @@
 # User guide
 
-How people in member organizations use the platform day to day. Each section names the screens to use and, for work done through connected systems or the API, the API calls (paths are relative to `/api/v1`; see the API guide).
+How people in member organizations use the platform day to day. Each section names the web screens to use. Menu paths read **Workspace → Area → Screen**. The same work can be done by connected systems through the API (paths are relative to `/api/v1`; see the API guide), and every web screen goes through the same API rules.
 
 ## 1. Getting started
 
-### Sign in
-- **Web:** open the platform address, choose **Sign in**, enter your e-mail and password (and your two-factor code if your organization requires it).
+### Create an account and sign in
+- **New to the platform:** choose **Create an account** on the sign-in page, enter your name, work e-mail and a password (at least 10 characters, with letters and numbers). You are signed in straight away.
+- **Sign in:** open the platform address, choose **Sign in**, enter your e-mail and password (and your two-factor code if two-factor is on for your account).
+- **Forgotten password:** choose **Forgot your password?** on the sign-in page. The e-mailed link opens a page where you choose a new password; changing it also signs you out of the mobile apps.
 - **Field force app:** enter the server address provided by your administrator, sign in, then choose your organization and the mode (field work or POS).
-- Forgotten password: request a reset link with `POST auth/forgot-password {email}` (your support desk or app does this for you); the link lets you choose a new password.
+
+### Register a new organization, or join one
+After creating an account, the dashboard offers two choices:
+
+1. **Register your organization:** name, type (pharmacy, distributor, manufacturer, hospital, …), country and contact details. You become its owner. It starts with the modules for its type on the default plan, and unverified.
+2. **Accept an invitation:** open the link in the invitation e-mail, or paste the code from it. The invitation must have been sent to the e-mail address you signed up with.
+
+Then complete verification in **Organization → Profile & verification**: the checklist shows what your country and organization type require. Complete the address and licence numbers (for example a pharmacy's PCN premises licence in Nigeria), upload the documents, then **Submit for verification**. Platform compliance staff review it and you are notified of the decision.
+
+Invite your team in **Organization → Members & roles** and give each person roles and, if needed, specific branches or warehouses.
 
 ### Choose your organization
 If you belong to several organizations, pick the one to work in from the **Organization** menu. Everything you see and do applies to that organization only; a member restricted to some branches or warehouses sees only those.
 
-### Register a new organization
-Registration and verification are done through the API (by your onboarding application or with support's help):
-
-1. Create an account: `POST auth/register`, then register the organization: `POST organizations {name, type, country_code}` (type: pharmacy, distributor, manufacturer, hospital, …).
-2. The organization starts with the modules for its type on a trial plan.
-3. Check what your country requires: `GET organization/onboarding-requirements`. Upload the documents (`POST organization/documents`), add licence numbers (`POST organization/regulatory-identifiers`, for example a pharmacy's PCN premises licence in Nigeria) and complete your address (`PATCH organization`).
-4. Submit: `POST organization/verification/submit`. Platform compliance staff review it in their verification queue; you are notified of the decision.
-5. Invite your team and give each person a role (`POST invitations`).
-
-### Web screens
-
-| Screen | For | What you can do |
-|---|---|---|
-| Dashboard | Everyone | Headline figures, expiring stock, today's sales, quick links |
-| Product catalogue | Everyone | Search the shared product master by name, SKU, GTIN or registration number |
-| POS register | Cashiers, pharmacists | Sell over the counter, take payment, print receipts |
-| Field force dashboard | Supervisors | Team visits today, plan approvals, targets, pipeline |
-| Analytics | Managers | Executive dashboard, recommendations, ask questions in plain English |
-| Account security | Everyone | Password, two-factor, e-mail verification |
-
-Other operations (purchasing, warehouse documents, finance, marketplace, logistics) are done through the API by your own systems or connected applications.
+### Finding screens
+The **Workspace** menu groups every area you can use: supply chain, commerce, field and CRM, finance and insight, connect. You see an area only when your organization has its module and your role has a permission in it. Each screen has a short description under its title and tabs for the other screens of the same area.
 
 ## 2. Inventory and warehouses
 
-| Task | How |
+| Task | Screen |
 |---|---|
-| See stock | `GET inventory/stock-levels`, `inventory/balances` (by batch and state), `inventory/expiring?days=90`, `inventory/low-stock` |
-| Receive stock without an order | `POST inventory/receipts` with batch number, expiry and quantity |
-| Adjust or write off | `POST stock-adjustments` with a reason (damage, expiry, recall, count difference) |
-| Move between warehouses | `POST stock-transfers`, then `…/dispatch` and `…/receive` |
-| Count | `POST stock-counts`, enter counted quantities, `…/post` |
-| Quarantine or release a batch | Quality actions on the batch (pharmacist or inventory manager) |
+| See stock | **Inventory → Stock on hand** (by product, warehouse and state; expiring and low stock filters), **Batches** |
+| Receive stock without an order | **Inventory → Receive stock**: batch number, expiry and quantity per line |
+| Adjust or write off | **Inventory → Adjustments**, with a reason (damage, expiry, recall, count difference) |
+| Move between warehouses | **Inventory → Transfers**: create, dispatch, then receive at the other end |
+| Count | **Inventory → Stock counts**: start a count, enter counted quantities, post |
+| Quarantine or release a batch | **Inventory → Batches**, open the batch (pharmacist or inventory manager) |
+| Ledger | **Inventory → Movements** |
 
-Rules you will notice: stock is issued **first expiry, first out**; expired, quarantined and recalled batches cannot be sold; every movement is written to the stock ledger and the traceability record.
+Rules you will notice: stock is issued **first expiry, first out**; expired, quarantined and recalled batches cannot be sold; every movement is written to the stock ledger and the traceability record. Allocation and expiry rules are in **Inventory → Settings**.
 
 ## 3. Purchasing
 
-1. **Requisition** (`POST purchase-requisitions`), submitted and approved; or accept a reorder recommendation in **Analytics**, which creates a draft requisition for you.
-2. **Purchase order** (`POST purchase-orders`); orders above your organization's threshold need approval by someone else; then **send** it.
-3. **Goods receipt** (`POST goods-receipts`): record each batch, expiry and quality status.
-4. **Supplier invoice** (`POST supplier-invoices`): matched against the order and the receipt (three-way match).
-5. **Payment** (`POST finance/payments/supplier`).
+1. **Procurement → Requisitions**: create, submit and approve; or accept a reorder suggestion (**Reorder suggestions**, or a recommendation in **Analytics → Recommendations**), which creates a draft requisition for you.
+2. **Procurement → Purchase orders**: orders above your organization's threshold need approval by someone else; then **Send** it to the supplier.
+3. **Procurement → Goods receipts**: record each batch, expiry and quality status against the order.
+4. **Procurement → Supplier invoices**: pre-filled from the order and matched against the order and the receipt (three-way match). An unmatched invoice needs an override reason to approve.
+5. **Finance → Payments**: pay the supplier and allocate the payment to invoices.
 
-Returns to a supplier: `POST supplier-returns`.
+Returns to a supplier: **Procurement → Supplier returns**. Suppliers themselves are kept in **Customers & suppliers → Suppliers**.
 
 ## 4. Sales and customers
 
-1. Create the customer (`POST customers`) with payment terms and credit limit.
-2. **Quotation** (optional) → **Sales order** (`POST sales-orders`). Prices come from price lists; discounts above your limit and orders over the credit limit wait for approval.
-3. **Confirm**: stock is reserved, first expiry first out.
-4. **Delivery** (`POST sales-orders/{id}/deliveries`): stock leaves the warehouse.
-5. **Invoice** (`POST sales-orders/{id}/invoice`), then record the **payment** (`POST customer-payments`).
-6. Returns: **credit note** on the invoice (`POST sales-invoices/{id}/credit-notes`); returned goods go back as quarantined until checked.
+1. **Customers & suppliers → Customers**: payment terms, credit limit, contacts, price list; the statement is on the customer.
+2. **Sales → Quotations** (optional), converted into a **Sales order**. Prices come from **Price lists**; discounts above your limit and orders over the credit limit wait for approval.
+3. **Confirm** the order: stock is reserved, first expiry first out.
+4. **Deliver**: stock leaves the warehouse.
+5. **Invoice**, then record the customer's payment in **Sales → Payments** (allocated oldest invoice first, or by hand).
+6. Returns: a **credit note** on the invoice (**Sales → Invoices**); returned goods go back as quarantined until checked.
 
-Customer statement: `GET customers/{id}/statement`.
+Overdue balances: **Sales → Receivables aging**.
 
 ## 5. Point of sale
+
+At the till (**Point of sale → Register**):
 
 1. **Open a shift** with the opening cash.
 2. Scan or search products; the till proposes the batch (first expiry). Prescription-only medicines need a pharmacist and prescription details.
@@ -76,7 +71,9 @@ Customer statement: `GET customers/{id}/statement`.
 4. Print or reprint the receipt (it shows batch numbers for recalls).
 5. **Close the shift**: count the cash; a supervisor reviews differences.
 
-The till keeps working offline. Sales captured offline are sent when the connection returns; if stock was no longer available, a **sync issue** is raised for the supervisor. Refunds are requested by cashiers and approved by supervisors.
+Back office for supervisors: **Shifts** (cash movements, closing and reviewing shifts), **Refunds** (requested by cashiers, approved by a different person), **Pending payments** (confirm card and transfer payments), **Reports** and **Terminals**.
+
+The till keeps working offline. Sales captured offline are sent when the connection returns; if stock was no longer available, a **sync issue** is raised for the supervisor in **Devices & sync → Sync**.
 
 ## 6. Field force app
 
@@ -90,37 +87,49 @@ The till keeps working offline. Sales captured offline are sent when the connect
 
 Everything works without signal. Items show **Waiting to sync** until they reach the server; the app retries automatically. The location notice in the menu explains how location is used.
 
-Supervisors approve visit plans, see their team's activity and targets on the **Field force dashboard**.
+On the web, **Field force** has the supervisor's **Field force dashboard**, **Visits**, **Field orders** (submit into a sales order), **Follow-ups**, **Territories** and the **Activity report**. Visits logged on the web carry no device location and stay unverified.
 
 ## 7. CRM
 
-Customer profiles (tier, visit frequency, potential), contacts with consent, segments, approved detailing messages, visit plans, targets, opportunities and customer feedback (including possible adverse events, which are flagged for pharmacovigilance). Automation creates follow-ups for missed plans, overdue visits and stale opportunities.
+**CRM → Accounts** holds customer profiles (tier, visit frequency, potential) and contacts with recorded consent. Alongside: **Visit plans** (built with suggested customers, approved by a supervisor), **Opportunities** (pipeline by stage), **Targets**, **Interactions**, **Feedback** (possible adverse events are flagged for pharmacovigilance), **Detailing** (approved key messages; a second person approves), **Segments**, **CRM analytics** and **Automation**, which creates follow-ups for missed plans, overdue visits and stale opportunities.
 
 ## 8. Marketplace
 
-1. Suppliers publish a **profile** and **listings** (price, minimum order, availability).
-2. Buyers **discover** suppliers, request a **trading relationship**, send **RFQs** and compare quotes.
-3. A **marketplace order** creates the buyer's purchase order and the supplier's sales order; the supplier ships and invoices; the buyer receives.
-4. Problems are raised as **disputes** on the order.
+1. Suppliers publish a **Profile** and **Listings** (price, minimum order, availability, allowed buyer types).
+2. Buyers **Discover** suppliers, request a **trading relationship** (approved in **Trading partners**), send **RFQs** and compare **Quotes**.
+3. A marketplace **Order** creates the buyer's purchase order and the supplier's sales order; the supplier ships and invoices; the buyer receives.
+4. Problems are raised as **Disputes** on the order. Marketplace fees charged to suppliers are listed in **Fees**.
 
 ## 9. Traceability and recalls
 
-- **Scan a pack** (GS1 DataMatrix, barcode or the platform's QR code): the result tells you whether the product and batch are recorded, expired or **recalled**. Anyone can scan a platform QR code at `/t/{code}`.
-- **Lot history:** `GET trace/lots?…` shows every recorded movement of a batch you took part in.
-- **Recall notice:** when a batch you hold is recalled, your stock is quarantined automatically and you receive a notice and an e-mail. **Acknowledge** it, return or destroy the stock, then **complete** the notice.
-- **Incidents:** record stolen, lost or unscannable packs (`POST regulatory-incidents`); the reporting deadline of your country is shown.
+- **Scan a pack** (**Traceability → Verify a pack**; GS1 DataMatrix, barcode or the platform's QR code): the result tells you whether the product and batch are recorded, expired or **recalled**. Anyone can scan a platform QR code at `/t/{code}`.
+- **Identifiers:** issue batch, product and SSCC identifiers with their QR code.
+- **Lot history:** **Traceability → Lot history** shows every recorded movement of a batch you took part in; **Events** lists your own events and **Integrity** checks your hash chain and downloads EPCIS.
+- **Recall notice:** when a batch you hold is recalled, your stock is quarantined automatically and you receive a notice and an e-mail. In **Recalls & incidents → Recall notices**, **acknowledge** it, return or destroy the stock, then **complete** the notice.
+- **Issuing a recall** (brand owners): **Recalls & incidents → Recalls**; a second person activates it.
+- **Incidents:** record stolen, lost or unscannable packs in **Regulatory incidents**; your country's reporting deadline is shown.
 
 ## 10. Logistics and cold chain
 
-Create a shipment from a delivery or transfer, assign a carrier, driver and vehicle, then dispatch. Drivers record tracking events, temperatures and the **proof of delivery** (receiver, signature, photo, delivered quantities). Temperature excursions alert the shipper, who records an assessment. Undelivered goods are corrected through the original document.
+In **Logistics → Shipments**, create a shipment from a delivery or transfer, assign a carrier, driver, vehicle and temperature logger, then dispatch. Record tracking events, temperatures and the **proof of delivery** (receiver, condition, delivered quantities, signature). Temperature excursions alert the shipper, who records an assessment. **Reconciliation** compares shipped, delivered and returned quantities; undelivered goods are corrected through the original document.
 
-## 11. Analytics and the reporting assistant
+## 11. Finance
 
-- **Executive dashboard** (web **Analytics**): sales, stock value, expiry risk, POS, field force, integrations and recalls, limited to what your role and locations allow.
+**Finance → Reports** has the profit and loss, balance sheet, trial balance, account ledgers and payables aging. **Journal entries** (balanced manual entries and reversals), **Payments** (supplier payments), **Chart of accounts** and **Periods** (close and reopen) complete the area.
+
+## 12. Analytics and the reporting assistant
+
+- **Executive dashboard** and area **Dashboards**: sales, purchases, stock value, expiry risk, POS, marketplace, field force, integrations and recalls, limited to what your role and locations allow.
+- **Forecast:** weekly demand with a range and the model's measured accuracy.
 - **Recommendations:** reorder, overstock, expiry risk and anomalies. They are suggestions: you accept (a reorder becomes a draft requisition) or dismiss them with a reason.
-- **Ask a question** in the box on the Analytics page, for example "What were our sales last month?" or "What is at risk of expiring?". Answers come from your own reports and are labelled as generated; the assistant cannot change anything.
+- **Assistant:** ask a question in plain English, for example "What were our sales last month?". Answers come from your own reports and are labelled as generated; the assistant cannot change anything.
 
-## 12. Getting help
+## 13. Connected systems and devices
+
+- **Integrations** (integration administrators): connectors, field mappings, messages received (retry, ignore or fix a code and reprocess), runs, webhooks, external references and health. See *Connecting an external system*.
+- **Devices & sync:** registered tills and phones (revoke or wipe a lost one), and the issues raised by offline transactions.
+
+## 14. Getting help
 
 - Each error message includes a reference (`correlation_id`); quote it to support.
 - Your organization's administrator manages members, roles and locations.

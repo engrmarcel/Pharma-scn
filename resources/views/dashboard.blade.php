@@ -35,10 +35,14 @@
                     @elseif ($memberships->isNotEmpty())
                         Choose an organization below to see its stock, orders and sales figures.
                     @else
-                        Welcome to the network.
+                        Welcome to the network. Register your organization, or accept an invitation to join one.
                     @endif
                 </p>
                 <div class="mt-6 flex flex-wrap gap-3">
+                    @if ($memberships->isEmpty())
+                        <a href="{{ route('onboarding.organization') }}" class="btn-gold"><x-heroicon-o-building-office-2 class="size-5"/>Register your organization</a>
+                        <a href="{{ route('invitations.accept') }}" class="btn-ghost-light"><x-heroicon-o-envelope-open class="size-5"/>Accept an invitation</a>
+                    @endif
                     @if ($nav['pos'])
                         <a href="{{ route('pos.register') }}" class="btn-gold"><x-heroicon-o-building-storefront class="size-5"/>Open POS register</a>
                     @endif

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-22: Web screens, part 7: platform administration and onboarding
+- Administration: organizations (profile, documents, modules, subscription, entitlement overrides, suspend and reactivate), users (suspend, reactivate, reset two-factor), product master (create and edit, regulatory identifiers and checks, change-request review), platform recalls, network traceability (lot history across organizations, independent event verification, chain integrity), marketplace disputes and fees, countries (readiness, details, profile, go-live reviews, tax rates, identifier types, activation), exchange rates, subscription plans with entitlements, platform analytics, operations with failed-job retry, security policy, branding with preview, and the platform audit log. Each screen shows only to staff whose role allows it.
+- Onboarding: sign-up, forgotten password and reset, organization registration and invitation acceptance; the invitation email now links to the accept page.
+- Fixed: the password reset email pointed to a route that did not exist.
+- Screen tests now run the API's own middleware (route-model binding, tenancy, modules, idempotency) as in production; this exposed an admin action that bound an empty organization under the test harness.
+- 321 tests passing.
+
 ### 2026-10-22: Web screens, part 6: integrations, offline sync, analytics
 - Integrations: connectors (register, edit, activate, pause, disable; inbound key and request-signing secret shown once; encrypted outbound credentials), field mappings per canonical entity with templates and a sample-record preview, file upload, SFTP check and CSV exports, reconciliation of references and stock against the source system; messages (payload as received with personal data masked, mapped result, error; retry, ignore, or map a code to a product or warehouse and reprocess); runs; webhooks (subscriptions with event types, secret shown once, test event, deliveries with redelivery, event outbox); external references; health refreshed every minute.
 - Offline sync: issues raised by offline transactions (acknowledge, or record found stock for a shortfall), unresolved conflicts and rejections, and per-device reconciliation.

@@ -30,6 +30,7 @@ class OrganizationInvitationNotification extends Notification implements ShouldQ
             ->line("{$this->organization->name} has invited you to join their workspace on {$brand['display_name']}.")
             ->line('Sign in or create an account with this email address, then accept the invitation using this code:')
             ->line($this->token)
+            ->action('Accept the invitation', route('invitations.accept', ['token' => $this->token]))
             ->line('The invitation expires in 7 days. If you were not expecting it, you can ignore this email.');
     }
 }
