@@ -26,8 +26,14 @@ class TraceChain
     public function append(string $organizationId, array $event): TraceEvent
     {
         return DB::transaction(function () use ($organizationId, $event) {
-            DB::table('trace_chain_heads')->insertOrIgnore(['organization_id' => $organizationId, 'sequence' => 0, 'created_at' => now(), 'updated_at' => now()]);
-            $head = DB::table('trace_chain_heads')->where('organization_id', $organizationId)->lockForUpdate()->first();
+            // Lock first, insert only for a new organization (INSERT IGNORE on an existing head takes a
+            // shared lock that deadlocks with a concurrent append; found by the Phase 10 load test).
+            $lockHead = fn () => DB::table('trace_chain_heads')->where('organization_id', $organizationId)->lockForUpdate()->first();
+            $head = $lockHead();
+            if ($head === null) {
+                DB::table('trace_chain_heads')->insertOrIgnore(['organization_id' => $organizationId, 'sequence' => 0, 'created_at' => now(), 'updated_at' => now()]);
+                $head = $lockHead();
+            }
 
             $row = $event + [
                 'id' => strtolower((string) Str::ulid()),

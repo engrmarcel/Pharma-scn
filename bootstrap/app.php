@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureAccountSecurity;
 use App\Http\Middleware\EnsureDeviceActive;
 use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
+use App\Http\Middleware\ProfileRequest;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\Exceptions\BusinessRuleViolation;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AssignCorrelationId::class);
         $middleware->append(SecurityHeaders::class);
+        $middleware->append(ProfileRequest::class); // load tests only (PERF_PROFILE)
 
         $middleware->alias([
             'tenant' => ResolveTenant::class,

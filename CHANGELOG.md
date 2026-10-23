@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 10a: load testing and measured fixes
+- Load-test tooling: `php artisan perf:generate` fills a `*_load` database with LOAD TEST data through the domain services; `tools/load/cluster.mjs` runs several production-like app instances behind a least-busy load balancer; `tools/load/run.mjs` runs ten scenarios at increasing concurrency; `tools/load/summarize.mjs` reports per-route cost from the new request profiler (`PERF_PROFILE`, off by default, refused in production); `tools/load/ab.sh` compares two checkouts on the same data. Results and limitations: `docs/PERFORMANCE_AND_LOAD_TESTING.md`.
+- Fixed: concurrent counter sales failed with database deadlocks (up to 25% of sales at 16 cashiers). Document numbers and the traceability chain head are locked before any insert, a cart's lines are deleted by key, stock is locked in product order, idempotency keys are claimed through the unique index, and POS transactions retry a deadlock (not provider payments). Afterwards: no errors and no deadlocks at 16 cashiers.
+- New `php artisan ops:consistency`: checks that stock equals its ledger, nothing is negative or over-reserved, reservations match, journals balance, completed sales are paid and invoiced, document numbers are unique and every traceability chain verifies.
+- Fixed: the API rate limit ignored the plan's `api_requests_per_minute`; it now follows the plan per user and organization, with a platform default and a ceiling for unlimited plans.
+- Dashboards are cached per viewer for 60 seconds (`ANALYTICS_DASHBOARD_CACHE_SECONDS`), keyed on permissions and locations so access changes apply at once; responses carry `meta.generated_at`. Executive dashboard under load: about 5x the throughput.
+- Indexes for period reports on stock movements and sales invoices; one query for module checks; the subscription is loaded once per entitlement check; API tokens record "last used" at most once a minute.
+- ADR-0025: locking rules for new code, and why per-organization write serialization stays for now.
+- 325 tests passing.
+
 ### 2026-10-22: Web screens, part 7: platform administration and onboarding
 - Administration: organizations (profile, documents, modules, subscription, entitlement overrides, suspend and reactivate), users (suspend, reactivate, reset two-factor), product master (create and edit, regulatory identifiers and checks, change-request review), platform recalls, network traceability (lot history across organizations, independent event verification, chain integrity), marketplace disputes and fees, countries (readiness, details, profile, go-live reviews, tax rates, identifier types, activation), exchange rates, subscription plans with entitlements, platform analytics, operations with failed-job retry, security policy, branding with preview, and the platform audit log. Each screen shows only to staff whose role allows it.
 - Onboarding: sign-up, forgotten password and reset, organization registration and invitation acceptance; the invitation email now links to the accept page.

@@ -1,0 +1,36 @@
+A1 catalogue_search     c= 1     5.92/s  p50   166ms  p95   213ms  p99   308ms  errors 0
+A1 catalogue_search     c= 8    27.42/s  p50   283ms  p95   377ms  p99   468ms  errors 0
+A1 stock_levels         c= 1     2.58/s  p50   379ms  p95   515ms  p99   519ms  errors 0
+A1 stock_levels         c= 8    12.08/s  p50   650ms  p95   900ms  p99  1081ms  errors 0
+A1 customers            c= 1     5.83/s  p50   169ms  p95   263ms  p99   389ms  errors 0
+A1 customers            c= 8    31.83/s  p50   241ms  p95   369ms  p99   444ms  errors 0
+A1 pos_lookup           c= 1     5.58/s  p50   169ms  p95   258ms  p99   283ms  errors 0
+A1 pos_lookup           c= 8    28.92/s  p50   263ms  p95   373ms  p99   416ms  errors 0
+A1 
+B1 catalogue_search     c= 1     6.08/s  p50   162ms  p95   208ms  p99   225ms  errors 0
+B1 catalogue_search     c= 8     29.5/s  p50   268ms  p95   356ms  p99   430ms  errors 0
+B1 stock_levels         c= 1     2.67/s  p50   367ms  p95   437ms  p99   485ms  errors 0
+B1 stock_levels         c= 8    13.75/s  p50   596ms  p95   690ms  p99   769ms  errors 0
+B1 customers            c= 1        7/s  p50   143ms  p95   173ms  p99   209ms  errors 0
+B1 customers            c= 8    34.67/s  p50   224ms  p95   303ms  p99   338ms  errors 0
+B1 pos_lookup           c= 1     5.58/s  p50   172ms  p95   245ms  p99   343ms  errors 0
+B1 pos_lookup           c= 8    28.58/s  p50   267ms  p95   370ms  p99   452ms  errors 0
+B1 
+A2 catalogue_search     c= 1        6/s  p50   168ms  p95   223ms  p99   299ms  errors 0
+A2 catalogue_search     c= 8    26.92/s  p50   295ms  p95   391ms  p99   434ms  errors 0
+A2 stock_levels         c= 1     2.58/s  p50   380ms  p95   486ms  p99   488ms  errors 0
+A2 stock_levels         c= 8    13.08/s  p50   613ms  p95   749ms  p99   812ms  errors 0
+A2 customers            c= 1     7.08/s  p50   140ms  p95   172ms  p99   195ms  errors 0
+A2 customers            c= 8    33.08/s  p50   233ms  p95   341ms  p99   408ms  errors 0
+A2 pos_lookup           c= 1     5.58/s  p50   173ms  p95   243ms  p99   382ms  errors 0
+A2 pos_lookup           c= 8    28.17/s  p50   266ms  p95   402ms  p99   508ms  errors 0
+A2 
+B2 catalogue_search     c= 1        6/s  p50   168ms  p95   206ms  p99   211ms  errors 0
+B2 catalogue_search     c= 8    28.83/s  p50   273ms  p95   357ms  p99   418ms  errors 0
+B2 stock_levels         c= 1     2.67/s  p50   363ms  p95   512ms  p99   518ms  errors 0
+B2 stock_levels         c= 8    13.67/s  p50   585ms  p95   724ms  p99   807ms  errors 0
+B2 customers            c= 1     7.08/s  p50   142ms  p95   174ms  p99   196ms  errors 0
+B2 customers            c= 8    34.33/s  p50   227ms  p95   314ms  p99   346ms  errors 0
+B2 pos_lookup           c= 1     5.58/s  p50   171ms  p95   224ms  p99   410ms  errors 0
+B2 pos_lookup           c= 8    26.25/s  p50   290ms  p95   420ms  p99   495ms  errors 0
+B2 

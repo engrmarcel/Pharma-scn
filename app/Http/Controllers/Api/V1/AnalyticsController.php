@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Domain\Access\Services\AccessControl;
+use App\Domain\Analytics\Services\AnalyticsScope;
 use App\Domain\Analytics\Services\CommercialAnalytics;
 use App\Domain\Analytics\Services\ExecutiveDashboard;
 use App\Domain\Analytics\Services\InventoryAnalytics;
@@ -11,6 +13,7 @@ use App\Domain\Crm\Services\CrmAnalytics;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +30,7 @@ class AnalyticsController extends Controller
     {
         [$from, $to] = $this->period($request);
 
-        return response()->json(['data' => $dashboard->build($from, $to)]);
+        return $this->cached($request, 'executive', compact('from', 'to'), fn () => $dashboard->build($from, $to));
     }
 
     public function dashboard(Request $request, string $dashboard, CommercialAnalytics $commercial, InventoryAnalytics $inventory, OperationsAnalytics $operations): JsonResponse
@@ -35,7 +38,7 @@ class AnalyticsController extends Controller
         [$from, $to] = $this->period($request);
         $warehouse = $request->validate(['warehouse_id' => ['nullable', 'ulid']])['warehouse_id'] ?? null;
 
-        $data = match ($dashboard) {
+        return $this->cached($request, $dashboard, compact('from', 'to', 'warehouse') + ['territory_id' => $request->query('territory_id')], fn () => match ($dashboard) {
             'sales' => $commercial->sales($from, $to, $warehouse),
             'purchases' => $commercial->purchases($from, $to, $warehouse),
             'pos' => $commercial->pos($from, $to, $warehouse),
@@ -46,9 +49,33 @@ class AnalyticsController extends Controller
             'integrations' => $operations->integrations($from, $to),
             'sync' => $operations->sync($from, $to),
             'recalls' => $operations->recalls(),
-        };
+        });
+    }
 
-        return response()->json(['data' => $data]);
+    /**
+     * Dashboards are recomputed live and are the costliest reads (Phase 10 load test), so a result is
+     * kept briefly per viewer. The key holds the organization, the viewer, their current permissions
+     * and warehouse restrictions, so a change in access takes effect at once; only the figures can be
+     * up to `analytics.dashboard_cache_seconds` old, which `generated_at` states.
+     */
+    private function cached(Request $request, string $dashboard, array $params, \Closure $build): JsonResponse
+    {
+        $ttl = (int) config('analytics.dashboard_cache_seconds');
+        if ($ttl <= 0) {
+            return response()->json(['data' => $build(), 'meta' => ['generated_at' => now()->toIso8601String()]]);
+        }
+        $scope = app(AnalyticsScope::class);
+        $permissions = app(AccessControl::class)->organizationPermissions($request->user());
+        ksort($permissions);
+        $key = 'analytics:'.$scope->organizationId().':'.$request->user()->id.':'.$dashboard.':'.sha1(json_encode([
+            $params, array_keys($permissions), $scope->warehouseIds(),
+        ]));
+
+        // Authorization runs inside the builders, so a cached result is only ever served to the same
+        // viewer with the same permissions that already passed it.
+        $result = Cache::remember($key, $ttl, fn () => ['data' => $build(), 'generated_at' => now()->toIso8601String()]);
+
+        return response()->json(['data' => $result['data'], 'meta' => ['generated_at' => $result['generated_at']]]);
     }
 
     public function platform(Request $request, PlatformAnalytics $platform): JsonResponse

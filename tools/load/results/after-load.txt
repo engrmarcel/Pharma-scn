@@ -1,0 +1,43 @@
+catalogue_search     c= 1      5.8/s  p50   169ms  p95   233ms  p99   318ms  errors 0
+catalogue_search     c= 4     20.6/s  p50   191ms  p95   243ms  p99   264ms  errors 0
+catalogue_search     c= 8     27.4/s  p50   286ms  p95   378ms  p99   437ms  errors 0
+catalogue_search     c=16    28.27/s  p50   577ms  p95   710ms  p99   780ms  errors 0
+stock_levels         c= 1      2.6/s  p50   381ms  p95   473ms  p99   692ms  errors 0
+stock_levels         c= 4     8.27/s  p50   496ms  p95   570ms  p99   606ms  errors 0
+stock_levels         c= 8    12.73/s  p50   625ms  p95   772ms  p99   859ms  errors 0
+stock_levels         c=16    13.27/s  p50  1263ms  p95  1491ms  p99  1719ms  errors 0
+expiring             c= 1     6.07/s  p50   161ms  p95   211ms  p99   248ms  errors 0
+expiring             c= 4    20.27/s  p50   192ms  p95   261ms  p99   301ms  errors 0
+expiring             c= 8     27.6/s  p50   279ms  p95   383ms  p99   441ms  errors 0
+expiring             c=16    26.67/s  p50   599ms  p95   776ms  p99   836ms  errors 0
+customers            c= 1     6.87/s  p50   145ms  p95   187ms  p99   219ms  errors 0
+customers            c= 4    21.53/s  p50   177ms  p95   238ms  p99   679ms  errors 0
+customers            c= 8    31.93/s  p50   243ms  p95   338ms  p99   398ms  errors 0
+customers            c=16    29.87/s  p50   530ms  p95   764ms  p99   888ms  errors 0
+pos_lookup           c= 1     5.47/s  p50   185ms  p95   268ms  p99   319ms  errors 0
+pos_lookup           c= 4     17.4/s  p50   222ms  p95   307ms  p99   370ms  errors 0
+pos_lookup           c= 8    25.27/s  p50   304ms  p95   435ms  p99   481ms  errors 0
+pos_lookup           c=16    24.87/s  p50   652ms  p95   817ms  p99   931ms  errors 0
+pos_sales_list       c= 1      5.2/s  p50   187ms  p95   252ms  p99   355ms  errors 0
+pos_sales_list       c= 4     17.2/s  p50   228ms  p95   305ms  p99   402ms  errors 0
+pos_sales_list       c= 8    23.67/s  p50   329ms  p95   428ms  p99   503ms  errors 0
+pos_sales_list       c=16    23.47/s  p50   693ms  p95   844ms  p99  1026ms  errors 0
+pos_report           c= 1      3.2/s  p50   299ms  p95   399ms  p99   561ms  errors 0
+pos_report           c= 4     10.6/s  p50   380ms  p95   462ms  p99   478ms  errors 0
+pos_report           c= 8    15.07/s  p50   531ms  p95   647ms  p99   762ms  errors 0
+pos_report           c=16    15.33/s  p50  1067ms  p95  1300ms  p99  1431ms  errors 0
+sales_dashboard      c= 1     6.67/s  p50   143ms  p95   191ms  p99   689ms  errors 0
+sales_dashboard      c= 4    24.07/s  p50   161ms  p95   223ms  p99   264ms  errors 0
+sales_dashboard      c= 8    33.13/s  p50   233ms  p95   332ms  p99   387ms  errors 0
+sales_dashboard      c=16    32.33/s  p50   483ms  p95   714ms  p99  1316ms  errors 0
+executive_dashboard  c= 1     6.33/s  p50   139ms  p95   189ms  p99  1535ms  errors 0
+executive_dashboard  c= 4    24.47/s  p50   160ms  p95   211ms  p99   271ms  errors 0
+executive_dashboard  c= 8    32.33/s  p50   241ms  p95   323ms  p99   420ms  errors 0
+executive_dashboard  c=16     32.8/s  p50   481ms  p95   632ms  p99   714ms  errors 0
+pos_sale             c= 1     0.73/s  p50  1332ms  p95  1869ms  p99  1869ms  errors 0
+pos_sale             c= 4     2.27/s  p50  1873ms  p95  2514ms  p99  2609ms  errors 0
+pos_sale             c= 8     2.93/s  p50  2846ms  p95  4201ms  p99  5363ms  errors 0
+pos_sale             c=16     3.33/s  p50  5634ms  p95  7820ms  p99  8104ms  errors 0
+
+Saved C:\xampp\htdocs\pharm-scn\tools\load\results\2026-10-23T17-42-11-423Z.json
+deadlocks logged during run: 0

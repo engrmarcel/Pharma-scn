@@ -15,6 +15,9 @@ use App\Domain\Analytics\Forecasting\StatisticalForecaster;
 
 return [
 
+    // Dashboards are kept this long per viewer (same permissions and locations); 0 = always recompute.
+    'dashboard_cache_seconds' => (int) env('ANALYTICS_DASHBOARD_CACHE_SECONDS', 60),
+
     // Name of a connection in config/database.php (e.g. "analytics_replica"); null = default connection.
     'connection' => env('ANALYTICS_DB_CONNECTION'),
 

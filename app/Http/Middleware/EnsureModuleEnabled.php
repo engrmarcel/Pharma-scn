@@ -29,7 +29,9 @@ class EnsureModuleEnabled
         $organization = $this->tenant->organization();
         $candidates = explode('|', $modules);
 
-        $enabled = array_values(array_filter($candidates, fn ($m) => $organization?->hasModule($m)));
+        // One query for all candidates (was one per module; Phase 10 load test).
+        $on = $organization ? $organization->modules()->where('enabled', true)->whereIn('module', $candidates)->pluck('module')->all() : [];
+        $enabled = array_values(array_intersect($candidates, $on));
         if ($enabled === []) {
             throw new BusinessRuleViolation('module_not_enabled', "The {$modules} module is not enabled for this organization.", 403);
         }

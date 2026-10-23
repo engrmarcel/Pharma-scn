@@ -18,8 +18,14 @@ class DocumentNumberer
     {
         $organizationId = $this->tenant->id() ?? throw new \LogicException('Document numbering requires a tenant context.');
 
-        DB::table('document_sequences')->insertOrIgnore(['organization_id' => $organizationId, 'prefix' => $prefix, 'next_value' => 1]);
-        $row = DB::table('document_sequences')->where('organization_id', $organizationId)->where('prefix', $prefix)->lockForUpdate()->first();
+        // Lock first; insert only for a new prefix. INSERT IGNORE on an existing row takes a shared lock,
+        // and two transactions upgrading shared locks to exclusive deadlock (found by the Phase 10 load test).
+        $query = fn () => DB::table('document_sequences')->where('organization_id', $organizationId)->where('prefix', $prefix)->lockForUpdate()->first();
+        $row = $query();
+        if ($row === null) {
+            DB::table('document_sequences')->insertOrIgnore(['organization_id' => $organizationId, 'prefix' => $prefix, 'next_value' => 1]);
+            $row = $query();
+        }
         DB::table('document_sequences')->where('organization_id', $organizationId)->where('prefix', $prefix)->update(['next_value' => $row->next_value + 1]);
 
         return sprintf('%s-%06d', $prefix, $row->next_value);

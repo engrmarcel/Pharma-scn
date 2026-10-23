@@ -36,9 +36,9 @@ class EntitlementService
      *
      * @return array<string, array{enabled: bool, limit: int|null}>
      */
-    public function entitlements(Organization $organization): array
+    public function entitlements(Organization $organization, ?OrganizationSubscription $subscription = null): array
     {
-        $plan = $this->currentSubscription($organization)?->plan?->entitlementMap() ?? [];
+        $plan = ($subscription ?? $this->currentSubscription($organization))?->plan?->entitlementMap() ?? [];
         $overrides = DB::table('organization_entitlement_overrides')->where('organization_id', $organization->id)->get()
             ->mapWithKeys(fn ($row) => [$row->key => ['enabled' => (bool) $row->enabled, 'limit' => $row->limit_value === null ? null : (int) $row->limit_value]])
             ->all();
@@ -57,7 +57,7 @@ class EntitlementService
         $subscription = $this->currentSubscription($organization);
 
         return $subscription !== null && $subscription->isOperational()
-            && ($this->entitlements($organization)[$feature]['enabled'] ?? false);
+            && ($this->entitlements($organization, $subscription)[$feature]['enabled'] ?? false);
     }
 
     /** @return array<string, int> */

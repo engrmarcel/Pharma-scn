@@ -9,6 +9,7 @@ use App\Domain\Analytics\Forecasting\ForecastProvider;
 use App\Domain\Analytics\Models\Recommendation;
 use App\Domain\Billing\Models\OrganizationSubscription;
 use App\Domain\Billing\Models\SubscriptionPlan;
+use App\Domain\Billing\Services\ApiRateLimits;
 use App\Domain\Catalogue\Models\Manufacturer;
 use App\Domain\Catalogue\Models\OrganizationProduct;
 use App\Domain\Catalogue\Models\Product;
@@ -94,6 +95,7 @@ use App\Http\Middleware\EnsureModuleEnabled;
 use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\View\Composers\NavigationComposer;
+use App\Models\PersonalAccessToken;
 use App\Models\User;
 use App\Support\BusinessCalendar;
 use App\Support\Events\EventRecorder;
@@ -107,6 +109,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Sanctum\Sanctum;
 use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
@@ -139,6 +142,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Mass-assigning a guarded attribute is a bug, not something to ignore quietly.
         Model::preventSilentlyDiscardingAttributes(! $this->app->isProduction());
+        Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         // Stable type names in polymorphic columns; class names never leak into the database.
         Relation::enforceMorphMap([
@@ -238,7 +242,9 @@ class AppServiceProvider extends ServiceProvider
         // Web screens call the API in-process (ADR-0024); one page view can make several calls.
         RateLimiter::for('api', fn (Request $request) => $request->attributes->get('web_client')
             ? Limit::perMinute(600)->by('web:'.$request->user()?->id)
-            : Limit::perMinute(120)->by($request->user()?->id ?: $request->ip()));
+            : ($request->user()
+                ? Limit::perMinute(app(ApiRateLimits::class)->perMinute($request->user(), $request->header(config('platform.tenancy.header'))))->by($request->user()->id)
+                : Limit::perMinute((int) config('platform.api.default_rate_per_minute', 120))->by($request->ip())));
         RateLimiter::for('auth', fn (Request $request) => [
             Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip()),
             Limit::perMinute(30)->by($request->ip()),

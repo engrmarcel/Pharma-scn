@@ -8,7 +8,6 @@ use App\Support\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -87,38 +86,40 @@ class EnforceIdempotency
 
     private function claim(string $scope, string $key, Request $request, string $hash): IdempotencyKey
     {
-        return DB::transaction(function () use ($scope, $key, $request, $hash) {
-            $existing = IdempotencyKey::query()->where('scope', $scope)->where('key', $key)->lockForUpdate()->first();
+        // The unique index decides the race: insert, and on a duplicate read the winner. Locking a key
+        // that does not exist yet takes a gap lock, and two new keys in the same gap deadlock on insert
+        // (found by the Phase 10 load test).
+        $find = fn () => IdempotencyKey::query()->where('scope', $scope)->where('key', $key)->first();
+        $existing = $find();
 
-            if ($existing !== null && $existing->expires_at->isPast()) {
-                $existing->delete();
-                $existing = null;
+        if ($existing !== null && $existing->expires_at->isPast()) {
+            IdempotencyKey::query()->whereKey($existing->getKey())->delete();
+            $existing = null;
+        }
+
+        if ($existing === null) {
+            try {
+                return IdempotencyKey::query()->create([
+                    'scope' => $scope,
+                    'key' => $key,
+                    'method' => $request->method(),
+                    'path' => substr($request->path(), 0, 255),
+                    'request_hash' => $hash,
+                    'expires_at' => now()->addHours(config('platform.idempotency.ttl_hours')),
+                ]);
+            } catch (UniqueConstraintViolationException) {
+                $existing = $find() ?? throw new BusinessRuleViolation('idempotency_request_in_progress', 'A request with this idempotency key is already being processed.', 409);
             }
+        }
 
-            if ($existing === null) {
-                try {
-                    return IdempotencyKey::query()->create([
-                        'scope' => $scope,
-                        'key' => $key,
-                        'method' => $request->method(),
-                        'path' => substr($request->path(), 0, 255),
-                        'request_hash' => $hash,
-                        'expires_at' => now()->addHours(config('platform.idempotency.ttl_hours')),
-                    ]);
-                } catch (UniqueConstraintViolationException) {
-                    throw new BusinessRuleViolation('idempotency_request_in_progress', 'A request with this idempotency key is already being processed.', 409);
-                }
-            }
+        if (! hash_equals($existing->request_hash, $hash)) {
+            throw new BusinessRuleViolation('idempotency_key_reused', 'This idempotency key was already used for a different request.', 422);
+        }
 
-            if (! hash_equals($existing->request_hash, $hash)) {
-                throw new BusinessRuleViolation('idempotency_key_reused', 'This idempotency key was already used for a different request.', 422);
-            }
+        if ($existing->completed_at === null) {
+            throw new BusinessRuleViolation('idempotency_request_in_progress', 'A request with this idempotency key is already being processed.', 409);
+        }
 
-            if ($existing->completed_at === null) {
-                throw new BusinessRuleViolation('idempotency_request_in_progress', 'A request with this idempotency key is already being processed.', 409);
-            }
-
-            return $existing;
-        });
+        return $existing;
     }
 }

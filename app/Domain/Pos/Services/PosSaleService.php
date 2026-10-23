@@ -49,6 +49,9 @@ use Illuminate\Support\Facades\Gate;
  */
 class PosSaleService
 {
+    /** A transaction that dies in a deadlock is retried (the database rolled it back completely). */
+    private const DEADLOCK_ATTEMPTS = 3;
+
     public const ELECTRONIC = ['card', 'bank_transfer', 'mobile_money'];
 
     public function __construct(
@@ -87,7 +90,7 @@ class PosSaleService
                 'pos_shift_id' => $shift->id, 'pos_terminal_id' => $terminal->id, 'cashier_id' => $cashier->id,
                 'customer_id' => $customer?->id, 'warehouse_id' => $terminal->warehouse_id, 'status' => 'open',
                 'currency_code' => $this->tenant->organization()->country->currency_code,
-            ]))->load('lines', 'payments');
+            ]), self::DEADLOCK_ATTEMPTS)->load('lines', 'payments');
         } catch (UniqueConstraintViolationException) {
             return PosSale::query()->where('client_transaction_id', strtolower($clientTransactionId))->firstOrFail()->load('lines', 'payments');
         }
@@ -106,7 +109,7 @@ class PosSaleService
             $locked->forceFill(['status' => 'open'])->save();
 
             return $locked->load('lines', 'payments');
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     /**
@@ -122,7 +125,12 @@ class PosSaleService
         $customer = $locked->customer_id ? Customer::query()->find($locked->customer_id) : null;
         $maxDiscount = $this->salesPolicy->settings()['max_discount_percent'];
 
-        $locked->lines()->delete();
+        // Delete by primary key: a range delete on an empty cart takes a gap lock at the end of the
+        // index, where every new sale inserts its lines (deadlock found by the Phase 10 load test).
+        $existingLines = $locked->lines()->pluck('id');
+        if ($existingLines->isNotEmpty()) {
+            PosSaleLine::query()->whereKey($existingLines)->delete();
+        }
         $totals = ['subtotal' => '0', 'discount' => '0', 'tax' => '0', 'total' => '0'];
         foreach ($lines as $i => $line) {
             $level = $this->units->level($line['product_id'], $line['package_level_code'] ?? null);
@@ -324,7 +332,8 @@ class PosSaleService
                 throw new BusinessRuleViolation('pos_sale_empty', 'The cart is empty.', 422);
             }
 
-            foreach ($locked->lines()->get() as $line) {
+            // Product order: concurrent sales then lock stock balances in the same order.
+            foreach ($locked->lines()->orderBy('product_id')->orderBy('id')->get() as $line) {
                 if ($line->requested_batch_id) {
                     $this->fefo->assertSellable(Batch::query()->findOrFail($line->requested_batch_id));
                     $this->reservations->reserveBatch($line->product_id, $locked->warehouse_id, $line->requested_batch_id, (string) $line->base_quantity, 'pos_sale_line', $line->id);
@@ -335,7 +344,7 @@ class PosSaleService
             $locked->forceFill(['status' => 'awaiting_payment'])->save();
 
             return $locked->load('lines', 'payments');
-        });
+        }, self::DEADLOCK_ATTEMPTS);
     }
 
     /**
@@ -380,7 +389,7 @@ class PosSaleService
             $this->tryComplete($locked);
 
             return array_filter(['sale' => $locked->fresh(['lines', 'payments']), 'payment' => $payment->fresh(), 'instructions' => $instructions]);
-        });
+        }, $method === 'cash' || $channel === 'manual_terminal' ? self::DEADLOCK_ATTEMPTS : 1); // a provider payment is not retried: it would be initiated twice
     }
 
     /** Supervisor confirms a standalone-terminal payment after checking the terminal's settlement. */
@@ -494,7 +503,8 @@ class PosSaleService
         $invoiceLines = [];
         $deltas = [];
 
-        foreach ($sale->lines()->orderBy('id')->get() as $line) {
+        // Stock is issued in product order (the same lock order as checkout); invoice lines keep the cart order.
+        foreach ($sale->lines()->orderBy('product_id')->orderBy('id')->get() as $line) {
             // Offline shortfalls (unallocated) are issued later, when the issue is resolved.
             $toShip = bcsub((string) $line->base_quantity, (string) $line->unallocated_base_quantity, 4);
             $shipped = bccomp($toShip, '0', 4) > 0 ? $this->reservations->consumeQuantity('pos_sale_line', $line->id, $toShip) : ['batches' => []];
@@ -503,6 +513,8 @@ class PosSaleService
                 PosSaleAllocation::query()->create(['pos_sale_line_id' => $line->id, 'batch_id' => $batchId, 'base_quantity' => $qty, 'unit_cost' => $costs[$batchId]]);
                 $deltas[] = ['batch_id' => $batchId, 'quantity' => $qty];
             }
+        }
+        foreach ($sale->lines()->orderBy('id')->get() as $line) {
             $invoiceLines[] = $line->only(['product_id', 'package_level_code', 'quantity', 'base_quantity', 'unit_price', 'list_price', 'discount_percent',
                 'tax_category_code', 'tax_rate', 'line_subtotal', 'line_discount', 'line_tax', 'line_total']);
         }

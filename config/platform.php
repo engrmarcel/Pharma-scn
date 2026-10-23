@@ -45,6 +45,13 @@ return [
             ->mapWithKeys(fn ($pair) => [trim(strstr($pair, '=', true)) => trim(substr(strstr($pair, '='), 1))])->all(),
     ],
 
+    'api' => [
+        // Per-user rate without an organization, or when the plan has no api_requests_per_minute entitlement.
+        'default_rate_per_minute' => (int) env('API_DEFAULT_RATE_PER_MINUTE', 120),
+        // Ceiling for plans with an unlimited API rate, to protect the platform.
+        'unlimited_rate_ceiling' => (int) env('API_UNLIMITED_RATE_CEILING', 6000),
+    ],
+
     'tenancy' => [
         // API clients select the acting organization with this header.
         'header' => 'X-Organization-Id',
