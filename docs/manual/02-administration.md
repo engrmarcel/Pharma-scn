@@ -95,6 +95,7 @@ A verification record is the platform's own check; it is never presented as a st
 |---|---|
 | Readiness | `GET /api/v1/health` |
 | Queues, integration backlogs, review queues | **Administration → Operations** (refreshes every 30 seconds) |
+| Alerts | **Administration → Operations**, top of the page. Checked every minute: queue backlog and age, failed jobs, whether the scheduler and queue workers are running, webhook, integration and offline-sync backlogs, and the nightly consistency check. Operations staff are e-mailed when an alert opens and when it clears |
 | Failed jobs | **Administration → Operations**: **Retry** sends a job back to the queue (payloads are not shown) |
 | Audit trail | **Administration → Audit log** (platform); **Organization → Audit log** (organization) |
 | Platform figures by country | **Administration → Platform analytics**, optionally in one reporting currency |

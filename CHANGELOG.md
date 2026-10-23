@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-23: Phase 10b: operational monitoring and alerts
+- Heartbeats: `ops:heartbeat` (every minute) records that the scheduler ran and sends a heartbeat job through each watched queue, so stopped schedulers and stuck workers are visible instead of looking like an empty queue.
+- Alerts: `ops:monitor` (every minute) checks queue backlog and age, failed jobs in the last hour, scheduler and worker heartbeats, overdue and abandoned webhook deliveries, integration backlog and quarantine, offline-sync backlog and high-severity sync issues against `config/operations.php`. One alert per problem episode; platform operations staff are e-mailed when it opens, escalates or clears. `ops:consistency --alert` runs nightly and raises a critical alert when an invariant breaks.
+- Queue figures now come from the queue API, so they are right for Redis as well as the database queue.
+- `GET /api/v1/metrics`: Prometheus gauges for scrapers, behind `OPS_METRICS_TOKEN` (off when unset). `GET /api/v1/admin/operations/alerts`: alert history. The Operations screen shows open alerts and heartbeats.
+- 330 tests passing.
+
 ### 2026-10-23: Phase 10a: load testing and measured fixes
 - Load-test tooling: `php artisan perf:generate` fills a `*_load` database with LOAD TEST data through the domain services; `tools/load/cluster.mjs` runs several production-like app instances behind a least-busy load balancer; `tools/load/run.mjs` runs ten scenarios at increasing concurrency; `tools/load/summarize.mjs` reports per-route cost from the new request profiler (`PERF_PROFILE`, off by default, refused in production); `tools/load/ab.sh` compares two checkouts on the same data. Results and limitations: `docs/PERFORMANCE_AND_LOAD_TESTING.md`.
 - Fixed: concurrent counter sales failed with database deadlocks (up to 25% of sales at 16 cashiers). Document numbers and the traceability chain head are locked before any insert, a cart's lines are deleted by key, stock is locked in product order, idempotency keys are claimed through the unique index, and POS transactions retry a deadlock (not provider payments). Afterwards: no errors and no deadlocks at 16 cashiers.

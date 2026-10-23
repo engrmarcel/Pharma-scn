@@ -61,6 +61,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     // Public
     Route::get('branding', [ReferenceDataController::class, 'branding'])->name('branding');
     Route::get('health', [OperationsController::class, 'health'])->middleware('throttle:30,1')->name('health');
+    // Prometheus scrape (Phase 10b): static bearer token OPS_METRICS_TOKEN, not a user session.
+    Route::get('metrics', [OperationsController::class, 'metrics'])->middleware('throttle:60,1')->name('metrics');
     // Provider callbacks: authenticated by the provider's signature, not by a user.
     // External systems (spec §15): authenticated by connector key, rate-limited per connector; never a user session.
     Route::middleware('connector')->prefix('integration/inbound')->name('integration.inbound.')->group(function () {
@@ -622,6 +624,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::put('organizations/{organization}/entitlement-overrides', [SubscriptionController::class, 'overrideForOrganization'])->whereUlid('organization')->name('organizations.entitlement-overrides');
 
             Route::get('operations/status', [OperationsController::class, 'status'])->name('operations.status');
+            Route::get('operations/alerts', [OperationsController::class, 'alerts'])->name('operations.alerts');
             Route::get('trace/lots', [TraceabilityController::class, 'lot'])->name('trace.lots');
             Route::get('recalls', [RecallController::class, 'index'])->name('recalls.index');
             Route::post('recalls', [RecallController::class, 'store'])->name('recalls.store');

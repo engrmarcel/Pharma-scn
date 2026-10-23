@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Platform\Services\OperationsMonitor;
 use App\Domain\Traceability\Services\TraceChain;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  */
 class CheckConsistency extends Command
 {
-    protected $signature = 'ops:consistency {--organization= : Check one organization only}';
+    protected $signature = 'ops:consistency {--organization= : Check one organization only} {--alert : Open or resolve an operational alert with the outcome (scheduled run)}';
 
     protected $description = 'Check stock, reservation, ledger, POS and traceability invariants';
 
@@ -61,6 +62,11 @@ class CheckConsistency extends Command
         $checks['broken_trace_chains'] = collect($orgs)->filter(fn ($id) => ! $chain->verify($id)['intact'])->count();
 
         $failed = array_filter($checks);
+        if ($this->option('alert')) {
+            app(OperationsMonitor::class)->report('consistency', $org ?? '', $failed === [] ? null : 'critical',
+                $failed === [] ? 'All consistency invariants hold.' : 'Consistency problems: '.collect($failed)->map(fn ($n, $k) => str_replace('_', ' ', $k)." ({$n})")->implode(', ').'.',
+                array_sum($failed));
+        }
         $this->table(['Check', 'Problems'], collect($checks)->map(fn ($n, $name) => [str_replace('_', ' ', $name), $n === 0 ? 'none' : $n])->values()->all());
         if ($failed !== []) {
             $this->error('Consistency problems found: '.implode(', ', array_keys($failed)));

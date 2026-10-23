@@ -23,3 +23,9 @@ Schedule::command('analytics:refresh')->dailyAt('01:30')->withoutOverlapping();
 // Recommendations (advisory): reorder, overstock, expiry risk, integration and traceability anomalies.
 Schedule::command('analytics:recommend')->dailyAt('02:00')->withoutOverlapping();
 Schedule::command('analytics:purge-assistant-log')->dailyAt('02:45')->withoutOverlapping();
+
+// Operational monitoring (Phase 10b): heartbeats of the scheduler and queue workers, threshold
+// checks that open and resolve alerts, and the nightly consistency check of ledgers and chains.
+Schedule::command('ops:heartbeat')->everyMinute();
+Schedule::command('ops:monitor')->everyMinute()->withoutOverlapping();
+Schedule::command('ops:consistency --alert')->dailyAt('03:30')->withoutOverlapping();
