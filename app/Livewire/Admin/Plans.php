@@ -49,6 +49,7 @@ class Plans extends WebPage
         return view('livewire.admin.plans', [
             'plans' => $this->read('admin/subscription-plans', [], ['data' => []])['data'],
             'labels' => collect(config('entitlements.keys'))->map(fn ($d) => $d[1]),
+            'types' => collect(config('entitlements.keys'))->map(fn ($d) => $d[0]),
         ]);
     }
 }

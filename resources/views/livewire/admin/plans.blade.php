@@ -13,7 +13,7 @@
                 @if ($p['description'])<p class="mt-2 text-sm text-slate-600">{{ $p['description'] }}</p>@endif
                 <ul class="mt-3 space-y-1 text-sm">
                     @foreach ($p['entitlements'] as $key => $ent)
-                        @if ($ent['enabled'])<li class="flex justify-between gap-2"><span>{{ $labels[$key] ?? $key }}</span><span class="text-slate-500">{{ $ent['limit'] === null ? (str_starts_with($key, 'module.') || ! isset($labels[$key]) ? '✓' : 'Unlimited') : number_format($ent['limit']) }}</span></li>@endif
+                        @if ($ent['enabled'])<li class="flex justify-between gap-2"><span>{{ $labels[$key] ?? $key }}</span><span class="text-slate-500">{{ $ent['limit'] === null ? (($types[$key] ?? 'feature') === 'feature' ? '✓' : 'Unlimited') : number_format($ent['limit']) }}</span></li>@endif
                     @endforeach
                 </ul>
             </x-ui.card>
