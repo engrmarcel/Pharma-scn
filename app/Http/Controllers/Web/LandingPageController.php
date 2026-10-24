@@ -7,7 +7,7 @@ use App\Domain\Platform\Services\LandingPageService;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 /** The public landing page (content edited at /admin/landing-page) and the media uploaded for it. */
 class LandingPageController extends Controller
@@ -18,11 +18,13 @@ class LandingPageController extends Controller
     }
 
     /** Images and videos uploaded in the editor; names are random, so only published media are reachable. */
-    public function media(string $file): BinaryFileResponse
+    public function media(string $file): Response
     {
         $path = 'landing/'.$file;
-        abort_unless(Storage::disk('local')->exists($path), 404);
+        $disk = Storage::disk(config('platform.landing.media_disk'));
+        abort_unless($disk->exists($path), 404);
 
-        return response()->file(Storage::disk('local')->path($path), ['Cache-Control' => 'public, max-age=604800', 'X-Content-Type-Options' => 'nosniff']);
+        // Streamed through the storage API, so it works for a local disk and for object storage alike.
+        return $disk->response($path, null, ['Cache-Control' => 'public, max-age=604800', 'X-Content-Type-Options' => 'nosniff']);
     }
 }

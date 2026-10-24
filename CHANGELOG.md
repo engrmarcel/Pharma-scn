@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Phase 10d: scaling readiness (Phase 10 complete)
+- Every scheduled task runs on one server only, so several application instances can each run the scheduler without repeating backups, monitoring or nightly jobs.
+- Landing page media are stored on a configurable disk (`LANDING_MEDIA_DISK`) and served through the storage API, so an upload through one instance is available on all of them (previously local disk only).
+- Optional read replicas for the main connection (`DB_READ_HOST`): reads outside transactions go to replicas; writes, locking reads and reads inside transactions stay on the primary, and a request reads its own writes.
+- 339 tests passing.
+- docs/PERFORMANCE_AND_LOAD_TESTING.md section 7: each Phase 10 scaling item, what is in place, the evidence, and the measurement that would justify more. DEPLOYMENT_GUIDE.md: running several instances.
+
 ### 2026-10-24: Fix: 403 on every action of the organization screens
 - Clicking any button on a Workspace or Organization screen (for example **New customer**) returned 403 Forbidden. Livewire re-applies the tenant middleware to each update as a stand-alone step, and the middleware cleared the organization as soon as that step finished, so the component ran without an organization: the screen's permission check refused, and its API calls had no organization either. The context now lasts for the whole Livewire update request (it is request-scoped, so it still ends with the request).
 - New test `LivewireUpdateRequestTest` sends real Livewire update requests over HTTP, as the browser does (the existing screen tests use Livewire's harness, which skips this path): opening forms, saving a customer into the right organization, and refusing a member without the permission. Verified in the browser as well.

@@ -3,6 +3,18 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+/*
+ | Optional read replicas for the main connection (Phase 10d): set DB_READ_HOST to one host or a
+ | comma-separated list. Reads outside a transaction go to a replica; writes, locking reads and every
+ | read inside a transaction stay on the primary, and "sticky" sends a request's reads to the primary
+ | once it has written, so a request always sees its own changes. Unset = one primary for everything.
+ */
+$readReplicas = static fn (): array => array_filter(explode(',', (string) env('DB_READ_HOST', ''))) === [] ? [] : [
+    'read' => ['host' => array_values(array_filter(array_map('trim', explode(',', (string) env('DB_READ_HOST')))))],
+    'write' => ['host' => [env('DB_HOST', '127.0.0.1')]],
+    'sticky' => true,
+];
+
 return [
 
     /*
@@ -62,7 +74,7 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
+        ] + $readReplicas(),
 
         // Optional read replica for analytics (set ANALYTICS_DB_CONNECTION=analytics_replica; see config/analytics.php).
         'analytics_replica' => [
@@ -98,7 +110,7 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
+        ] + $readReplicas(),
 
         'pgsql' => [
             'driver' => 'pgsql',

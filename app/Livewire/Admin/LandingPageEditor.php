@@ -127,7 +127,8 @@ class LandingPageEditor extends Component
     private function store(UploadedFile $file): string
     {
         $name = Str::lower(Str::random(32)).'.'.$file->guessExtension();
-        $file->storeAs('landing', $name, 'local');
+        // A shared disk (object storage) when several app instances serve the site (Phase 10d).
+        $file->storeAs('landing', $name, config('platform.landing.media_disk'));
 
         return '/landing-media/'.$name;
     }

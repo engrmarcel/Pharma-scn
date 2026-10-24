@@ -63,6 +63,12 @@ return [
         'ttl_hours' => 48,
     ],
 
+    // Landing page images and videos uploaded in the editor. Use shared object storage when several
+    // app instances serve the site, so every instance can serve what any instance stored.
+    'landing' => [
+        'media_disk' => env('LANDING_MEDIA_DISK', 'local'),
+    ],
+
     'attachments' => [
         'disk' => env('ATTACHMENTS_DISK', 'local'),
         'max_kb' => 10240,

@@ -52,6 +52,13 @@ Both are off after deployment. When you are ready:
 - **Prometheus.** Set `OPS_METRICS_TOKEN` and scrape `GET /api/v1/metrics` with `Authorization: Bearer <token>` (gauges named `pharma_*`: queue backlog, oldest job, heartbeat ages, failed jobs, webhook, integration and sync backlogs, open alerts). Without a token the endpoint returns 404. Platform-level figures only, no tenant data.
 - **External checks** (the built-in alerting cannot report its own absence): probe `GET /api/v1/health` from outside and alert when it fails; alert when `pharma_scheduler_heartbeat_age_seconds` exceeds 300 or the scrape fails; and alert on 5xx rate > 1% and backup job failure.
 
+### Running several application instances (Phase 10d)
+- **Shared state:** `CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis` on the same Redis for every instance. Rate limits and scheduler locks live in the cache, so it must be shared.
+- **Files:** `ATTACHMENTS_DISK`, `LANDING_MEDIA_DISK` and `BACKUP_DISK` must point at shared object storage (an S3-compatible private bucket), not the instance's local disk; otherwise a file uploaded through one instance is missing on the others.
+- **Scheduler:** run `php artisan schedule:work` (or the cron entry) on every instance if convenient: every task is marked to run on one server only, using a lock in the shared cache.
+- **Read replicas (optional):** `DB_READ_HOST=replica1,replica2` sends reads outside transactions to the replicas; writes, locking reads and reads inside transactions stay on the primary, and a request that has written reads from the primary. `ANALYTICS_DB_CONNECTION=analytics_replica` (with `ANALYTICS_DB_HOST`) moves dashboards and reports to a replica.
+- Measurements, limits and when to scale further: PERFORMANCE_AND_LOAD_TESTING.md.
+
 ### Why basic shared hosting is unsuitable (spec §33)
 The platform needs long-running queue workers and a scheduler, Redis, private object storage, TLS control, and the ability to run several app instances behind a load balancer. Shared hosting typically allows none of these reliably, so notifications, integrations and offline sync would silently stall. It is acceptable only for a throwaway prototype.
 

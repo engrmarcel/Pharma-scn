@@ -131,7 +131,26 @@ Completed counter sales therefore have a ceiling per organization: about 3 per s
 | Reporting load on the primary | Not separated in the test | Dashboard and report queries show up in primary database CPU | Point `ANALYTICS_DB_CONNECTION` at a read replica (already supported) |
 | Rate limiter and caches | Database cache in the test | Always in production | Redis (`CACHE_STORE=redis`), as the deployment guide requires |
 
-## 7. Running the load test
+## 7. Scaling readiness (Phase 10d)
+
+Phase 10 lists the scaling work to do "as justified by measurements". Each item, what is in place, and what would justify more:
+
+| Item | In place | Evidence | Do more when |
+|---|---|---|---|
+| Multiple application instances | Stateless instances: sessions, cache, queue and rate limits in shared stores; uploaded files on configurable disks (`ATTACHMENTS_DISK`, `LANDING_MEDIA_DISK`, `BACKUP_DISK`); every scheduled task runs on one server only | The load test ran 8 instances on one database with no errors; `ScalingReadinessTest` | Always required in production |
+| Load balancing | Any HTTP balancer; instances need no affinity (sessions are shared) | `tools/load/cluster.mjs` balanced 8 instances (least-busy) | — |
+| Read replicas | Optional: `DB_READ_HOST` splits reads to replicas (writes, locking reads and reads inside transactions stay on the primary; a request reads its own writes); `ANALYTICS_DB_CONNECTION` sends dashboards and reports to a replica | Configuration verified; not load-tested against a real replica | Primary CPU is dominated by reads, or reports slow down transactions |
+| Queue scaling | One `default` queue; add workers horizontally. Heartbeats and backlog alerts show when workers fall behind | Phase 10b monitoring | The oldest job regularly waits over a minute, or integration bursts delay notifications: split into `critical` (recall notices, alerts), `default`, `integrations`, `webhooks` and size workers per queue |
+| Durable event delivery | Transactional outbox; deliveries retried with backoff, lost or interrupted deliveries recovered every minute, abandoned ones kept for redelivery | `ResilienceTest`, integration tests | — |
+| Analytics data separation | Analytics read through their own connection (replica-ready), daily demand facts precomputed, dashboards cached per viewer | Section 5.2 | Reports load the primary: point `ANALYTICS_DB_CONNECTION` at a replica; later a warehouse fed from the outbox |
+| Dedicated search | Database `LIKE` search on indexed columns | Catalogue and customer search: median about 150 ms on the test machine at 500 products and 500 customers | Search p95 over 500 ms in production, or catalogues above about 50,000 items: an external search index fed from the outbox |
+| Event streaming | Webhooks from the outbox | — | A consumer needs replay or ordered streams beyond webhooks |
+| Regional infrastructure | One deployment per region, organizations pinned to their region (ADR-0023) | Region tests | A new region's data must stay in-country |
+| Service decomposition | One application | Section 5.4: the bottleneck is per-organization write serialization, which splitting services would not remove | A component's scaling or release needs differ measurably from the rest |
+| Disaster recovery | Backups, tested restore drills, runbook | docs/DISASTER_RECOVERY.md | — |
+| Load and resilience testing | Tooling and results in this document; failure-injection tests | Sections 3–5 | Re-run before each major release and on staging hardware |
+
+## 8. Running the load test
 
 ```bash
 # 1. A dedicated database (the generator refuses any other)
