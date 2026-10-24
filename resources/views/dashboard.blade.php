@@ -44,7 +44,7 @@
                         <a href="{{ route('invitations.accept') }}" class="btn-ghost-light"><x-heroicon-o-envelope-open class="size-5"/>Accept an invitation</a>
                     @endif
                     @if ($nav['pos'])
-                        <a href="{{ route('pos.register') }}" class="btn-gold"><x-heroicon-o-building-storefront class="size-5"/>Open POS register</a>
+                        <a href="{{ route('pos.register') }}" class="btn-gold"><x-heroicon-o-building-storefront class="size-5"/>Open POS terminal</a>
                     @endif
                     <a href="{{ route('catalogue') }}" class="btn-ghost-light"><x-heroicon-o-beaker class="size-5"/>Product catalogue</a>
                     <a href="{{ route('account.security') }}" class="btn-ghost-light"><x-heroicon-o-finger-print class="size-5"/>Account security</a>

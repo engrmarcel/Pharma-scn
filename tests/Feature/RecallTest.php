@@ -119,6 +119,8 @@ class RecallTest extends FeatureTestCase
 
     public function test_regulatory_incidents_carry_the_reporting_deadline(): void
     {
+        // The deadline is computed from now() in the request and in the assertion: freeze the clock so a slow request cannot cross a second.
+        $this->freezeSecond();
         [$owner, $org] = $this->marketplaceOrg('pharmacy');
         $this->actingAsApi($owner, $org);
         $stolen = $this->api('POST', 'regulatory-incidents', ['type' => 'stolen', 'description' => 'Two cartons taken from the delivery van', 'quantity' => '400',

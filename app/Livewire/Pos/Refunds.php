@@ -15,7 +15,16 @@ class Refunds extends WebPage
     #[Url]
     public string $status = 'pending_approval';
 
+    #[Url(as: 'sale')]
     public string $saleNumber = '';
+
+    /** Opened from the till with ?sale=NUMBER: go straight to that sale. */
+    public function mount(): void
+    {
+        if ($this->saleNumber !== '') {
+            $this->findSale();
+        }
+    }
 
     /** Refund request being prepared: sale, reason, method, lines (line id => [quantity, restock_state]). */
     public ?array $request = null;

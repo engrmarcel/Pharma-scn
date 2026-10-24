@@ -234,7 +234,7 @@ class AppServiceProvider extends ServiceProvider
             return $access->isRegistered($ability) ? $access->check($user, $ability) : null;
         });
 
-        View::composer(['layouts.app', 'layouts.guest', 'dashboard'], NavigationComposer::class);
+        View::composer(['layouts.app', 'layouts.guest', 'layouts.pos', 'dashboard'], NavigationComposer::class);
 
         // Livewire component updates re-run the page's tenant and module checks.
         Livewire::addPersistentMiddleware([EnsureUserIsActive::class, EnsureAccountSecurity::class, ResolveTenant::class, EnsureModuleEnabled::class]);

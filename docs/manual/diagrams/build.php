@@ -250,3 +250,21 @@ diagram('08-integration', 'External system integration', [
     ['inbox', 'status', '202 ack', 'dashed', [[2, 0.5], [1.5, 0.5], [1.5, 1]]], ['erp', 'status', 'poll', 'dashed'],
     ['apply', 'event'], ['event', 'outbox'], ['outbox', 'hook'], ['hook', 'recv'],
 ], $legend);
+
+diagram('09-counter-sale', 'Counter sale (POS)', [
+    'cashier' => [0, 0, "Cashier\ndesktop till or app", 'actor'],
+    'shift' => [1, 0, "Open shift\ncount the float", 'step'],
+    'scan' => [2, 0, "Scan or search\nterminal catalogue", 'step'],
+    'cart' => [3, 0, "Cart priced by server\nprice list, tax", 'step'],
+    'rx' => [4, 0, "Prescription-only?\npharmacist + Rx", 'gate'],
+    'checkout' => [4, 1, "Checkout\nreserve stock FEFO", 'step'],
+    'pay' => [3, 1, "Payment\ncash, terminal, provider", 'gate'],
+    'done' => [2, 1, "Sale completed\ninvoice, stock, trace", 'store'],
+    'receipt' => [1, 1, "Receipt\nbatch numbers", 'step'],
+    'close' => [0, 1, "Close shift\ncount, variance", 'step'],
+    'review' => [0, 2, "Supervisor\nreview, refunds", 'actor'],
+    'offline' => [2, 2, "POS app offline\nreplayed on sync", 'alert'],
+], [
+    ['cashier', 'shift'], ['shift', 'scan'], ['scan', 'cart'], ['cart', 'rx'], ['rx', 'checkout'], ['checkout', 'pay'], ['pay', 'done'],
+    ['done', 'receipt'], ['receipt', 'close'], ['close', 'review'], ['offline', 'done', 'same rules', 'dashed'],
+], $legend);

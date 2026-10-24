@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\AccountPagesController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\DocumentationDownloadController;
 use App\Http\Controllers\Web\LandingPageController;
+use App\Http\Controllers\Web\PosCatalogueController;
 use App\Http\Controllers\Web\PosReceiptController;
 use App\Http\Controllers\Web\SessionController;
 use App\Http\Controllers\Web\TraceScanPageController;
@@ -30,7 +31,6 @@ use App\Livewire\Onboarding;
 use App\Livewire\Organization;
 use App\Livewire\Parties;
 use App\Livewire\Pos;
-use App\Livewire\Pos\Register;
 use App\Livewire\Procurement;
 use App\Livewire\Sales;
 use App\Livewire\Sync;
@@ -174,7 +174,9 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     });
 
     Route::middleware(['tenant', 'module:pos'])->group(function () {
-        Route::get('pos', Register::class)->name('pos.register');
+        // Desktop POS terminal (full screen); its product list loads from the terminal's catalogue.
+        Route::get('pos', Pos\Terminal::class)->name('pos.register');
+        Route::get('pos/terminals/{terminal}/catalogue', PosCatalogueController::class)->whereUlid('terminal')->name('pos.catalogue');
         Route::get('pos/receipts/{sale}', PosReceiptController::class)->whereUlid('sale')->name('pos.receipt');
         Route::get('pos/terminals', Pos\Terminals::class)->name('pos.terminals');
         Route::get('pos/shifts', Pos\Shifts::class)->name('pos.shifts');

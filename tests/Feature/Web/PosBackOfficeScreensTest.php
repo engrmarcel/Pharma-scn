@@ -5,11 +5,11 @@ namespace Tests\Feature\Web;
 use App\Domain\Pos\Models\PosRefund;
 use App\Domain\Pos\Models\PosSale;
 use App\Domain\Pos\Models\PosShift;
-use App\Domain\Pos\Models\PosTerminal;
+use App\Domain\Pos\Models\PosTerminal as PosTerminalModel;
 use App\Livewire\Pos\Refunds;
-use App\Livewire\Pos\Register;
 use App\Livewire\Pos\Reports;
 use App\Livewire\Pos\Shifts;
+use App\Livewire\Pos\Terminal as PosTerminal;
 use App\Livewire\Pos\Terminals;
 use App\Support\Tenancy\TenantContext;
 use Livewire\Livewire;
@@ -33,13 +33,13 @@ class PosBackOfficeScreensTest extends FeatureTestCase
         Livewire::actingAs($owner)->test(Terminals::class)
             ->call('create')->set('terminal.warehouse_id', $main->id)->set('terminal.code', 'TILL1')->set('terminal.name', 'Front counter')
             ->call('save')->assertHasNoErrors()->assertSee('Front counter');
-        $terminal = PosTerminal::acrossTenants()->where('organization_id', $org->id)->sole();
+        $terminal = PosTerminalModel::acrossTenants()->where('organization_id', $org->id)->sole();
 
         // The cashier sells 4 capsules for cash and closes the shift 10 short.
         app(TenantContext::class)->set($org, $cashierMembership);
-        Livewire::actingAs($cashier)->test(Register::class)
+        Livewire::actingAs($cashier)->test(PosTerminal::class)
             ->set('terminalId', $terminal->id)->set('openingFloat', '1000')->call('openShift')
-            ->set('search', 'AMX')->call('scan')->call('setQuantity', 0, '4')->call('checkout')->set('tendered', '600')->call('payCash')
+            ->call('add', $product->id, $product->display_name, 'capsule')->call('setQuantity', 0, '4')->call('checkout')->set('tendered', '600')->call('pay')
             ->set('countedCash', '1590')->call('closeShift')->assertHasNoErrors();
         $shift = PosShift::acrossTenants()->where('organization_id', $org->id)->sole();
         $sale = PosSale::acrossTenants()->where('organization_id', $org->id)->sole();

@@ -80,7 +80,7 @@ class Navigation
             ['sales.settings', 'Settings', 'cog-6-tooth', ['sales.settings.manage'], 'Credit control, approvals and numbering.'],
         ]],
         'pos' => ['Point of sale', 'building-storefront', 'Commerce', ['pos'], 'tenant', [
-            ['pos.register', 'Register', 'building-storefront', ['pos.sell'], 'Sell over the counter, take payment and print receipts.'],
+            ['pos.register', 'POS terminal', 'computer-desktop', ['pos.sell'], 'Full-screen till for selling from a computer: scan, take payment, print receipts.'],
             ['pos.shifts', 'Shifts', 'clock', ['pos.shift.review', 'pos.reports.view'], 'Cashier shifts, cash counts and variances to review.'],
             ['pos.refunds', 'Refunds', 'receipt-refund', ['pos.refund.approve', 'pos.refund.request'], 'Refund requests waiting for approval.'],
             ['pos.payments', 'Pending payments', 'credit-card', ['pos.payments.confirm'], 'Card and transfer payments waiting for confirmation.'],

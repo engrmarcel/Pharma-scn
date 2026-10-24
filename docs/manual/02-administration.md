@@ -115,7 +115,24 @@ A verification record is the platform's own check; it is never presented as a st
 | Integrations | **Workspace → Integrations**; see *Connecting an external system* |
 | External AI for the assistant | **Analytics → Assistant** settings, with an explicit acknowledgement (only if the platform offers it) |
 
-## 11. Organization roles
+## 11. Setting up point of sale on a desktop
+
+For organizations that sell from a computer at the counter with the **POS terminal** (**Workspace → Point of sale → POS terminal**). The POS app (tablet or phone) is set up the same way and can be used alongside it, for example as a backup during outages.
+
+1. **Module:** the organization needs the POS module (on by default for pharmacies and pharmacy chains) and a plan that includes it; platform staff turn it on in **Administration → Organizations → Modules** if needed.
+2. **Terminals:** in **Point of sale → Terminals**, register one terminal per till, each linked to the store (warehouse) it sells from. A terminal has one open shift at a time. The plan's *POS terminals* limit applies.
+3. **Prices and tax:** products sell at the default price list (**Sales → Price lists**) for the pack size sold; a product with no price cannot be sold. Tax comes from the product's tax category and the country's rates.
+4. **People and roles** (**Organization → Members & roles**):
+   - *POS cashier*: sells, opens and closes their own shift, requests refunds.
+   - *Pharmacist*: also sells prescription-only medicines (records the prescription).
+   - *POS supervisor*: also records cash in and out, cancels sales after payment, approves discounts above the limit, confirms terminal payments, reviews shifts and approves refunds.
+   - Restrict a member to their branch or store under **Locations**, so they see only that store's terminals and stock.
+5. **Counter computer:** a current browser (Chrome or Edge), signed in as the cashier. A USB barcode scanner works as a keyboard (no setup). For receipts, set the 72–80 mm receipt printer as the browser's default printer; for printing without the print dialog, run the browser in kiosk printing mode (for example Chrome's `--kiosk-printing` option) on that computer. The terminal needs a connection to the server.
+6. **Settings:** the largest discount without approval is in **Sales → Settings**. Which medicines are prescription-only comes from each product's classification for your country in the product master.
+
+Shifts, cash differences, refunds and pending card payments are reviewed in the other **Point of sale** screens; sales from the terminal and the app appear together in **Point of sale → Reports** and **Analytics → Dashboards**.
+
+## 12. Organization roles
 
 | Role | Main permissions |
 |---|---|

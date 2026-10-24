@@ -67,3 +67,14 @@ Requisitions (or accepted reorder recommendations) become purchase orders; order
 
 - Inbound: the external system posts records with its connector key (and optionally an HMAC signature). Each record is stored once by its `message_id`, mapped to the canonical model and applied; problems go to quarantine for correction. The sender receives `202` immediately and can poll the outcome per `message_id`.
 - Outbound: business events are written to the outbox in the same transaction as the change and delivered as signed webhooks with retries.
+
+## 9. Counter sale (POS)
+
+![Counter sale](diagrams/09-counter-sale.svg)
+
+- A cashier sells from the full-screen **POS terminal** in a browser or from the POS app. Both call the same POS API, so prices, tax, discount limits, prescription controls and stock rules are identical.
+- The terminal loads its till's catalogue (prices per pack size, prescription classification, stock in its store) once and searches it in the browser for instant scanning; every cart change is priced by the server.
+- Prescription-only medicines are sold only by a pharmacist, with the prescription's reference, prescriber and date.
+- Checkout reserves stock first expiry first out. When payment covers the total, the sale completes in one transaction: invoice, stock issue with batches, cost of goods sold, cash in the drawer and a traceability event. The receipt lists the batches.
+- The shift is closed with a cash count; the difference is reviewed by a supervisor, who also approves refunds and confirms card-terminal payments.
+- The desktop terminal needs a connection. The POS app keeps selling offline and its sales are replayed through the same rules when it syncs (section 6).

@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Desktop POS terminal
+- **Workspace → Point of sale → POS terminal** (`/pos`) is now a full-screen till for counters that sell from a computer, beside the POS app. It replaces the earlier register page.
+  - Product tiles from the terminal's catalogue, searched instantly in the browser: barcode, batch number, SKU or name; Enter adds the exact match.
+  - Cart priced by the server on every change: quantity, pack size, line discount. Customer selection. Prescription-only medicines prompt the pharmacist for the prescription.
+  - Checkout and payment: cash with quick amounts and a large change-due display, card or transfer terminal approval codes, electronic providers with live confirmation, split payments.
+  - Receipts print automatically; hold and resume, cancel with a reason; this shift's sales with reprint and refund; cash in and out for supervisors; close shift with a cash count and the difference.
+  - Keyboard shortcuts (F2, F4, F6–F9, Esc), full-screen mode and an online indicator.
+- It goes through the POS API like the app (ADR-0024), so the rules are identical; it needs a connection, while the app keeps selling offline. The Refunds screen opens directly on a sale with `?sale=NUMBER`.
+- 340 tests passing (a timing-sensitive recall test now freezes the clock).
+- Documentation: user guide section 5 (the two ways to sell, step by step, shortcuts), administration guide section 11 (setting up desktop point of sale: terminals, prices, roles, scanner and receipt printer), application flows section 9 with a new counter-sale diagram, and the setup guide's component list.
+
 ### 2026-10-24: Security: Livewire 4.4.8
 - Upgraded Livewire to 4.4.8 for advisory GHSA-mhf7-xp6r-6qrc (authorization bypass in `#[Authorize]` via reordered parameter keys and `#[Json]` execution order, published 2026-10-23). The application does not use `#[Authorize]` or `#[Json]`, so it was not exposed; the upgrade clears the CI dependency audit, which had started failing on it.
 

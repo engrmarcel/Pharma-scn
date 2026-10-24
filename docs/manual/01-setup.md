@@ -12,6 +12,7 @@ This guide takes the platform from a fresh server to a running installation: req
 | File storage | S3-compatible object storage (production), local disk (development) | Organization documents, landing page media, proofs of delivery |
 | Background work | `queue:work` workers and the scheduler | Notifications, webhooks, integrations, analytics |
 | Field force app | Flutter (Android first) in `mobile/field_app` | Offline-first, encrypted local database |
+| Desktop POS terminal | Web (full-screen page at `/pos`) in Chrome or Edge on the counter computer | Needs a connection; a USB barcode scanner works as a keyboard; set the receipt printer as the browser's default printer |
 
 ## 2. Requirements
 

@@ -63,17 +63,42 @@ Overdue balances: **Sales → Receivables aging**.
 
 ## 5. Point of sale
 
-At the till (**Point of sale → Register**):
+There are two ways to sell over the counter. Both follow the same rules (prices, tax, stock first expiry first out, prescription controls, payments), and both appear in the same shifts and reports.
 
-1. **Open a shift** with the opening cash.
-2. Scan or search products; the till proposes the batch (first expiry). Prescription-only medicines need a pharmacist and prescription details.
-3. Take payment: cash (change is calculated), a standalone card terminal (approval code, checked later by a supervisor) or an electronic provider enabled in your country.
-4. Print or reprint the receipt (it shows batch numbers for recalls).
-5. **Close the shift**: count the cash; a supervisor reviews differences.
+| | **POS terminal** (desktop) | **POS app** (tablet or phone) |
+|---|---|---|
+| Where | **Workspace → Point of sale → POS terminal**, in a browser on the counter computer | The Pharma Field app in POS mode |
+| Connection | Needs the server: if the connection drops, it says so and stops taking sales | Keeps selling offline and syncs later |
+| Best for | Counters with a computer, barcode scanner and receipt printer | Pop-up counters, backup during outages, small shops without a computer |
 
-Back office for supervisors: **Shifts** (cash movements, closing and reviewing shifts), **Refunds** (requested by cashiers, approved by a different person), **Pending payments** (confirm card and transfer payments), **Reports** and **Terminals**.
+### The POS terminal (desktop)
 
-The till keeps working offline. Sales captured offline are sent when the connection returns; if stock was no longer available, a **sync issue** is raised for the supervisor in **Devices & sync → Sync**.
+The terminal opens full screen, without the website menus, and is made for the keyboard and a barcode scanner.
+
+1. **Open a shift**: choose the till (terminal) and enter the cash in the drawer.
+2. **Add products**: scan a barcode, a batch number or a SKU, or type part of a name; **Enter** adds the exact match, or click a product tile. Tiles show the price and how many are in stock at this till's store. Scanning the same product again adds one more.
+3. **Adjust the cart**: change the quantity with − and +, or type it; switch the pack size (for example tablet, blister or pack); enter a discount percentage (above your organization's limit it needs a supervisor). The server prices every change, so totals are always the price list's.
+4. **Prescription-only medicines** (marked *Rx*): only a pharmacist can sell them. The terminal asks for the prescription reference, the prescriber and the date, and records them with the sale.
+5. **Customer** (**F4**): leave as walk-in, or choose an account so its prices apply. Choose it before the first product.
+6. **Pay** (**F9**): the cart is checked out, which reserves the stock. Then take payment:
+   - **Cash**: type the amount received, or use **Exact** or a rounded amount; the change is shown in large figures.
+   - **Card / transfer terminal**: record the approval code from the standalone terminal's slip. It stays pending until a supervisor checks the settlement.
+   - **Electronic provider** (where your country has one): the request is sent and the screen waits for the provider's confirmation.
+   - Payments can be split, for example part cash and part card.
+7. **Receipt**: printed automatically when the sale completes (switch this off under the change-due figure), or with **Print receipt**. It shows batch numbers for recalls. **Sales** (**F6**) lists this shift's sales for reprinting or starting a refund.
+8. **Hold** (**F8**) parks a sale so you can serve someone else; **Held** (**F7**) brings it back. **Cancel** needs a reason; once money has been taken, only a supervisor can cancel.
+9. **Cash in or out** (supervisors): record money added to or taken from the drawer, with a reason.
+10. **Close shift**: count the drawer. The terminal shows what it expected, what you counted and the difference; a supervisor reviews it in **Point of sale → Shifts**.
+
+Keyboard: **F2** new sale and search · **F4** customer · **F6** sales · **F7** held sales · **F8** hold · **F9** pay · **Esc** close a dialog. The top bar shows the till, the cashier, the shift, the cash in the drawer and whether the terminal is online; the buttons on the right switch to full screen and leave the till.
+
+### The POS app
+
+Open the app in POS mode, open a shift and sell the same way. The app keeps working offline: sales are stored on the device and sent when the connection returns; if stock was no longer available, a **sync issue** is raised for the supervisor in **Devices & sync → Sync**.
+
+### Back office (supervisors)
+
+**Shifts** (cash movements, closing and reviewing shifts), **Refunds** (requested by cashiers, approved by a different person), **Pending payments** (confirm card and transfer payments), **Reports** and **Terminals**.
 
 ## 6. Field force app
 
