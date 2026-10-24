@@ -88,7 +88,9 @@ class Navigation
             ['pos.terminals', 'Terminals', 'computer-desktop', ['pos.terminals.manage'], 'Registers and the warehouse each one sells from.'],
         ]],
         'marketplace' => ['Marketplace', 'globe-europe-africa', 'Commerce', ['marketplace'], 'tenant', [
-            ['marketplace.discover', 'Discover', 'magnifying-glass', ['marketplace.browse'], 'Find verified suppliers and their offers.'],
+            ['marketplace.home', 'Trading floor', 'squares-2x2', ['marketplace.browse', 'marketplace.orders.place', 'marketplace.orders.fulfil', 'marketplace.listings.manage', 'marketplace.quotes.respond'], 'Everything you buy and sell on the marketplace: what needs attention, activity and figures.'],
+            ['marketplace.discover', 'Discover offers', 'magnifying-glass', ['marketplace.browse'], 'Find offers from suppliers and compare prices across them.'],
+            ['marketplace.suppliers', 'Suppliers', 'building-storefront', ['marketplace.browse'], 'Supplier storefronts: who they are, where they deliver, what they offer.'],
             ['marketplace.orders', 'Orders', 'shopping-bag', ['marketplace.browse', 'marketplace.orders.place', 'marketplace.orders.fulfil'], 'Orders you placed or received: approve, ship, receive, invoice.'],
             ['marketplace.rfqs', 'RFQs', 'chat-bubble-left-right', ['marketplace.rfq.manage', 'marketplace.quotes.respond'], 'Requests for quotation: send, compare, award.'],
             ['marketplace.quotes', 'Quotes', 'document-duplicate', ['marketplace.rfq.manage', 'marketplace.quotes.respond'], 'Quotes sent and received.'],
@@ -96,7 +98,7 @@ class Navigation
             ['marketplace.relationships', 'Trading partners', 'link', ['marketplace.relationships.manage', 'marketplace.browse'], 'Requests to trade, approvals and credit terms.'],
             ['marketplace.disputes', 'Disputes', 'scale', ['marketplace.disputes.manage'], 'Problems with orders: messages, escalation, resolution.'],
             ['marketplace.fees', 'Fees', 'receipt-percent', ['marketplace.orders.fulfil'], 'Marketplace fees charged on your orders.'],
-            ['marketplace.profile', 'Profile', 'identification', ['marketplace.listings.manage'], 'How your organization appears to buyers.'],
+            ['marketplace.profile', 'Storefront profile', 'identification', ['marketplace.listings.manage'], 'How your organization appears to buyers.'],
         ]],
         'field_force' => ['Field force', 'map-pin', 'Field & CRM', ['field_force'], 'tenant', [
             ['field-force.dashboard', 'Field force dashboard', 'presentation-chart-line', ['field_force.team.view', 'field_force.view_all', 'crm.plans.approve'], 'Team visits, plan approvals, targets and pipeline.'],
@@ -181,8 +183,12 @@ class Navigation
     ) {}
 
     /** [section key, page] for a route name, or null. */
+    /** Detail pages shown under a listed page (same banner, tabs and permissions). */
+    public const ALIASES = ['marketplace.storefront' => 'marketplace.suppliers'];
+
     public static function find(?string $route): ?array
     {
+        $route = self::ALIASES[$route] ?? $route;
         foreach (self::SECTIONS as $key => $section) {
             foreach ($section[5] as $page) {
                 if ($page[0] === $route) {
@@ -223,6 +229,10 @@ class Navigation
                 if (isset($page[5]) && ! $this->moduleUsable($org, $page[5])) {
                     continue;
                 }
+                // Selling screens only for organization types that may sell on the marketplace.
+                if (in_array($route, self::MARKETPLACE_SELLER_PAGES, true) && ! self::sellsOnMarketplace($org)) {
+                    continue;
+                }
                 if (Route::has($route) && $allowed($abilities)) {
                     $visible[] = ['route' => $route, 'label' => $pageLabel, 'icon' => $pageIcon, 'description' => $description];
                 }
@@ -234,6 +244,16 @@ class Navigation
         }
 
         return $out;
+    }
+
+    /** Marketplace pages that only make sense for a supplier. */
+    public const MARKETPLACE_SELLER_PAGES = ['marketplace.listings', 'marketplace.fees', 'marketplace.profile'];
+
+    public static function sellsOnMarketplace(?Organization $org): bool
+    {
+        $type = $org?->type instanceof \BackedEnum ? $org->type->value : $org?->type;
+
+        return $type !== null && array_key_exists($type, config('marketplace.buyer_types_by_supplier_type'));
     }
 
     private function moduleUsable(?Organization $org, array $modules): bool

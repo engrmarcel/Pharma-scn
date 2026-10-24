@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Marketplace trading floor, supplier directory and storefronts
+- **Workspace → Marketplace → Trading floor** (`/marketplace`) is the marketplace's home: what needs attention as a buyer (orders waiting for the supplier, deliveries to receive, invoices to record, quotes to review) and as a supplier (orders to accept and ship, RFQs to answer, buyers asking to trade), each opening the filtered screen; purchases and sales of the last 30 days; recent trading activity; a search across all suppliers; featured verified suppliers.
+- **Suppliers** directory and supplier **storefronts** (profile, trading terms, all offers, request to trade, ask for a quote). Suppliers see their own storefront as buyers do.
+- Offers show the price per pack and per base unit, minimum order, lead time, availability, who they are sold to, and why you may not buy. **Discover → Compare by product** puts every supplier's offer side by side and marks the best price you can buy.
+- One cart across the trading floor, storefronts and Discover, one order per supplier.
+- Selling screens (listings, storefront profile, fees) are shown to and allowed for supplier types only; a listing's buyer types are limited to those the trading rules allow.
+- Every organization type that buys or sells medicines gets the marketplace module when it registers.
+- API: `GET /marketplace/activity`, `GET /marketplace/suppliers`; discover results add `allowed_buyer_types`, `pack.base_unit` and `price_per_base_unit`.
+- Synthetic demo data now includes a working marketplace: four supplier storefronts with 11 offers, trading relationships, orders and an RFQ with a quote (all labelled Demo).
+- 345 tests passing.
+- Documentation: user guide section 8, administration guide (marketplace participation), API specification.
+
 ### 2026-10-24: Desktop POS terminal
 - **Workspace → Point of sale → POS terminal** (`/pos`) is now a full-screen till for counters that sell from a computer, beside the POS app. It replaces the earlier register page.
   - Product tiles from the terminal's catalogue, searched instantly in the browser: barcode, batch number, SKU or name; Enter adds the exact match.

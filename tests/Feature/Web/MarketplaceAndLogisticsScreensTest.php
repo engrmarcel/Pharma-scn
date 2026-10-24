@@ -65,7 +65,7 @@ class MarketplaceAndLogisticsScreensTest extends FeatureTestCase
         Livewire::actingAs($s['owner'])->test(Profile::class)->set('form.headline', 'Fast delivery in Lagos')->call('save')->assertHasNoErrors();
 
         $this->actingAs($s['owner'])->withSession([config('platform.tenancy.session_key') => $s['org']->id]);
-        foreach (['marketplace.discover' => 'Your orders in progress', 'marketplace.orders' => $order->number, 'marketplace.rfqs' => 'New RFQ', 'marketplace.quotes' => 'Quotes',
+        foreach (['marketplace.home' => 'Recent trading activity', 'marketplace.discover' => 'Compare by product', 'marketplace.suppliers' => 'Suppliers', 'marketplace.orders' => $order->number, 'marketplace.rfqs' => 'New RFQ', 'marketplace.quotes' => 'Quotes',
             'marketplace.listings' => 'New listing', 'marketplace.relationships' => 'our buyer', 'marketplace.disputes' => 'No disputes', 'marketplace.fees' => 'Fee rate',
             'marketplace.profile' => 'Fast delivery in Lagos'] as $route => $text) {
             $this->get(route($route))->assertOk()->assertSee($text);

@@ -2,7 +2,7 @@
     <x-ui.tabs :current="$as" model="as" :tabs="['' => 'All', 'buyer' => 'Our suppliers', 'supplier' => 'Our buyers']"/>
     <x-ui.toolbar>
         <x-ui.field label="Status" for="status"><select id="status" wire:model.live="status" class="form-select w-40"><option value="">All</option>@foreach (['requested', 'approved', 'rejected', 'suspended'] as $s)<option value="{{ $s }}">{{ ucfirst($s) }}</option>@endforeach</select></x-ui.field>
-        <x-slot:actions><a href="{{ route('marketplace.discover') }}" class="btn-light">Find suppliers</a></x-slot:actions>
+        <x-slot:actions><a href="{{ route('marketplace.suppliers') }}" class="btn-light">Find suppliers</a></x-slot:actions>
     </x-ui.toolbar>
 
     <div class="card overflow-hidden">

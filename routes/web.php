@@ -133,7 +133,10 @@ Route::middleware(['auth', 'active', 'secure'])->group(function () {
     });
 
     Route::middleware(['tenant', 'module:marketplace'])->prefix('marketplace')->name('marketplace.')->group(function () {
-        Route::get('/', Marketplace\Discover::class)->name('discover');
+        Route::get('/', Marketplace\Hub::class)->name('home');
+        Route::get('discover', Marketplace\Discover::class)->name('discover');
+        Route::get('suppliers', Marketplace\Suppliers::class)->name('suppliers');
+        Route::get('suppliers/{supplier}', Marketplace\Storefront::class)->whereUlid('supplier')->name('storefront');
         Route::get('orders', Marketplace\Orders::class)->name('orders');
         Route::get('rfqs', Marketplace\Rfqs::class)->name('rfqs');
         Route::get('quotes', Marketplace\Quotes::class)->name('quotes');

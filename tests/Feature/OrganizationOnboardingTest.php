@@ -24,7 +24,7 @@ class OrganizationOnboardingTest extends FeatureTestCase
             ->assertJsonPath('data.platform_verification.status', 'unverified')
             ->assertJsonPath('data.status', 'active');
 
-        $this->assertEqualsCanonicalizing(['catalogue', 'inventory', 'procurement', 'sales', 'pos', 'finance'], $response->json('data.modules'));
+        $this->assertEqualsCanonicalizing(['catalogue', 'inventory', 'procurement', 'sales', 'pos', 'finance', 'marketplace'], $response->json('data.modules'));
 
         $orgId = $response->json('data.id');
         $this->actingAsApi($user)->api('GET', 'auth/me')

@@ -34,6 +34,19 @@ class Rfqs extends WebPage
 
     protected array $filters = ['as'];
 
+    /** Opened from a supplier's storefront with ?to=SUPPLIER: start an RFQ addressed to them. */
+    #[Url(as: 'to')]
+    public string $toSupplier = '';
+
+    public function mount(): void
+    {
+        if ($this->toSupplier !== '') {
+            $this->create();
+            $this->doc['suppliers'][$this->toSupplier] = true;
+            $this->toSupplier = '';
+        }
+    }
+
     public function create(): void
     {
         $this->resetErrorBag();

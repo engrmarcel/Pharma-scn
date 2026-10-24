@@ -42,6 +42,8 @@ abstract class WebPage extends Component
         $abilities = Navigation::find(static::ROUTE)[1][3] ?? null;
         abort_if($abilities === null, 404);
         abort_unless($abilities === [] || Gate::any($abilities), 403);
+        abort_if(in_array(static::ROUTE, Navigation::MARKETPLACE_SELLER_PAGES, true) && ! Navigation::sellsOnMarketplace(app(TenantContext::class)->organization()), 403,
+            'Only suppliers sell on the marketplace.');
     }
 
     protected function api(): InternalApi

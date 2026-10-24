@@ -29,12 +29,15 @@ use App\Domain\Integration\Services\IntegrationInbox;
 use App\Domain\Integration\Services\IntegrationProcessor;
 use App\Domain\Integration\Webhooks\WebhookService;
 use App\Domain\Inventory\Services\DirectReceiptService;
+use App\Domain\Marketplace\Models\MarketplaceListing;
 use App\Domain\Marketplace\Models\MarketplaceOrder;
 use App\Domain\Marketplace\Models\MarketplaceShipment;
+use App\Domain\Marketplace\Models\TradingRelationship;
 use App\Domain\Marketplace\Services\ListingService;
 use App\Domain\Marketplace\Services\MarketplaceFulfilmentService;
 use App\Domain\Marketplace\Services\MarketplaceOrderService;
 use App\Domain\Marketplace\Services\RelationshipService;
+use App\Domain\Marketplace\Services\RfqService;
 use App\Domain\Organizations\Enums\VerificationStatus;
 use App\Domain\Organizations\Models\Branch;
 use App\Domain\Organizations\Models\Organization;
@@ -353,58 +356,125 @@ class DemoSeeder extends Seeder
      */
     private function marketplace(): void
     {
-        $dist = Organization::query()->where('name', 'Demo National Distribution Ltd')->first();
-        $pharmacy = Organization::query()->where('name', 'Demo Community Pharmacy')->first();
-        if ($dist === null || $pharmacy === null || MarketplaceOrder::query()->where('supplier_organization_id', $dist->id)->exists()) {
+        $org = fn (string $name) => Organization::query()->where('name', $name)->first();
+        [$dist, $pharmacy, $importer, $manufacturer, $wholesaler, $hospital, $pharmacy2] = [$org('Demo National Distribution Ltd'), $org('Demo Community Pharmacy'),
+            $org('Demo Pharma Imports Ltd'), $org('Demo Pharma Manufacturing Ltd'), $org('Demo Wholesale Medicines'), $org('Demo General Hospital'), $org('Demo Neighbourhood Pharmacy')];
+        if (in_array(null, [$dist, $pharmacy, $importer, $manufacturer, $wholesaler, $hospital, $pharmacy2], true)) {
             return;
         }
-        foreach (Organization::query()->whereIn('name', ['Demo National Distribution Ltd', 'Demo Community Pharmacy', 'Demo Wholesale Medicines', 'Demo General Hospital'])->get() as $org) {
-            if (! OrganizationModule::query()->where('organization_id', $org->id)->where('module', 'marketplace')->exists()) {
-                OrganizationModule::query()->create(['organization_id' => $org->id, 'module' => 'marketplace', 'enabled' => true]);
-            }
+        // Every demo organization trades on the marketplace (new organizations get it by default).
+        foreach ([$dist, $pharmacy, $importer, $manufacturer, $wholesaler, $hospital, $pharmacy2] as $o) {
+            // organization_modules has no primary key: update with an explicit where, never updateOrCreate.
+            $row = OrganizationModule::query()->where('organization_id', $o->id)->where('module', 'marketplace');
+            $row->exists() ? $row->update(['enabled' => true]) : OrganizationModule::query()->create(['organization_id' => $o->id, 'module' => 'marketplace', 'enabled' => true]);
         }
-        $owner = fn (Organization $org) => $org->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->with('user')->firstOrFail();
-        [$distOwner, $phOwner] = [$owner($dist), $owner($pharmacy)];
+        $owner = fn (Organization $o) => $o->memberships()->whereHas('roles', fn ($q) => $q->where('code', 'org_owner'))->with('user')->firstOrFail();
         $context = app(TenantContext::class);
+        $product = fn (string $generic) => Product::query()->where('generic_name', $generic)->value('id');
+        $as = function (Organization $o, callable $work) use ($owner, $context) {
+            $m = $owner($o);
+            Auth::setUser($m->user);
 
-        Auth::setUser($distOwner->user);
-        $listings = $context->runAs($dist, function () {
-            $service = app(ListingService::class);
-            $service->saveProfile(['listed' => true, 'headline' => 'SYNTHETIC DEMO: nationwide pharmaceutical distribution', 'regions_served' => ['Lagos', 'Ogun', 'Oyo'],
-                'delivery_options' => ['delivery', 'pickup'], 'minimum_order_value' => '5000', 'contact_email' => 'marketplace.distributor@demo.test']);
+            return $context->runAs($o, $work, $m);
+        };
 
-            return [
-                $service->save(null, ['product_id' => Product::query()->where('generic_name', 'Paracetamol')->value('id'), 'package_level_code' => 'blister', 'unit_price' => '70', 'minimum_order_quantity' => '2', 'lead_time_days' => 2]),
-                $service->save(null, ['product_id' => Product::query()->where('generic_name', 'Oral rehydration salts')->value('id'), 'package_level_code' => 'box', 'unit_price' => '1800',
-                    'minimum_order_quantity' => '1', 'availability_mode' => 'declared', 'declared_availability' => 'in_stock']),
-            ];
-        }, $distOwner);
+        // Supplier storefronts: profile and listings (pack, price, minimum order, lead time, availability, buyer types).
+        $storefronts = [
+            [$dist, ['headline' => 'SYNTHETIC DEMO: nationwide pharmaceutical distribution', 'description' => 'Fictional distributor for demonstrations. Next-day delivery across the South West.',
+                'regions_served' => ['Lagos', 'Ogun', 'Oyo'], 'delivery_options' => ['delivery', 'pickup'], 'minimum_order_value' => '5000', 'contact_email' => 'marketplace.distributor@demo.test'], [
+                    ['Paracetamol', 'blister', '70', '2', 2, null],
+                    ['Oral rehydration salts', 'box', '1800', '1', 1, 'in_stock'],
+                    ['Amoxicillin', 'pack', '950', '5', 2, null],
+                    ['Artemether/Lumefantrine', 'pack', '1450', '3', 2, null],
+                ]],
+            [$importer, ['headline' => 'SYNTHETIC DEMO: imported antimalarials and antibiotics', 'description' => 'Fictional importer. Full cartons for distributors, wholesalers and hospitals.',
+                'regions_served' => ['Lagos', 'FCT'], 'delivery_options' => ['delivery'], 'minimum_order_value' => '50000', 'contact_email' => 'marketplace.importer@demo.test'], [
+                    ['Artemether/Lumefantrine', 'carton', '68000', '1', 7, 'in_stock', ['national_distributor', 'regional_distributor', 'wholesaler', 'hospital']],
+                    ['Amoxicillin', 'carton', '42000', '1', 5, 'in_stock'],
+                    ['Amlodipine', 'pack', '820', '10', 3, 'limited'],
+                ]],
+            [$manufacturer, ['headline' => 'SYNTHETIC DEMO: manufacturer direct supply', 'description' => 'Fictional manufacturer. Factory cartons to licensed distributors, chains and hospitals.',
+                'regions_served' => ['Nationwide'], 'delivery_options' => ['delivery'], 'minimum_order_value' => '250000', 'contact_email' => 'marketplace.manufacturer@demo.test'], [
+                    ['Paracetamol', 'carton', '2900', '20', 10, 'in_stock'],
+                    ['Amlodipine', 'carton', '36000', '2', 10, 'in_stock'],
+                ]],
+            [$wholesaler, ['headline' => 'SYNTHETIC DEMO: wholesale OTC medicines for pharmacies', 'description' => 'Fictional wholesaler, not yet verified: lists over-the-counter products only.',
+                'regions_served' => ['Lagos'], 'delivery_options' => ['delivery', 'pickup'], 'minimum_order_value' => '2000', 'contact_email' => 'marketplace.wholesaler@demo.test'], [
+                    ['Paracetamol', 'pack', '640', '1', 1, null, ['pharmacy', 'pharmacy_chain']],
+                    ['Oral rehydration salts', 'box', '1750', '2', 1, 'in_stock'],
+                ]],
+        ];
+        $listings = [];
+        foreach ($storefronts as [$supplier, $profile, $items]) {
+            $listings[$supplier->id] = $as($supplier, function () use ($profile, $items, $product) {
+                if (MarketplaceListing::query()->exists()) {
+                    return MarketplaceListing::query()->orderBy('created_at')->orderBy('id')->get()->all();
+                }
+                $service = app(ListingService::class);
+                $service->saveProfile(['listed' => true] + $profile);
 
-        Auth::setUser($phOwner->user);
-        $relationship = $context->runAs($pharmacy, fn () => app(RelationshipService::class)->request($dist, 'SYNTHETIC DEMO: weekly replenishment'), $phOwner);
-        Auth::setUser($distOwner->user);
-        $context->runAs($dist, fn () => app(RelationshipService::class)->decide($relationship, true, 'Approved for demo trading', 30), $distOwner);
+                return array_map(fn ($i) => $service->save(null, array_filter([
+                    'product_id' => $product($i[0]), 'package_level_code' => $i[1], 'unit_price' => $i[2], 'minimum_order_quantity' => $i[3], 'lead_time_days' => $i[4],
+                    'availability_mode' => $i[5] ? 'declared' : 'live', 'declared_availability' => $i[5], 'allowed_buyer_types' => $i[6] ?? null,
+                ], fn ($v) => $v !== null)), $items);
+            });
+        }
 
-        Auth::setUser($phOwner->user);
-        $order = $context->runAs($pharmacy, function () use ($listings, $dist, $phOwner) {
+        // Trading partners: approved, and two still waiting for the supplier's decision.
+        $relate = function (Organization $buyer, Organization $supplier, ?int $approveWithTermsDays, string $message) use ($as) {
+            if (TradingRelationship::query()->withoutGlobalScopes()->where('buyer_organization_id', $buyer->id)->where('supplier_organization_id', $supplier->id)->exists()) {
+                return;
+            }
+            $relationship = $as($buyer, fn () => app(RelationshipService::class)->request($supplier, $message));
+            if ($approveWithTermsDays !== null) {
+                $as($supplier, fn () => app(RelationshipService::class)->decide($relationship, true, 'Approved for demo trading', $approveWithTermsDays));
+            }
+        };
+        $relate($pharmacy, $dist, 30, 'SYNTHETIC DEMO: weekly replenishment');
+        $relate($hospital, $importer, 30, 'SYNTHETIC DEMO: antimalarial supply for the hospital pharmacy');
+        $relate($hospital, $dist, 14, 'SYNTHETIC DEMO: top-up orders');
+        $relate($pharmacy, $wholesaler, null, 'SYNTHETIC DEMO: OTC lines');
+        $relate($pharmacy2, $dist, null, 'SYNTHETIC DEMO: new pharmacy looking for a distributor');
+
+        if (MarketplaceOrder::query()->withoutGlobalScopes()->where('supplier_organization_id', $dist->id)->exists()) {
+            return;
+        }
+        $warehouse = fn () => Warehouse::query()->where('code', 'WH-MAIN')->value('id');
+
+        // A completed order: submitted, accepted, shipped, received and invoiced.
+        $order = $as($pharmacy, function () use ($listings, $dist, $owner, $pharmacy, $warehouse) {
             $orders = app(MarketplaceOrderService::class);
-            $order = $orders->createFromListings($dist, [['listing_id' => $listings[0]->id, 'quantity' => '2']],
-                Warehouse::query()->where('code', 'WH-MAIN')->value('id'), null, 'SYNTHETIC DEMO ORDER');
 
-            return $orders->submit($order, $phOwner->user);
-        }, $phOwner);
-
-        Auth::setUser($distOwner->user);
-        $shipment = $context->runAs($dist, function () use ($order) {
+            return $orders->submit($orders->createFromListings($dist, [['listing_id' => $listings[$dist->id][0]->id, 'quantity' => '2']], $warehouse(), null, 'SYNTHETIC DEMO ORDER'), $owner($pharmacy)->user);
+        });
+        $shipment = $as($dist, function () use ($order) {
             app(MarketplaceOrderService::class)->accept($order, null, 'Demo acceptance');
 
             return app(MarketplaceFulfilmentService::class)->ship($order, [['order_line_id' => $order->lines()->value('id'), 'quantity' => '2']], 'Demo Haulage', 'DEMO-TRK-0001');
-        }, $distOwner);
+        });
+        $as($pharmacy, fn () => app(MarketplaceFulfilmentService::class)->receive(MarketplaceShipment::query()->findOrFail($shipment->id)));
+        $as($dist, fn () => app(MarketplaceFulfilmentService::class)->invoice(MarketplaceOrder::query()->findOrFail($order->id)));
 
-        Auth::setUser($phOwner->user);
-        $context->runAs($pharmacy, fn () => app(MarketplaceFulfilmentService::class)->receive(MarketplaceShipment::query()->findOrFail($shipment->id)), $phOwner);
-        Auth::setUser($distOwner->user);
-        $context->runAs($dist, fn () => app(MarketplaceFulfilmentService::class)->invoice(MarketplaceOrder::query()->findOrFail($order->id)), $distOwner);
+        // An order waiting for the supplier to accept it.
+        $as($pharmacy, function () use ($listings, $dist, $owner, $pharmacy, $warehouse) {
+            $orders = app(MarketplaceOrderService::class);
+            $orders->submit($orders->createFromListings($dist, [['listing_id' => $listings[$dist->id][2]->id, 'quantity' => '5'], ['listing_id' => $listings[$dist->id][1]->id, 'quantity' => '2']],
+                $warehouse(), null, 'SYNTHETIC DEMO: monthly antibiotics and ORS'), $owner($pharmacy)->user);
+        });
+
+        // An open request for quotation from the hospital to two suppliers, one of which has quoted.
+        $rfq = $as($hospital, function () use ($dist, $importer, $product, $warehouse) {
+            $rfqs = app(RfqService::class);
+            $rfq = $rfqs->create(['title' => 'SYNTHETIC DEMO: antimalarial restock', 'response_deadline' => now()->addDays(7)->toDateTimeString(), 'delivery_warehouse_id' => $warehouse(),
+                'notes' => 'Delivery within two weeks.', 'lines' => [['product_id' => $product('Artemether/Lumefantrine'), 'package_level_code' => 'pack', 'quantity' => '100']],
+                'supplier_organization_ids' => [$importer->id, $dist->id]]);
+
+            return $rfqs->transition($rfq, 'open');
+        });
+        $as($importer, function () use ($rfq, $hospital) {
+            app(RfqService::class)->submitQuote($rfq, $hospital, ['valid_until' => now()->addDays(14)->toDateString(), 'notes' => 'SYNTHETIC DEMO quote: delivered in 5 days.',
+                'lines' => [['rfq_line_id' => $rfq->lines()->value('id'), 'quantity' => '100', 'unit_price' => '1390', 'lead_time_days' => 5]]]);
+        });
     }
 
     /**

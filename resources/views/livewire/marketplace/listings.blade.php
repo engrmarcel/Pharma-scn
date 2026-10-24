@@ -1,7 +1,7 @@
 <div>
     <x-ui.toolbar>
         <x-ui.field label="Status" for="status"><select id="status" wire:model.live="status" class="form-select w-36"><option value="">All</option><option value="active">Active</option><option value="paused">Paused</option></select></x-ui.field>
-        <x-slot:actions><button type="button" class="btn-primary" wire:click="create"><x-heroicon-o-plus class="size-4"/>New listing</button></x-slot:actions>
+        <x-slot:actions><a href="{{ $storefront }}" class="btn-light">View my storefront</a><button type="button" class="btn-primary" wire:click="create"><x-heroicon-o-plus class="size-4"/>New listing</button></x-slot:actions>
     </x-ui.toolbar>
 
     <div class="card overflow-hidden">
@@ -16,7 +16,7 @@
                             <td class="num font-semibold">{{ fmt()->money($l['unit_price'], $l['currency_code']) }}</td>
                             <td class="num">{{ fmt()->number($l['minimum_order_quantity'], 0) }}</td>
                             <td>{{ $l['availability_mode'] === 'live' ? 'Live stock'.($l['warehouse_id'] ? ' · '.($warehouses[$l['warehouse_id']] ?? '') : '') : str_replace('_', ' ', $l['declared_availability']) }}</td>
-                            <td class="text-xs">{{ $l['allowed_buyer_types'] ? implode(', ', array_map(fn ($t) => str_replace('_', ' ', $t), (array) $l['allowed_buyer_types'])) : 'Any verified buyer' }}</td>
+                            <td class="text-xs">{{ $l['allowed_buyer_types'] ? implode(', ', array_map(fn ($t) => \App\Domain\Organizations\Enums\OrganizationType::tryFrom($t)?->label() ?? $t, (array) $l['allowed_buyer_types'])) : 'Every allowed buyer type' }}</td>
                             <td><x-ui.badge :status="$l['status']"/></td>
                             <td class="text-right"><button type="button" class="link text-xs" wire:click="edit(@js($l), @js($names[$l['product_id']] ?? ''))">Edit</button></td>
                         </tr>
@@ -50,7 +50,7 @@
                 @endif
                 <x-ui.field label="Status" for="form.status"><select id="form.status" wire:model="form.status" class="form-select"><option value="active">Active</option><option value="paused">Paused</option></select></x-ui.field>
                 <div class="sm:col-span-2">
-                    <p class="form-label">Only these buyer types (none ticked: any)</p>
+                    <p class="form-label">Only these buyer types (none ticked: every type you may sell to)</p>
                     <div class="flex flex-wrap gap-x-4 gap-y-1">@foreach ($types as $t)<label class="flex items-center gap-1.5 text-sm"><input type="checkbox" value="{{ $t->value }}" wire:model="form.allowed_buyer_types" class="form-check">{{ $t->label() }}</label>@endforeach</div>
                 </div>
             </form>

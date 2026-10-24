@@ -249,6 +249,8 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('listings', [MarketplaceController::class, 'storeListing'])->name('listings.store');
                 Route::patch('listings/{id}', [MarketplaceController::class, 'updateListing'])->whereUlid('id')->name('listings.update');
                 Route::get('discover', [MarketplaceController::class, 'discover'])->name('discover');
+                Route::get('activity', [MarketplaceController::class, 'activity'])->name('activity');
+                Route::get('suppliers', [MarketplaceController::class, 'suppliers'])->name('suppliers.index');
                 Route::get('suppliers/{organizationId}', [MarketplaceController::class, 'supplier'])->whereUlid('organizationId')->name('suppliers.show');
                 Route::get('relationships', [MarketplaceController::class, 'relationships'])->name('relationships.index');
                 Route::post('relationships', [MarketplaceController::class, 'requestRelationship'])->name('relationships.store');

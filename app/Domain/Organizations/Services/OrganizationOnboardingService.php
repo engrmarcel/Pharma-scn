@@ -46,6 +46,12 @@ class OrganizationOnboardingService
 
             $type = $organization->type instanceof OrganizationType ? $organization->type->value : $organization->type;
             $modules = config("platform.default_modules.$type", config('platform.default_modules.*'));
+            // Every organization type that can buy or sell in the supply chain joins the marketplace by default
+            // (the trading matrix decides who may trade with whom; verification still gates restricted products).
+            $traders = collect(config('marketplace.buyer_types_by_supplier_type'))->flatten()->merge(array_keys(config('marketplace.buyer_types_by_supplier_type')))->unique();
+            if ($traders->contains($type) && ! in_array('marketplace', $modules, true)) {
+                $modules[] = 'marketplace';
+            }
             foreach ($modules as $module) {
                 OrganizationModule::query()->create(['organization_id' => $organization->id, 'module' => $module, 'enabled' => true, 'changed_by' => $owner->id]);
             }

@@ -7,6 +7,7 @@ use App\Domain\Marketplace\Models\MarketplaceProfile;
 use App\Domain\Marketplace\Models\TradingRelationship;
 use App\Domain\Marketplace\Services\ListingService;
 use App\Domain\Marketplace\Services\MarketplaceAccess;
+use App\Domain\Marketplace\Services\MarketplaceActivity;
 use App\Domain\Marketplace\Services\MarketplaceDiscovery;
 use App\Domain\Marketplace\Services\RelationshipService;
 use App\Domain\Organizations\Enums\OrganizationType;
@@ -107,6 +108,32 @@ class MarketplaceController extends Controller
         ]);
 
         return response()->json($discovery->search($this->tenant->organization(), $f, (int) ($f['page'] ?? 1)));
+    }
+
+    /** The trading floor: what needs attention as buyer and supplier, recent activity and figures. */
+    public function activity(MarketplaceActivity $activity): JsonResponse
+    {
+        abort_unless(Gate::any(['marketplace.browse', 'marketplace.orders.place', 'marketplace.orders.fulfil', 'marketplace.listings.manage', 'marketplace.quotes.respond']), 403);
+        $this->access->assertParticipates($this->tenant->organization());
+
+        return response()->json(['data' => $activity->summary($this->tenant->organization())]);
+    }
+
+    /** Directory of listed suppliers, with whether the buyer may trade with each. */
+    public function suppliers(Request $request, MarketplaceActivity $activity): JsonResponse
+    {
+        Gate::authorize('marketplace.browse');
+        $this->access->assertParticipates($this->tenant->organization());
+        $f = $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+            'type' => ['nullable', Rule::enum(OrganizationType::class)],
+            'state' => ['nullable', 'string', 'max:100'],
+            'delivery' => ['nullable', Rule::in(MarketplaceProfile::DELIVERY_OPTIONS)],
+            'verified_only' => ['nullable', 'boolean'],
+            'page' => ['nullable', 'integer', 'min:1'],
+        ]);
+
+        return response()->json($activity->suppliers($this->tenant->organization(), $f, (int) ($f['page'] ?? 1)));
     }
 
     public function supplier(string $organizationId): JsonResponse

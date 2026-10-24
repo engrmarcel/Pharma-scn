@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Domain\Marketplace\Models\TradingRelationship;
 use App\Domain\Parties\Models\Customer;
 use App\Domain\Parties\Models\Supplier;
+use Illuminate\Support\Facades\DB;
 use Tests\Concerns\InteractsWithMarketplace;
 use Tests\FeatureTestCase;
 
@@ -112,7 +113,8 @@ class MarketplaceTest extends FeatureTestCase
         $this->actingAsApi($cashier, $s['org'])->api('GET', 'marketplace/discover')->assertForbidden();
         $this->actingAsApi($cashier, $s['org'])->api('POST', 'marketplace/listings', [])->assertForbidden();
 
-        [$buyer, $hospital] = $this->organizationMember(orgAttributes: ['type' => 'hospital']); // marketplace not enabled
+        [$buyer, $hospital] = $this->organizationMember(orgAttributes: ['type' => 'hospital']);
+        DB::table('organization_modules')->where('organization_id', $hospital->id)->where('module', 'marketplace')->update(['enabled' => false]); // switched off
         $this->actingAsApi($buyer, $hospital)->api('GET', 'marketplace/discover')->assertForbidden()->assertJsonPath('error.code', 'module_not_enabled');
     }
 }

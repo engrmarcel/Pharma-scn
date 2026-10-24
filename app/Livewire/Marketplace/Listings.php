@@ -6,6 +6,7 @@ use App\Domain\Marketplace\Models\MarketplaceListing;
 use App\Domain\Organizations\Enums\OrganizationType;
 use App\Livewire\Concerns\PicksProducts;
 use App\Livewire\WebPage;
+use App\Support\Tenancy\TenantContext;
 use Livewire\Attributes\Title;
 
 /** What the organization offers on the marketplace: price, minimum, availability (live stock or declared) and who may buy. */
@@ -70,7 +71,10 @@ class Listings extends WebPage
             'names' => $this->productNames(array_column($rows, 'product_id')),
             'warehouses' => $this->warehouseOptions(),
             'declared' => MarketplaceListing::DECLARED,
-            'types' => OrganizationType::cases(),
+            // A listing can narrow who may buy, never widen it: offer only the types this supplier may sell to.
+            'types' => collect(config('marketplace.buyer_types_by_supplier_type.'.app(TenantContext::class)->organization()->type->value, []))
+                ->map(fn ($t) => OrganizationType::from($t))->all(),
+            'storefront' => route('marketplace.storefront', app(TenantContext::class)->id()),
         ]);
     }
 }

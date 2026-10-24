@@ -4,6 +4,7 @@
         'account.security' => ['finger-print', 'Account', 'Your sign-in, email verification and two-factor settings.'],
     ];
     $routeName = request()->route()?->getName();
+    $routeName = \App\Support\Web\Navigation::ALIASES[$routeName] ?? $routeName; // detail pages highlight their parent tab
     $found = \App\Support\Web\Navigation::find($routeName);
     $page = $found
         ? [$found[1][2], \App\Support\Web\Navigation::SECTIONS[$found[0]][0], $found[1][4]]

@@ -64,6 +64,8 @@ class MarketplaceDiscovery
                 'p.display_name', 'p.generic_name', 'p.strength_text', 'p.dosage_form_code', 'p.platform_sku', 'br.name as brand_name',
                 'pl.name as level_name', 'pl.base_unit_quantity', 'mp.delivery_options', 'mp.regions_served', 'mp.minimum_order_value'])
             ->selectSub($live, 'live_units')
+            // The smallest unit (tablet, capsule, sachet), so buyers can compare packs of different sizes.
+            ->selectSub(fn ($b) => $b->from('product_package_levels as bl')->whereColumn('bl.product_id', 'l.product_id')->where('bl.level', 0)->select('bl.unit_code')->limit(1), 'base_unit')
             ->orderBy('p.display_name')->orderBy('l.unit_price');
 
         $paginator = $query->paginate($perPage, page: $page);
@@ -84,7 +86,8 @@ class MarketplaceDiscovery
                     'listing_id' => $r->id,
                     'product' => ['id' => $r->product_id, 'display_name' => $r->display_name, 'generic_name' => $r->generic_name, 'brand' => $r->brand_name,
                         'strength' => $r->strength_text, 'dosage_form' => $r->dosage_form_code, 'platform_sku' => $r->platform_sku],
-                    'pack' => ['code' => $r->package_level_code, 'name' => $r->level_name, 'base_unit_quantity' => (string) $r->base_unit_quantity],
+                    'pack' => ['code' => $r->package_level_code, 'name' => $r->level_name, 'base_unit_quantity' => (string) $r->base_unit_quantity, 'base_unit' => $r->base_unit],
+                    'price_per_base_unit' => bccomp((string) $r->base_unit_quantity, '0', 4) > 0 ? bcdiv((string) $r->unit_price, (string) $r->base_unit_quantity, 4) : null,
                     'unit_price' => (string) $r->unit_price, 'currency_code' => $r->currency_code,
                     'minimum_order_quantity' => (string) $r->minimum_order_quantity, 'lead_time_days' => $r->lead_time_days,
                     'availability' => $this->availability($r, $staleDays),
@@ -95,6 +98,8 @@ class MarketplaceDiscovery
                     'restriction' => ['classification' => $classification, 'restricted' => $this->access->isRestricted($classification),
                         'you_may_buy' => $block === null, 'reason' => $block['message'] ?? null],
                     'relationship' => $relationships[$r->organization_id] ?? null,
+                    // Buyer types the listing is limited to (null: everyone the trading rules allow for this supplier).
+                    'allowed_buyer_types' => $allowedTypes,
                 ];
             })->values();
 

@@ -33,7 +33,7 @@ Before requiring two-factor for staff, enrol your own account (web: **Account �
 2. Open the documents, check them against the country's requirements (the checklist shows what the country and organization type require, e.g. a Nigerian pharmacy's PCN premises licence).
 3. **Approve**, **Request changes** (notes required) or **Reject** (notes required). A reviewer cannot decide on an organization they belong to.
 
-Verified organizations can trade on the marketplace and propose catalogue changes.
+Verification opens trading in prescription-only and controlled products on the marketplace (other products can be traded before it) and lets the organization propose catalogue changes.
 
 ### Lifecycle
 In **Administration → Organizations**, search or filter by verification status, state and type, then open an organization:
@@ -80,6 +80,8 @@ A verification record is the platform's own check; it is never presented as a st
 - **Recall** (**Administration → Recalls**): prepare it; a **second** compliance officer activates it. Activation quarantines the lots in every holder's stock and notifies them. Follow progress in the exposure view; close when every notice is acknowledged (or with an override reason).
 
 ## 7. Marketplace
+
+Organizations that buy or sell medicines (manufacturers, importers, distributors, wholesalers, pharmacies and chains, hospitals, health facilities and institutional buyers) have the marketplace switched on when they register; turn it off or on for one organization in **Administration → Organizations → Modules**. Who may buy from whom, and which products need both parties verified, is set in `config/marketplace.php`.
 
 **Administration → Marketplace**: escalated disputes (open one to read the messages and add a platform note both parties see; the supplier resolves it) and fees (totals by status; waive an accrued fee with a reason).
 

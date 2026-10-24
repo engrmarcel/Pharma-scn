@@ -120,10 +120,35 @@ On the web, **Field force** has the supervisor's **Field force dashboard**, **Vi
 
 ## 8. Marketplace
 
-1. Suppliers publish a **Profile** and **Listings** (price, minimum order, availability, allowed buyer types).
-2. Buyers **Discover** suppliers, request a **trading relationship** (approved in **Trading partners**), send **RFQs** and compare **Quotes**.
-3. A marketplace **Order** creates the buyer's purchase order and the supplier's sales order; the supplier ships and invoices; the buyer receives.
-4. Problems are raised as **Disputes** on the order. Marketplace fees charged to suppliers are listed in **Fees**.
+The marketplace is where organizations in the network buy from and sell to each other: manufacturers, importers and distributors supply wholesalers, pharmacies, hospitals and other facilities. Who may buy from whom follows the licensed supply chain (for example, a pharmacy buys from distributors and wholesalers, not directly from a manufacturer), and prescription-only or controlled products are traded only between organizations that have passed platform verification. Every organization type that buys or sells medicines has the marketplace switched on when it registers.
+
+### The trading floor
+
+**Workspace → Marketplace → Trading floor** is the marketplace's home. It shows:
+
+- **Needs your attention**, as a buyer and as a supplier, each with a count that opens the right screen already filtered: orders waiting for the supplier or for your own approval, deliveries to receive, supplier invoices to record, quotes to review; and for suppliers, orders to accept and to ship, requests for quotation to answer, and buyers asking to trade with you. Suppliers are also reminded to publish their profile and listings.
+- **The last 30 days**: purchases and sales (a sale counts once you have accepted the order), trading partners, active offers and open disputes.
+- **Recent trading activity**: orders, quotes, requests for quotation, trading requests and disputes, newest first.
+- A **search box** to find a medicine across all suppliers, and the verified suppliers to start with.
+
+### Buying
+
+1. **Find offers**: search on the trading floor, or open **Discover offers**. Each offer shows the price per pack and per tablet, capsule or sachet, the minimum order, lead time, availability (live from the supplier's stock, or as stated by the supplier with the date), who it is sold to, and whether *you* may buy it, with the reason if not. **Compare by product** lists every supplier's offer for a product side by side, cheapest per unit first, and marks the best price you can actually buy.
+2. **Look at suppliers**: **Suppliers** is the directory (type, location, regions served, delivery options, minimum order, number of offers, your trading status). Open a supplier's **storefront** for their profile, trading terms and all their offers.
+3. **Request to trade**: before the first order, ask the supplier to trade with you (from the directory, a storefront or an offer). The supplier approves and sets your payment terms; see **Trading partners**.
+4. **Order**: add offers to **Your order**. The cart follows you across the trading floor, storefronts and Discover, and keeps one order per supplier. **Order from …** sends it, delivered to the store you choose; the supplier's current price and minimums apply. If your organization requires internal approval above a threshold, the order waits for it first.
+5. **Ask for a quote** instead, for larger or regular needs: from a partner's storefront, or **RFQs**, to several suppliers at once; compare the **Quotes** and accept one to create the order.
+6. **Receive and pay**: record the delivery when it arrives (with the batches the supplier shipped), and record the supplier's invoice in your payables.
+
+### Selling
+
+1. **Storefront profile**: headline, description, regions you deliver to, delivery or pickup, minimum order value and contact. Tick *Listed* to appear in the directory. **View my storefront** shows it as buyers see it.
+2. **Listings**: for each product and pack, the price, minimum order, lead time, availability (live from your stock in one or all warehouses, or stated by you, for example *in stock* or *limited*), and optionally the buyer types it is for. You can only narrow the buyer types the trading rules allow you, never widen them. Prescription-only products can be listed once your organization is verified.
+3. **Trading partners**: approve or decline buyers who ask to trade, and set their payment terms.
+4. **Orders**: accept or reject, ship (the batches go with the shipment), and invoice. **RFQs**: answer with a quote or decline. Accepted orders create your sales order; shipments issue stock like any delivery.
+5. **Fees**: the marketplace fee charged on your invoiced orders.
+
+Problems are raised as **Disputes** on the order (messages, escalation to the platform, resolution).
 
 ## 9. Traceability and recalls
 
