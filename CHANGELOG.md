@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Security: Livewire 4.4.8
+- Upgraded Livewire to 4.4.8 for advisory GHSA-mhf7-xp6r-6qrc (authorization bypass in `#[Authorize]` via reordered parameter keys and `#[Json]` execution order, published 2026-10-23). The application does not use `#[Authorize]` or `#[Json]`, so it was not exposed; the upgrade clears the CI dependency audit, which had started failing on it.
+
 ### 2026-10-24: Phase 10d: scaling readiness (Phase 10 complete)
 - Every scheduled task runs on one server only, so several application instances can each run the scheduler without repeating backups, monitoring or nightly jobs.
 - Landing page media are stored on a configurable disk (`LANDING_MEDIA_DISK`) and served through the storage API, so an upload through one instance is available on all of them (previously local disk only).
