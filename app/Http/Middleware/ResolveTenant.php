@@ -51,6 +51,13 @@ class ResolveTenant
 
         $this->tenant->set($membership->organization, $membership);
 
+        // A Livewire update re-applies this middleware as a stand-alone pipeline before it runs the
+        // component, so the context must outlive $next here, or every action on a tenant screen runs
+        // without an organization (403). It still ends with the request: the context is request-scoped.
+        if ($request->hasHeader('X-Livewire')) {
+            return $next($request);
+        }
+
         try {
             return $next($request);
         } finally {

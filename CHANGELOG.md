@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### 2026-10-24: Fix: 403 on every action of the organization screens
+- Clicking any button on a Workspace or Organization screen (for example **New customer**) returned 403 Forbidden. Livewire re-applies the tenant middleware to each update as a stand-alone step, and the middleware cleared the organization as soon as that step finished, so the component ran without an organization: the screen's permission check refused, and its API calls had no organization either. The context now lasts for the whole Livewire update request (it is request-scoped, so it still ends with the request).
+- New test `LivewireUpdateRequestTest` sends real Livewire update requests over HTTP, as the browser does (the existing screen tests use Livewire's harness, which skips this path): opening forms, saving a customer into the right organization, and refusing a member without the permission. Verified in the browser as well.
+
 ### 2026-10-23: Phase 10c: backups, restore drills and failure recovery
 - `php artisan ops:backup`: a consistent, compressed database dump with SHA-256 and a manifest (row counts, schema version) on its own disk, with retention. Runs nightly when `BACKUP_ENABLED=true`; a failure raises an alert.
 - `php artisan ops:restore-drill`: restores a backup into a throwaway `*_restore_drill` database (never the live one), verifies checksum, tables and row counts, schema compatibility with this release and the consistency invariants, records the measured recovery time and data age in `recovery_drills`, and raises an alert on failure. Runs monthly; the monitor alerts when the last good backup or drill is too old. Measured on the load-test data (133,633 rows): backup 8 s, restore and checks 167 s on the test machine.
