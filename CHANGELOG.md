@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### 2026-11-12: Security: Symfony 7.4.22/7.4.23
+- Updated the Symfony components for advisories published 2026-10-28 to 2026-11-04 (http-foundation, http-kernel, mime, routing; including CVE-2026-45070, email header injection through MIME parameter names, and CVE-2026-118516, host placeholders matching the start of the path in compiled URL matchers). The CI dependency audit had started failing on them. 347 tests passing.
+
 ### 2026-11-12: Fix: document upload and verification submission
 - **Upload** on **Organization → Profile & verification** did nothing: the screen's action was named `upload`, which in the browser is Livewire's own file-upload helper (`$wire.upload`), so the click never reached the server, no document was stored, and **Submit for verification** was then refused for missing documents. The action is now `uploadDocument`; a test guards the name.
 - **Submit for verification** now lists exactly what is still missing (documents, licence numbers, address fields) instead of a generic refusal. The page shows when the submission is under review, the reviewer's notes when changes are requested or it is rejected, and the date it was verified. `GET /organization` returns the latest step as `platform_verification.last_event`.
