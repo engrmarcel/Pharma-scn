@@ -25,6 +25,28 @@
         @endif
     </div>
 
+    @php($last = $org['platform_verification']['last_event'] ?? null)
+    @if ($org['platform_verification']['status'] === 'pending_review')
+        <div class="flex items-start gap-3 rounded-lg border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+            <x-heroicon-o-clock class="size-5 shrink-0"/>
+            <p>Submitted {{ $last ? fmt()->dateTime($last['at']) : '' }}. The platform's compliance team is reviewing your documents and details; you will see the decision here.</p>
+        </div>
+    @elseif (in_array($org['platform_verification']['status'], ['changes_requested', 'rejected'], true) && $last)
+        <div class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            <x-heroicon-o-exclamation-triangle class="size-5 shrink-0"/>
+            <div>
+                <p class="font-medium">{{ $org['platform_verification']['status'] === 'rejected' ? 'Verification was rejected' : 'The reviewer asked for changes' }} ({{ fmt()->dateTime($last['at']) }}).</p>
+                @if ($last['notes'])<p class="mt-1">“{{ $last['notes'] }}”</p>@endif
+                <p class="mt-1">Make the changes, upload any documents needed, then submit again.</p>
+            </div>
+        </div>
+    @elseif ($org['platform_verification']['status'] === 'verified')
+        <div class="flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <x-heroicon-o-check-badge class="size-5 shrink-0"/>
+            <p>Verified by the platform{{ $org['platform_verification']['verified_at'] ? ' on '.fmt()->date($org['platform_verification']['verified_at']) : '' }}.</p>
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="space-y-6 lg:col-span-2">
             <x-ui.card title="Details" icon="identification">
@@ -69,7 +91,7 @@
 
             <x-ui.card title="Documents" icon="paper-clip">
                 @if ($canManage)
-                    <form wire:submit="upload" class="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
+                    <form wire:submit="uploadDocument" class="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3">
                         <x-ui.field label="Category" for="documentCategory" class="w-56">
                             <select id="documentCategory" wire:model="documentCategory" class="form-select">
                                 @foreach (['business_registration', 'premises_licence', 'pharmacist_licence', 'regulatory_licence', 'tax_certificate', 'other'] as $c)
@@ -81,7 +103,7 @@
                             <input id="document" type="file" wire:model="document" accept=".pdf,.jpg,.jpeg,.png,.webp" class="form-input py-1.5">
                             @error('upload.file') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                         </x-ui.field>
-                        <button class="btn-primary" wire:loading.attr="disabled" wire:target="document,upload"><x-heroicon-o-arrow-up-tray class="size-4"/>Upload</button>
+                        <button class="btn-primary" wire:loading.attr="disabled" wire:target="document,uploadDocument"><x-heroicon-o-arrow-up-tray class="size-4"/>Upload</button>
                     </form>
                 @endif
                 <ul class="divide-y divide-slate-100">

@@ -59,7 +59,9 @@ class Profile extends WebPage
         }
     }
 
-    public function upload(): void
+    // Not "upload": $wire.upload() is Livewire's own file-upload helper in the browser, so an action
+    // with that name is never sent to the server.
+    public function uploadDocument(): void
     {
         $this->validate(['document' => ['required', 'file', 'max:'.config('platform.attachments.max_kb')]]);
         $result = $this->attempt(fn ($api) => $api->upload('organization/documents', ['category' => $this->documentCategory], ['file' => $this->document], 'upload'), 'Document uploaded.');
@@ -83,6 +85,18 @@ class Profile extends WebPage
 
     public function submitForVerification(): void
     {
+        // Say exactly what is still missing rather than only that something is.
+        $requirements = $this->read('organization/onboarding-requirements')['data'] ?? null;
+        if ($requirements !== null && ! $requirements['ready']) {
+            $missing = collect($requirements['documents'])->where('present', false)->map(fn ($r) => 'document: '.str_replace('_', ' ', $r['category']))
+                ->merge(collect($requirements['identifiers'])->where('present', false)->pluck('name'))
+                ->merge(collect($requirements['profile_fields'])->where('present', false)->map(fn ($r) => strtolower($r['label'])))
+                ->when(! $requirements['any_document'] && collect($requirements['documents'])->isEmpty(), fn ($c) => $c->push('at least one document'));
+            $this->notify('Before submitting, add: '.$missing->implode(', ').'. See the verification checklist.', 'error');
+
+            return;
+        }
+
         $this->attempt(fn ($api) => $api->post('organization/verification/submit'), 'Submitted for platform verification.');
     }
 

@@ -2,10 +2,14 @@
 
 namespace App\Livewire\Admin;
 
+use App\Domain\Catalogue\Models\RegulatoryIdentifier;
 use App\Domain\Organizations\Models\Organization;
+use App\Domain\Organizations\Services\OnboardingRequirements;
 use App\Domain\Organizations\Services\OrganizationVerificationService;
+use App\Domain\Platform\Services\AuditLogger;
 use App\Support\Exceptions\BusinessRuleViolation;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -55,8 +59,19 @@ class VerificationQueue extends Component
             return;
         }
 
-        session()->flash('status', "{$organization->name}: decision recorded ({$decision}).");
+        $this->dispatch('notify', type: 'success', message: "{$organization->name}: ".['approve' => 'verified', 'reject' => 'rejected', 'request_changes' => 'changes requested'][$decision].'.');
         $this->reviewing = null;
+        $this->notes = '';
+    }
+
+    /** Open an uploaded document; every viewing is audited against the organization. */
+    public function downloadDocument(string $attachmentId)
+    {
+        Gate::authorize('platform.organizations.verify');
+        $attachment = Organization::query()->findOrFail($this->reviewing)->documents()->findOrFail($attachmentId);
+        app(AuditLogger::class)->record('organization.document_viewed_by_platform', $attachment, organizationId: $attachment->organization_id);
+
+        return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }
 
     public function render()
@@ -66,6 +81,8 @@ class VerificationQueue extends Component
         return view('livewire.admin.verification-queue', [
             'organizations' => Organization::query()->where('verification_status', $this->status)->oldest('updated_at')->paginate(20),
             'current' => $current,
+            'identifiers' => $current ? RegulatoryIdentifier::query()->with('authority')->where('subject_type', 'organization')->where('subject_id', $current->id)->get() : collect(),
+            'requirements' => $current ? app(OnboardingRequirements::class)->for($current) : null,
             'canDecide' => Gate::allows('platform.organizations.verify'),
         ]);
     }

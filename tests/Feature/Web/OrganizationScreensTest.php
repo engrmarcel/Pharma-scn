@@ -47,7 +47,7 @@ class OrganizationScreensTest extends FeatureTestCase
             ->assertHasErrors('form.website_url')
             ->set('form.website_url', 'https://example.test')->call('save')->assertHasNoErrors()->assertSet('form', null)
             ->set('document', UploadedFile::fake()->create('cac.pdf', 20, 'application/pdf'))->set('documentCategory', 'business_registration')
-            ->call('upload')->assertHasNoErrors()->assertSee('cac.pdf');
+            ->call('uploadDocument')->assertHasNoErrors()->assertSee('cac.pdf');
 
         $this->assertSame('Web Pharmacy Limited', $org->fresh()->legal_name);
         $this->assertSame(1, $org->documents()->count());

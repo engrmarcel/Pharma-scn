@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### 2026-11-12: Fix: document upload and verification submission
+- **Upload** on **Organization → Profile & verification** did nothing: the screen's action was named `upload`, which in the browser is Livewire's own file-upload helper (`$wire.upload`), so the click never reached the server, no document was stored, and **Submit for verification** was then refused for missing documents. The action is now `uploadDocument`; a test guards the name.
+- **Submit for verification** now lists exactly what is still missing (documents, licence numbers, address fields) instead of a generic refusal. The page shows when the submission is under review, the reviewer's notes when changes are requested or it is rejected, and the date it was verified. `GET /organization` returns the latest step as `platform_verification.last_event`.
+- The administration **Verification queue** now shows the organization's details, country checklist, licences and registrations, and lets reviewers **Open** each document (recorded in the audit log). Decisions confirm on screen.
+- Tested end to end in the browser (upload, submit, review, open a document, approve) and in `OrganizationVerificationScreenTest`.
+- 347 tests passing.
+
 ### 2026-10-24: Marketplace trading floor, supplier directory and storefronts
 - **Workspace → Marketplace → Trading floor** (`/marketplace`) is the marketplace's home: what needs attention as a buyer (orders waiting for the supplier, deliveries to receive, invoices to record, quotes to review) and as a supplier (orders to accept and ship, RFQs to answer, buyers asking to trade), each opening the filtered screen; purchases and sales of the last 30 days; recent trading activity; a search across all suppliers; featured verified suppliers.
 - **Suppliers** directory and supplier **storefronts** (profile, trading terms, all offers, request to trade, ask for a quote). Suppliers see their own storefront as buyers do.

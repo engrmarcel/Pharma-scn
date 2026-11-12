@@ -48,7 +48,7 @@ Base path: `/api/v1`. JSON only. A machine-readable OpenAPI document is planned.
 ### Tenant (`X-Organization-Id` required)
 | Method | Path | Permission |
 |---|---|---|
-| GET / PATCH | `/organization` | `organization.view` / `organization.manage` |
+| GET / PATCH | `/organization` | `organization.view` / `organization.manage`; GET includes `platform_verification.last_event` `{action, notes, at}` (the latest submission or decision, with the reviewer's notes) |
 | GET / POST | `/organization/documents` (multipart `category`, `file`) | view / manage |
 | GET | `/organization/documents/{id}` | `organization.view` (download) |
 | POST | `/organization/verification/submit` | `organization.manage` |

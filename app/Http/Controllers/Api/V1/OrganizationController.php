@@ -54,7 +54,7 @@ class OrganizationController extends Controller
     {
         Gate::authorize('organization.view');
 
-        return OrganizationResource::make($this->tenant->organization()->load('modules'));
+        return OrganizationResource::make($this->tenant->organization()->load(['modules', 'verifications' => fn ($q) => $q->limit(1)]));
     }
 
     public function update(Request $request, AuditLogger $audit): OrganizationResource

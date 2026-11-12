@@ -16,7 +16,7 @@ After creating an account, the dashboard offers two choices:
 1. **Register your organization:** name, type (pharmacy, distributor, manufacturer, hospital, …), country and contact details. You become its owner. It starts with the modules for its type on the default plan, and unverified.
 2. **Accept an invitation:** open the link in the invitation e-mail, or paste the code from it. The invitation must have been sent to the e-mail address you signed up with.
 
-Then complete verification in **Organization → Profile & verification**: the checklist shows what your country and organization type require. Complete the address and licence numbers (for example a pharmacy's PCN premises licence in Nigeria), upload the documents, then **Submit for verification**. Platform compliance staff review it and you are notified of the decision.
+Then complete verification in **Organization → Profile & verification**: the checklist shows what your country and organization type require. Complete the address and licence numbers (for example a pharmacy's PCN premises licence in Nigeria), upload the documents, then **Submit for verification**. If something is missing, **Submit for verification** tells you what. Platform compliance staff then review it; the page shows that it is under review, and then the decision. If they ask for changes or reject it, their notes are shown at the top of the page: make the changes and submit again.
 
 Invite your team in **Organization → Members & roles** and give each person roles and, if needed, specific branches or warehouses.
 

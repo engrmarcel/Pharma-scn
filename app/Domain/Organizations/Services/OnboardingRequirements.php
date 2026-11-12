@@ -33,7 +33,7 @@ class OnboardingRequirements
         })->values();
 
         $fields = collect($profile->get('address.required_fields', []))
-            ->map(fn ($f) => ['field' => $f, 'label' => $f === 'state_region' ? $profile->get('address.region_label') : str_replace('_', ' ', $f), 'present' => filled($org->{$f})])->values();
+            ->map(fn ($f) => ['field' => $f, 'label' => $f === 'state_region' ? $profile->get('address.region_label') : str_replace(['_', 'line1', 'line2'], [' ', 'line 1', 'line 2'], $f), 'present' => filled($org->{$f})])->values();
 
         $documentRows = collect($profile->requiredDocuments($type))->map(fn ($c) => ['category' => $c, 'present' => $documents->contains($c)])->values();
 

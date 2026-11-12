@@ -29,9 +29,9 @@ Before requiring two-factor for staff, enrol your own account (web: **Account �
 ## 3. Organizations
 
 ### Verification queue (web)
-1. Open **Administration → Verification queue**. Organizations waiting for review are listed with their documents.
-2. Open the documents, check them against the country's requirements (the checklist shows what the country and organization type require, e.g. a Nigerian pharmacy's PCN premises licence).
-3. **Approve**, **Request changes** (notes required) or **Reject** (notes required). A reviewer cannot decide on an organization they belong to.
+1. Open **Administration → Verification queue** and choose an organization. You see its details (legal name, registration and tax numbers, contact, address), the country checklist, its licences and registrations, its documents and the history of submissions and decisions.
+2. **Open** each document (every opening is recorded in the organization's audit log), check them against the country's requirements (the checklist shows what the country and organization type require, e.g. a Nigerian pharmacy's PCN premises licence).
+3. **Approve**, **Request changes** (notes required) or **Reject** (notes required). A reviewer cannot decide on an organization they belong to. The organization sees the decision and your notes on its **Profile & verification** page.
 
 Verification opens trading in prescription-only and controlled products on the marketplace (other products can be traded before it) and lets the organization propose catalogue changes.
 

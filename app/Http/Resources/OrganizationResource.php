@@ -34,6 +34,10 @@ class OrganizationResource extends JsonResource
             'platform_verification' => [
                 'status' => $this->verification_status?->value,
                 'verified_at' => $this->verified_at?->toIso8601String(),
+                // The latest step (submitted, approve, reject, request_changes) with the reviewer's notes, when loaded.
+                'last_event' => $this->whenLoaded('verifications', fn () => ($v = $this->verifications->first()) ? [
+                    'action' => $v->action, 'notes' => $v->notes, 'at' => $v->created_at?->toIso8601String(),
+                ] : null),
             ],
             // How to show dates, times and money for this organization (clients format; the API returns raw values).
             'locale' => [
